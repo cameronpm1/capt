@@ -66,6 +66,9 @@ class baseDynamics:
     
     def get_speed(self) -> float:
         return np.linalg.norm(self.state[3:6])
+    
+    def get_state(self) -> list[float]:
+        return self.state
 
     def forward_dynamics(self):
         pass

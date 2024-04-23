@@ -49,6 +49,11 @@ class pathPlanner(basePathPlanner):
     ) -> None:
         self.goal = goal_state
 
+    def get_goal_state(
+            self,
+    ) -> list[float]:
+        return self.goal
+
     def update_point_cloud(
             self,
             point_cloud: list[list[float]]

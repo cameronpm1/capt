@@ -46,3 +46,9 @@ class dynamicObject(staticObject):
     def step(self) -> None:
         states = self.dynamics.forward_step()
         self.update_points()
+
+    def reset(self) -> None:
+        self.dynamics.reset_state()
+
+    def get_state(self) -> list[float]:
+        return self.dynamics.get_state()

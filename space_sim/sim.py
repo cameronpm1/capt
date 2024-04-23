@@ -1,40 +1,54 @@
 import sys
 sys.path.insert(1, 'c:/Users/Cameron Mehlman/Documents/Magpie')
 
+import copy
+import control
+import cvxpy as cp
 import numpy as np
 import pyvista as pv
+from gym.utils import seeding
 import matplotlib.pyplot as plt
-import cvxpy as cp
-import control 
-import copy
 from typing import Any, Dict, Type, Optional, Union
 
-from dynamics.base_dynamics import baseDynamics
-from dynamics.sat_dynamics import satelliteDynamics
-from dynamics.dynamic_object import dynamicObject
-from dynamics.static_object import staticObject
-from dynamics.quad_dynamics import quadcopterDynamics
 from envs.gui import gui
+from logger import getlogger
 from util.util import line_to_point
+from dynamics.static_object import staticObject
+from dynamics.base_dynamics import baseDynamics
+from dynamics.dynamic_object import dynamicObject
+from dynamics.sat_dynamics import satelliteDynamics
+from dynamics.quad_dynamics import quadcopterDynamics
 from trajectory_planning.path_planner import pathPlanner
 
+logger = getlogger(__name__)
 
-class obstacleAvoidanceEnv():
+class Sim():
+    '''
+    Single adversary Satellite Simulation
+
+    main_object: our satellite attempting to reach path_planner.goal
+    adversary: a list of adversaries in the simulation
+    path_planner: path planner for main_object
+    control_method: controller for main object used for trajectory tracking
+    '''
 
     def __init__(
             self,
             main_object: Type[dynamicObject],
             path_planner: Type[pathPlanner],
             control_method: str, #MPC
-            kwargs: Dict[str, Any],
+            kwargs: Optional[Dict[str, Any]],
             point_cloud_radius: float = 5,
             path_point_tolerance: float = 0.1,
             point_cloud_size: float = 3000,
             goal_tolerance: float = 0.0001,
             time_tolerance: float = 300,
+            collision_tolerance: float = 1,
             perturbation_force: Optional[float] = None,
             plot_cloud: bool = False,
     ):
+        
+        logger.info('Initializing simulation...')
         
         self.main_object = main_object
         self.path_planner = path_planner
@@ -43,17 +57,20 @@ class obstacleAvoidanceEnv():
         self.path_point_tolerance = path_point_tolerance
         self.goal_tolerance = goal_tolerance
         self.time_tolerance = time_tolerance
+        self.collision_tolerance = collision_tolerance
         self.obstacles = []
-        self.perturbation_force = perturbation_force
         
         self.plot_cloud = plot_cloud
         self.point_cloud_plot = None
         self.point_cloud = None
         self.dynamic_obstacles = False
 
-        kwargs['dynamics'] = main_object.dynamics
-        self.control_method = getattr(self,control_method)(**kwargs)
-        self.control_method.update_state()
+        if len(control_method) == 0:
+            self.control_method = None
+        else:
+            kwargs['dynamics'] = main_object.dynamics
+            self.control_method = getattr(self,control_method)(**kwargs)
+            self.control_method.update_state()
 
         self.adversary = []
         self.adversary_control_method = []
@@ -69,43 +86,98 @@ class obstacleAvoidanceEnv():
         self.expected_time = None
         self.adjustment_count = 0
 
-        
-        '''
-        TO DO: the mpc controller has bad velocity control, as a result
-        we cannot predict vehicle speed until it is already moving,
-        Thus, we must recompute a trajectory after the first
-        few timesteps
-        '''
+    
         self.first_goal = True #has first goal been reached?
 
-    def step(self) -> tuple[list[float], list[float], bool, int]:
-        self.collision_check()
-        action = self.compute_next_action()
-        self.main_object.dynamics.set_control(action)
-        self.main_object.step()
-        self.control_method.update_state()
-        if len(self.adversary) > 0:
-            self.adversary_step()
+        self._np_random = None
+
+        logger.info('Simulation initialized')
+
+
+    def reset(self) -> None:
+        logger.info('Resetting simulation')
+        self.done = False
+        self.first_goal = True
+        self.time = 0
+        self.reward = 0
+        self.adjustment_count = 0
+        self.main_object.dynamics.reset_state()
         for obstacle in self.obstacles:
             if isinstance(obstacle,dynamicObject):
-                ##############################
-                #ADD PERTURBATION FORCES TO OBSTACLES
-                ##############################
-                '''
-                if self.perturbation_force is not None:
-                    prob = 0.1
-                    a = np.random.random()
-                    if a <= prob:
-                        pforce = np.random.random((3,))*2*self.perturbation_force - self.perturbation_force
-                        control = np.concatenate((pforce,np.zeros((obstacle.dynamics.control.size-3,))))
-                        obstacle.dynamics.set_control(control)
-                    else:
-                        obstacle.dynamics.set_control(np.zeros((obstacle.dynamics.control.size,)))
-                '''
-                ##############################
+                obstacle.reset()
+        self.update_point_cloud()
+        self.get_new_path()
+
+    def step(
+            self,
+    ) -> None:
+        #self.collision_check()
+        self.main_object.step()
+        self.control_method.update_state()
+        for obstacle in self.obstacles:
+            if isinstance(obstacle,dynamicObject):
                 obstacle.step()
+        self.time += 1
+    
+    def set_sat_control(
+            self,
+            control: list[float],
+    ) -> None:
+        self.main_object.dynamics.set_control(control)
+
+    def set_adversary_control(
+            self,
+            controls: list[list[float]],
+    ) -> None:
+        if len(self.adversary) == 0:
+            pass
+        else:
+            for i,control in enumerate(controls):
+                self.adversary[i].dynamics.set_control(control)
+
+    def get_distance_to_goal(self) -> None:
+        return np.linalg.norm(self.path_planner.goal[0:3]-self.main_object.dynamics.get_pos())
+    
+    def goal_check(self) -> bool:
+        if np.linalg.norm(self.path_planner.goal-self.main_object.dynamics.state) < self.goal_tolerance:
+            return True
+        return False
+    
+    def get_object_data(self) -> list[Dict[str, Any]]:
+        '''
+        package data for GUI
+        return:
+            main_object points and lines
+            current goal point
+            point cloud data ('if available')
+            final goal point
+        '''
+        objects = {}
+        objects['points'] = copy.deepcopy(self.main_object.temp_mesh['points'])
+        objects['lines'] = copy.deepcopy(self.main_object.temp_mesh['lines'])
+        objects['goal'] = self.current_path
+        if self.point_cloud_plot is not None and self.plot_cloud:
+            objects['point cloud'] = self.point_cloud_plot
+        if not self.plot_cloud and len(self.obstacles) > 0:
+            objects['obstacles'] = [obstacle.dynamics.get_pos() for obstacle in self.obstacles]
+        objects['final goal'] = self.path_planner.goal[0:3]
+
+        return objects
+    
+    def seed(self, seed):
+        #seed = seeding.hash_seed(seed)
+        seeds = []
+        seeds.append(seed)
+        self._np_random, seed = seeding.np_random(seed)
+        return seeds
+
+    '''
+    EVADE SUPPORT FUNCTIONS
+    '''
+
+    def compute_evade_control(self):
         if self.dynamic_obstacles:
-            if self.path_planner.distance_to_goal(state=self.main_object.dynamics.state) < 1:
+            if self.path_planner.distance_to_goal(state=self.main_object.dynamics.get_state()) < 1:
                 self.update_point_cloud(propagate=False)
             else:
                 self.update_point_cloud(propagate=True) 
@@ -113,96 +185,9 @@ class obstacleAvoidanceEnv():
         if self.current_path.size == 0:
             self.first_goal = True
             self.get_new_path()
-        self.time += 1
-        return self.main_object.dynamics.state, action, self.done, self.reward
+        main_object_action = self.control_method.compute_action(goal=self.current_path[0])
+        return main_object_action
 
-    def reset(self) -> None:
-        self.time = 0
-        self.adjustment_count = 0
-        self.done = False
-        self.reward = 0
-        self.main_object.dynamics.reset_state()
-        self.update_point_cloud()
-        self.get_new_path()
-        
-
-    def adversary_step(self) -> None:
-        update = 35
-        self.adversary_control_method[i].update_state()
-        self.adversary_check_goal()
-        action = self.adversary_compute_next_action()
-        for i,control in enumerate(action):
-            self.adversary[i].dynamics.set_control(control)
-            #self.adversary[i].step()
-            if self.time%update == 0:
-                self.adversary_compute_goals(i)
-
-    def set_adversary_path_planner(
-            self,
-            path_planner: pathPlanner
-        ) -> None:
-
-        self.adversary_path_planner = path_planner
-
-    def adversary_compute_goals(
-            self,
-            i: int
-        ) -> None:
-        dist = 7
-        n = 30
-        if self.time < 10:
-            self.adversary_path[i] = [self.adversary[i].dynamics.state]
-        else:
-            target_vel = self.main_object.dynamics.get_vel()
-            target_pos = self.main_object.dynamics.get_pos()
-            prop_vector = target_vel/np.linalg.norm(target_vel)*dist
-            next_point = np.zeros((len(self.adversary[i].dynamics.state),))
-            next_point[0:3] = target_pos + prop_vector
-            self.adversary_path[i] = np.linspace(self.adversary[i].dynamics.state, next_point, n)
-        '''
-        if self.adversary_path_planner is None:
-            n = 50
-
-            self.adversary_path[i] = np.linspace(self.adversary[i].dynamics.state, next_point, n)
-        else:
-            point_cloud = []
-            adversary_pos = self.adversary[i].dynamics.get_pos()
-            for j in range(len(self.adversary)):
-                if j == i:
-                    continue
-                else:
-                    point_cloud.append(self.adversary[j].dynamics.get_pos()-adversary_pos)
-            point_cloud.append(self.main_object.dynamics.get_pos()-adversary_pos)
-            self.adversary_path_planner.set_goal_state(goal_state=next_point)
-            self.adversary_path[i] = self.adversary_path_planner.compute_desired_path(state=self.adversary[i].dynamics.state, point_cloud=point_cloud)
-        '''
-            
-
-    def adversary_compute_next_action(self) -> list[float]:
-        next_action = []
-        if len(self.adversary_path) == 0:
-            for i in range(len(self.adversary)):
-                self.adversary_path.append([])
-                self.adversary_compute_goals(i)
-        else:
-            for i in range(len(self.adversary)):
-                if len(self.adversary_path[i][0]) == 1:
-                    self.adversary_compute_goals(i)
-                next_action.append(self.adversary_control_method[i].compute_action(goal=self.adversary_path[i][0]))
-        return next_action
-    
-    def adversary_check_goal(self) -> None:
-        tol = 0.10
-        for i in range(len(self.adversary)):
-            if np.linalg.norm(self.adversary_path[i][0][0:6]-self.adversary[i].dynamics.state[0:6]) < tol:
-                self.adversary_path[i] = self.adversary_path[i][1:]
-                if len(self.adversary_path[i]) < 1:
-                    self.adversary_compute_goals(i)
-
-    def compute_next_action(self) -> list[float]:
-        next_action = self.control_method.compute_action(goal=self.current_path[0])
-        return next_action
-    
     def compute_schedule(
             self,
             speed: float,
@@ -219,7 +204,6 @@ class obstacleAvoidanceEnv():
                 self.compute_schedule(self.main_object.dynamics.get_speed())
                 self.first_goal = False
                 self.get_new_path()
-            #print('['+str(self.current_path[0][0])+','+str(self.current_path[0][1])+','+str(self.current_path[0][2])+'],')
             self.current_path = self.current_path[1:]
             if self.current_path.size > 0:
                 self.compute_schedule(self.main_object.dynamics.get_speed())
@@ -227,20 +211,13 @@ class obstacleAvoidanceEnv():
                 self.path_planner.update_point_cloud(point_cloud=point_cloud)
                 safe = self.path_planner.check_goal_safety(goals=self.current_path,state=self.main_object.dynamics.state[0:3])
                 if not safe:
-                    #print('Obstacle has become too close to path, computing new path')
                     self.adjustment_count += 1
                     self.current_path = np.array([])
-                
 
     def get_new_path(self) -> None:
         if self.goal_check():
-            #print('Goal state achieved')
             self.done = True
             self.reward = 1
-        if self.path_planner.distance_to_goal(state=self.main_object.dynamics.state) < 1:
-            self.update_point_cloud(propagate=False)
-        else:
-            self.update_point_cloud(propagate=True) 
         if self.point_cloud is None:
             point_cloud = self.point_cloud
         else:
@@ -249,12 +226,28 @@ class obstacleAvoidanceEnv():
         self.adjustment_count += 1
         self.current_path = new_path[1:]
     
+    '''
+    POINT CLOUD HANDELING FUNCTIONS
+    '''    
+
+    def collision_check(self) -> None:
+        if self.point_cloud is None:
+            pass
+        else:
+            self.update_point_cloud(propagate=False)
+            location = self.main_object.dynamics.get_pos()
+
+            for point in self.point_cloud:
+                new_point = point-location
+                if np.linalg.norm(new_point) < self.collision_tolerance: 
+                    return True
+        return False               
+    
     def generate_proximal_point_cloud(self) -> list[list[float]]:
         '''
         return all points in env within point_cloud_radius 
         returns points location in relation to spacecraft
         '''
-
         if self.point_cloud is None:
             return None
 
@@ -348,24 +341,10 @@ class obstacleAvoidanceEnv():
                         return new_cloud
         
         return new_cloud
-
-
-    def collision_check(self) -> None:
-        if self.point_cloud is None:
-            pass
-        else:
-            self.update_point_cloud(propagate=False)
-            location = self.main_object.dynamics.get_pos()
-
-            for point in self.point_cloud:
-                new_point = point-location
-                if np.linalg.norm(new_point) < self.path_planner.algorithm.histogram.distance_tol:
-                    self.done = True
     
-    def goal_check(self):
-        if np.linalg.norm(self.path_planner.goal-self.main_object.dynamics.state) < self.goal_tolerance:
-            return True
-        return False
+    '''
+    DYNAMIC OBJECT HANDELING FUNCTIONS
+    '''
     
     def create_adversary(
             self,
@@ -376,17 +355,9 @@ class obstacleAvoidanceEnv():
         self.adversary.append(adversary)
         self.add_obstacle(obstacle=adversary)
 
-        kwargs['dynamics'] = adversary.dynamics
-        self.adversary_control_method.append(getattr(self,control_method)(**kwargs))
-        self.adversary_control_method[-1].update_state()
-
     def remove_adversary(self,i) -> None:
-        self.adversary.pop(i)
-        self.adversary_control_method.pop(i)
-        if len(self.adversary_path) > 0:
-            self.adversary_path.pop(i)
-        if len(self.adversary_goal) > 0:
-            self.adversary_goal.pop(i)
+        adversary = self.adversary.pop(i)
+        del adversary
     
     def add_obstacle(
             self,
@@ -410,35 +381,6 @@ class obstacleAvoidanceEnv():
         self.update_point_cloud()
         self.get_new_path()
 
-    def get_distance_to_goal(self) -> None:
-        return np.linalg.norm(self.path_planner.goal[0:3]-self.main_object.dynamics.get_pos())
-    
-    def set_perturbation_force(
-            self, 
-            pforce : float,
-    ) -> None:
-        self.perturbation_force = pforce
-
-    def get_object_data(self) -> list[Dict[str, Any]]:
-        '''
-        package data for GUI
-        return:
-            main_object points and lines
-            current goal point
-            point cloud data ('if available')
-            final goal point
-        '''
-        objects = {}
-        objects['points'] = copy.deepcopy(self.main_object.temp_mesh['points'])
-        objects['lines'] = copy.deepcopy(self.main_object.temp_mesh['lines'])
-        objects['goal'] = self.current_path
-        if self.point_cloud_plot is not None and self.plot_cloud:
-            objects['point cloud'] = self.point_cloud_plot
-        if not self.plot_cloud and len(self.obstacles) > 0:
-            objects['obstacles'] = [obstacle.dynamics.get_pos() for obstacle in self.obstacles]
-        objects['final goal'] = self.path_planner.goal[0:3]
-
-        return objects
     
     class MPC():
 
@@ -452,6 +394,8 @@ class obstacleAvoidanceEnv():
                 horizon: int = 20,
                 valued_actions: int = 5,
         ):
+            
+            logger.info('initializing MPC controller')
         
             self.dynamics = dynamics
             self.horizon = horizon

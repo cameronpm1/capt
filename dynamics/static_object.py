@@ -31,6 +31,9 @@ class staticObject():
         self.point_cloud = None
         self.radius = None
 
+    def get_name(self) -> str:
+        return self.name
+
     def update_points(self) -> None:
         if self.vista:
             self.temp_mesh.points += self.initial_pos

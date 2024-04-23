@@ -50,7 +50,7 @@ path_planner:
   interpolation_method: spline
   n: 25
 
-env:
+sim:
   control_method: MPC
   point_cloud_size: 400
   path_point_tolerance: 0.1
@@ -61,6 +61,12 @@ env:
     lower_state_bounds: [-1e10,  -1e10,  -1e10, -1e10, -1e10, -1e10, -0.2, -0.2, -0.2, -.25, -.25, -.25, -1000, -1000, -1000]
     horizon: 20
     valued_actions: 1
+
+env:
+  max_timestep: 2048
+  max_control: [0.3,0.3,0.3,0.1,0.1,0.1,1000,1000,1000]
+  action_scaling: clip
+  random_initial_state: False
 
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
 random:

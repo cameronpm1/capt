@@ -1,16 +1,29 @@
 import os
+import sys
+import gym
+import time
+import hydra
 import numpy as np
 import pyvista as pv
-
+from gym import spaces
 from astropy import units as u
+from omegaconf import DictConfig, OmegaConf
 
-from envs.obstacle_avoidance_env import obstacleAvoidanceEnv
-from dynamics.dynamic_object import dynamicObject
-from dynamics.static_object import staticObject
-from dynamics.quad_dynamics import quadcopterDynamics
-from dynamics.sat_dynamics import satelliteDynamics
-from trajectory_planning.path_planner import pathPlanner
+sys.path.insert(1, os.getcwd())
+
+import logging
+from logger import getlogger
 from envs.gui import Renderer
+from space_sim.sim import Sim
+from envs.sat_gym_env import satGymEnv
+from dynamics.static_object import staticObject
+from dynamics.dynamic_object import dynamicObject
+from dynamics.sat_dynamics import satelliteDynamics
+from dynamics.quad_dynamics import quadcopterDynamics
+from trajectory_planning.path_planner import pathPlanner
+
+
+logger = getlogger(__name__)
 
 def correct_orbit_units(dynamics):
     orbit_params = {
@@ -23,7 +36,7 @@ def correct_orbit_units(dynamics):
     }
     return orbit_params
 
-def make_env(cfg):
+def make_env(cfg: DictConfig):
     
     orbit_params = correct_orbit_units(cfg['satellite']['dynamics']['initial_orbit'])
 
@@ -55,17 +68,17 @@ def make_env(cfg):
 
     kwargs = {}
 
-    for kwarg in cfg['env']['kwargs'].keys():
-        kwargs[kwarg] = cfg['env']['kwargs'][kwarg]
+    for kwarg in cfg['sim']['kwargs'].keys():
+        kwargs[kwarg] = cfg['sim']['kwargs'][kwarg]
 
-    env = obstacleAvoidanceEnv(
+    sim = Sim(
         main_object = satellite,
         path_planner = path_planner,
-        point_cloud_size = cfg['env']['point_cloud_size'],
-        path_point_tolerance = cfg['env']['path_point_tolerance'],
-        point_cloud_radius = cfg['env']['point_cloud_radius'],
-        control_method = cfg['env']['control_method'],
-        goal_tolerance = cfg['env']['goal_tolerance'],
+        point_cloud_size = cfg['sim']['point_cloud_size'],
+        path_point_tolerance = cfg['sim']['path_point_tolerance'],
+        point_cloud_radius = cfg['sim']['point_cloud_radius'],
+        control_method = cfg['sim']['control_method'],
+        goal_tolerance = cfg['sim']['goal_tolerance'],
         kwargs = kwargs,
     )
 
@@ -73,6 +86,7 @@ def make_env(cfg):
         cfg['obstacles'] = []
 
     if bool(cfg['adversary'][True]):
+        logger.info('Initializing adversarial agents')
         for adversary in cfg['adversary']['adversaries']:
             stl = pv.read(cfg['adversary']['adversaries'][adversary]['stl'])
             stl.points *= cfg['adversary']['adversaries'][adversary]['stl_scale']
@@ -97,10 +111,10 @@ def make_env(cfg):
 
             kwargs = {}
 
-            for kwarg in cfg['env']['kwargs'].keys():
-                kwargs[kwarg] = cfg['env']['kwargs'][kwarg]
+            for kwarg in cfg['sim']['kwargs'].keys():
+                kwargs[kwarg] = cfg['sim']['kwargs'][kwarg]
                 
-            env.create_adversary(
+            sim.create_adversary(
                 adversary=adversary,
                 kwargs=kwargs,
                 control_method='MPC'
@@ -116,7 +130,7 @@ def make_env(cfg):
                 n = cfg['adversary']['path_planner']['n'] 
             )
 
-            env.set_adversary_path_planner(path_planner=path_planner)
+            sim.set_adversary_path_planner(path_planner=path_planner)
             '''
 
     
@@ -148,7 +162,7 @@ def make_env(cfg):
                 name = 'rand'+str(n), 
                 pos = pos)
             
-            env.add_obstacle(obstacle=temp_obstacle)
+            sim.add_obstacle(obstacle=temp_obstacle)
     else:
         for obstacle in cfg['obstacles']:
             
@@ -172,9 +186,34 @@ def make_env(cfg):
                 name = cfg['obstacles'][obstacle]['name'], 
                 pos = cfg['obstacles'][obstacle]['pos'])
             
-            env.add_obstacle(obstacle=temp_obstacle)
-    
+            sim.add_obstacle(obstacle=temp_obstacle)
+
+    env = satGymEnv(
+        sim=sim,
+        step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
+        max_episode_length=cfg['env']['max_timestep'],
+        max_ctrl=cfg['env']['max_control'],
+        action_scaling_type=cfg['env']['action_scaling'],
+        randomize_initial_state=cfg['env']['random_initial_state'],
+    )
 
     return env
     
-    
+@hydra.main(version_base=None, config_path="conf", config_name="config")  
+def main(cfg : DictConfig):
+    env = make_env(cfg)
+    env.reset()
+    print(env.action_space)
+    print(env.observation_space)
+    env.seed()
+    for i in range(100):
+        obs, rew, done, _ = env.step(np.zeros(len(env.max_ctrl,)))
+        #print(obs, rew, done, _)
+    env.close()
+
+if __name__ == "__main__":
+    main()
+    #main()
+
+
+

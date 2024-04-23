@@ -6,7 +6,7 @@ from omegaconf import DictConfig, OmegaConf
 import time
 import numpy as np
 
-from space_sim.make_env import make_env
+from train.make_env import make_env
 from envs.gui import Renderer
 
 def simulate_space_env(render=False,verbose=False,pforce=0) -> None:
