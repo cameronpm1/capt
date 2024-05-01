@@ -6,8 +6,8 @@ import control
 import cvxpy as cp
 import numpy as np
 import pyvista as pv
-from gym.utils import seeding
 import matplotlib.pyplot as plt
+from gymnasium.utils import seeding
 from typing import Any, Dict, Type, Optional, Union
 
 from envs.gui import gui
@@ -143,6 +143,18 @@ class Sim():
             return True
         return False
     
+    def set_sat_goal(
+            self,
+            goal: list[float],
+    ) -> None:
+        self.path_planner.set_goal_state(goal)
+
+    def get_sat_goal(
+            self,
+    ) -> list[float]:
+
+        return self.path_planner.goal
+    
     def get_object_data(self) -> list[Dict[str, Any]]:
         '''
         package data for GUI
@@ -215,9 +227,6 @@ class Sim():
                     self.current_path = np.array([])
 
     def get_new_path(self) -> None:
-        if self.goal_check():
-            self.done = True
-            self.reward = 1
         if self.point_cloud is None:
             point_cloud = self.point_cloud
         else:

@@ -1,13 +1,13 @@
 import os
 import sys
-import gym
 import time
 import hydra
 import numpy as np
 import pyvista as pv
-from gym import spaces
-from gym.utils import seeding
+import gymnasium
+from gymnasium import spaces
 from astropy import units as u
+from gymnasium.utils import seeding
 from collections import OrderedDict
 from omegaconf import DictConfig, OmegaConf
 from typing import Any, Dict, Type, Optional, Union
@@ -20,7 +20,7 @@ from sim_prompters.one_v_one_prompter import oneVOnePrompter
 
 logger = getlogger(__name__)
 
-class satGymEnv(gym.Env):
+class satGymEnv(gymnasium.Env):
 
     def __init__(
             self,
@@ -45,6 +45,7 @@ class satGymEnv(gym.Env):
         """
         logger.info("Initializing env ...")
 
+        self._episode = 0
         self._seed = None
         self.action_dim = len(max_ctrl)
         self.step_duration = step_duration
@@ -66,13 +67,13 @@ class satGymEnv(gym.Env):
     @property
     def action_space(
             self,
-    ) -> gym.Space:
+    ) -> gymnasium.Space:
         return spaces.Box(low=-1, high=1, shape=(self.action_dim,), dtype=np.float32)
 
     @property
     def observation_space(
             self,
-    ) -> gym.Space:
+    ) -> gymnasium.Space:
         
         obs = self._get_obs()
         space = {}
@@ -85,10 +86,11 @@ class satGymEnv(gym.Env):
     TO DO:
         -seed every reset?
     '''
-    def reset(self):
+    def reset(self, **kwargs):
+        self._episode += 1
         self._step = 0
         self.sim.reset()
-        return self._get_obs()
+        return self._get_obs(), {'episode': self._episode}
     
     def step(self, action):
         sat_action = self.sim.compute_evade_control()
@@ -98,9 +100,9 @@ class satGymEnv(gym.Env):
         self._step += 1
         obs = self._get_obs()
         rew = self._reward()
-        done = self._end_episode()
-
-        return obs, rew, done, {"done": done, "reward": rew}
+        terminated, truncated = self._end_episode() #end by collision, end by max episode
+        
+        return obs, rew, terminated, truncated, {'done': (terminated, truncated), 'reward': rew}
     
     def close(self):
         del self.sim
@@ -136,6 +138,8 @@ class satGymEnv(gym.Env):
         # Satellite
         obs['sat_state'] = self.sim.main_object.get_state().copy()
 
+        obs['goal_state'] = np.array(self.sim.get_sat_goal().copy())
+
         a = 0
         o = 0
         for obstacle in self.sim.obstacles:
@@ -147,7 +151,6 @@ class satGymEnv(gym.Env):
             if 'obstacle' in obstacle.get_name():
                 obs['obstacle'+str(o)+'_state'] = obstacle.get_state().copy()
                 o += 1
-
         return obs
 
     def _reward(self) -> float:
@@ -155,11 +158,9 @@ class satGymEnv(gym.Env):
     
     def _end_episode(self) -> bool:
         collision = self.sim.collision_check()
+        goal_reached = self.sim.goal_check()
 
-        if self._step >= self.max_episode_length or collision:
-            return True
-        else:
-            return False
+        return collision or goal_reached, self._step >= self.max_episode_length
         
     def render(self):
         return self.sim.get_object_data()

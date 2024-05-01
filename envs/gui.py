@@ -89,7 +89,8 @@ class gui(object):
         
         if 'goal' in object1.keys():
             #plot current goal path
-            self._ax1.plot(object1['goal'][path_skip:,0],object1['goal'][path_skip:,1],object1['goal'][path_skip:,2],color='g')
+            if object1['goal'] is not None:
+                self._ax1.plot(object1['goal'][path_skip:,0],object1['goal'][path_skip:,1],object1['goal'][path_skip:,2],color='g')
         if 'point cloud' in object1.keys():
             #remove point cloud data outside of axis limits
             for i,point in reversed(list(enumerate(object1['point cloud']))):

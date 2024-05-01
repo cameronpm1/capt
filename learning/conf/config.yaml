@@ -1,16 +1,35 @@
-defaults:  
-  - _self_  
-  - override hydra/hydra_logging: disabled  
-  - override hydra/job_logging: disabled
+#defaults:  
+#  - _self_  
+#  - override hydra/hydra_logging: disabled  
+#  - override hydra/job_logging: disabled
+
+seed: 1 # set experiment seed
 
 hydra:
-  output_subdir: null #space_sim/conf/outputs
   job:
-    name: space environment simulation1 # set job name
+    name: adversary_test # set job name
   run:
-    dir: .
-      
-seed: 1
+    dir: /logs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here
+
+alg:
+  type: ppo
+  nenv: 1
+  lr: 0.0001
+  batch_size: 256
+  gamma: 0.999
+  pi: [32, 32]
+  vf: [32, 32]
+  device: cpu # cpu, cuda
+  total_timesteps: 20 #20e6
+  
+
+
+env:
+  max_timestep: 2048
+  max_control: [0.3,0.3,0.3,0.1,0.1,0.1,1000,1000,1000]
+  action_scaling: clip
+  random_initial_state: False  
+
 
 satellite:
   name: satellite
@@ -62,12 +81,6 @@ sim:
     horizon: 20
     valued_actions: 1
 
-env:
-  max_timestep: 2048
-  max_control: [0.3,0.3,0.3,0.1,0.1,0.1,1000,1000,1000]
-  action_scaling: clip
-  random_initial_state: False
-
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
 random:
   on: False
@@ -81,19 +94,6 @@ random:
 
 adversary:
   on: True
-  path_planner:
-    goal_state: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] #[0,20,0,0,0,0,0,0,0,0,0,0,0,0,0] #
-    path_planning_algorithm: VFH
-    kwargs:
-      radius: 5
-      min_obstacle_distance: 3
-      iterations: 1
-      distance_tolerance: 1.0
-      layers: 6
-      angle_sections: 8
-    max_distance: 0.3
-    interpolation_method: spline
-    n: 25
   adversaries:
     adversary1:
       name: adversary1

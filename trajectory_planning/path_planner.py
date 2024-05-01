@@ -25,6 +25,12 @@ class pathPlanner(basePathPlanner):
             avg_speed: float = 0.5,
             n: int = 50,
     ):
+        
+        super().__init__(
+            path_planning_algorithm=path_planning_algorithm,
+            kwargs=kwargs,
+        )
+
         self.goal = goal_state
         self.avg_speed = avg_speed
         self.max_distance = max_distance
@@ -32,10 +38,14 @@ class pathPlanner(basePathPlanner):
         self.interpolation_method = interpolation_method
         self.n = n #for spline interpolation, determines how many points to compute
 
-        super().__init__(
-            path_planning_algorithm=path_planning_algorithm,
-            kwargs=kwargs,
-        )
+    def set_goal_state(
+            self,
+            goal_state: list[float],
+    ) -> None:
+        self.goal = goal_state
+
+    def get_goal_state(self):
+        return self.goal
 
     def distance_to_goal(
             self,
@@ -43,16 +53,6 @@ class pathPlanner(basePathPlanner):
     ) -> float:
         return np.linalg.norm(state[0:3] - self.goal[0:3])
 
-    def set_goal_state(
-            self,
-            goal_state: list[float,]
-    ) -> None:
-        self.goal = goal_state
-
-    def get_goal_state(
-            self,
-    ) -> list[float]:
-        return self.goal
 
     def update_point_cloud(
             self,

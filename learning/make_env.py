@@ -1,13 +1,14 @@
 import os
 import sys
-import gym
 import time
 import hydra
+import gymnasium
 import numpy as np
 import pyvista as pv
-from gym import spaces
+from gymnasium import spaces
 from astropy import units as u
 from omegaconf import DictConfig, OmegaConf
+from gymnasium.wrappers import FilterObservation, FlattenObservation
 
 sys.path.insert(1, os.getcwd())
 
@@ -23,6 +24,7 @@ from dynamics.quad_dynamics import quadcopterDynamics
 from trajectory_planning.path_planner import pathPlanner
 
 
+
 logger = getlogger(__name__)
 
 def correct_orbit_units(dynamics):
@@ -36,7 +38,7 @@ def correct_orbit_units(dynamics):
     }
     return orbit_params
 
-def make_env(cfg: DictConfig):
+def make_env(filedir: str, cfg: DictConfig):
     
     orbit_params = correct_orbit_units(cfg['satellite']['dynamics']['initial_orbit'])
 
@@ -88,7 +90,7 @@ def make_env(cfg: DictConfig):
     if bool(cfg['adversary'][True]):
         logger.info('Initializing adversarial agents')
         for adversary in cfg['adversary']['adversaries']:
-            stl = pv.read(cfg['adversary']['adversaries'][adversary]['stl'])
+            stl = pv.read(filedir+'/'+cfg['adversary']['adversaries'][adversary]['stl'])
             stl.points *= cfg['adversary']['adversaries'][adversary]['stl_scale']
 
             adversary_dynamics = satelliteDynamics(
@@ -120,18 +122,6 @@ def make_env(cfg: DictConfig):
                 control_method='MPC'
             )
 
-            '''
-            path_planner = pathPlanner(
-                goal_state = cfg['adversary']['path_planner']['goal_state'],
-                path_planning_algorithm = cfg['adversary']['path_planner']['path_planning_algorithm'],
-                kwargs = cfg['adversary']['path_planner']['kwargs'],
-                max_distance = cfg['adversary']['path_planner']['max_distance'],
-                interpolation_method = cfg['adversary']['path_planner']['interpolation_method'],
-                n = cfg['adversary']['path_planner']['n'] 
-            )
-
-            sim.set_adversary_path_planner(path_planner=path_planner)
-            '''
 
     
     if bool(cfg['random'][True]):
@@ -197,7 +187,21 @@ def make_env(cfg: DictConfig):
         randomize_initial_state=cfg['env']['random_initial_state'],
     )
 
+
+    filter_keys=[
+        'sat_state',
+        'adversary0_state',
+        #'goal_state'
+    ]
+    env = FilterObservation(
+        env,
+        filter_keys=filter_keys,
+    )
+    env = FlattenObservation(env)
+    env.unwrapped.seed(cfg["seed"])
+
     return env
+
     
 @hydra.main(version_base=None, config_path="conf", config_name="config")  
 def main(cfg : DictConfig):
@@ -205,7 +209,7 @@ def main(cfg : DictConfig):
     env.reset()
     print(env.action_space)
     print(env.observation_space)
-    env.seed()
+    env.unwrapped.seed()
     for i in range(100):
         obs, rew, done, _ = env.step(np.zeros(len(env.max_ctrl,)))
         #print(obs, rew, done, _)
