@@ -40,7 +40,7 @@ def _worker(
                     observation, info = env.reset()
                 remote.send((observation, reward, terminated or truncated, info, None))
             elif cmd == "seed":
-                remote.send(env.seed(data))
+                remote.send(env.unwrapped.seed(data))
             elif cmd == "reset":
                 observation = env.reset()
                 remote.send(observation)

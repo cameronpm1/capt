@@ -1,82 +1,65 @@
 import numpy as np
 from typing import Any, Dict, Type, Optional, Union
 
-
+from space_sim.sim import Sim
+from envs.sat_gym_env import satGymEnv
 from dynamics.dynamic_object import dynamicObject
 from trajectory_planning.path_planner import pathPlanner
-from envs.obstacle_avoidance_env import obstacleAvoidanceEnv
+from sim_prompters.one_v_one_prompter import oneVOnePrompter
 
 
 class adversaryTrainEnv(satGymEnv):
 
     def __init__(
             self,
-            main_object: Type[dynamicObject],
-            path_planner: Type[pathPlanner],
-            control_method: str, #MPC
-            kwargs: Dict[str, Any],
-            point_cloud_radius: float = 5,
-            path_point_tolerance: float = 0.1,
-            point_cloud_size: float = 3000,
-            goal_tolerance: float = 0.0001,
-            time_tolerance: float = 300,
-            perturbation_force: Optional[float] = None,
-            plot_cloud: bool = False,
+            sim: Type[Sim],
+            step_duration: float,
+            max_episode_length: int,
+            max_ctrl: list[float],
+            action_scaling_type: str = 'clip',
+            randomize_initial_state: bool = False,
+            scenario_prompter: Optional[Type[oneVOnePrompter]] = None,
     ):
         super().__init__(
-            main_object=main_object,
-            path_planner=path_planner,
-            control_method=control_method,
-            kwargs=kwargs,
-            point_cloud_radius=point_cloud_radius,
-            path_point_tolerance=path_point_tolerance,
-            point_cloud_size=point_cloud_size,
-            goal_tolerance=goal_tolerance,
-            time_tolerance=time_tolerance,
-            perturbation_force=perturbation_force,
+            sim=sim,
+            step_duration=step_duration,
+            max_episode_length=max_episode_length,
+            max_ctrl=max_ctrl,
+            action_scaling_type=action_scaling_type,
+            randomize_initial_state=randomize_initial_state,
+            scenario_prompter=scenario_prompter,
         )
 
 
-    def step(
-            self,
-            action: list[float],
-    ) -> tuple[list[float], int, bool, list[float]]:
+    def step(self, action):
+        sat_action = self.sim.compute_evade_control()
+        self.sim.set_sat_control(sat_action)
+
+        scalled_action = self.scaling_function(action)
+        full_action = np.zeros((9,))
+        full_action[0:3] = scalled_action
+        self.sim.set_adversary_control([full_action])
+        self.sim.step()
+        self._step += 1
+        obs = self._get_obs()
+        rew = self._reward()
+        terminated, truncated = self._end_episode() #end by collision, end by max episode
         
-        self.collision_check()
-        action = self.compute_next_action()
-        self.main_object.dynamics.set_control(action)
-        self.main_object.step()
-        self.control_method.update_state()
-        if len(self.adversary) > 0:
-            self.adversary_step()
-        for obstacle in self.obstacles:
-            if isinstance(obstacle,dynamicObject):
-                obstacle.step()
-        if self.dynamic_obstacles:
-            if self.path_planner.distance_to_goal(state=self.main_object.dynamics.state) < 1:
-                self.update_point_cloud(propagate=False)
-            else:
-                self.update_point_cloud(propagate=True) 
-        self.check_reached_path_point()
-        if self.current_path.size == 0:
-            self.first_goal = True
-            self.get_new_path()
-        self.time += 1
-        obs = self.get_observation()
-        rew = self.reward()
-        done = self.done
-        info = action
-        return obs, rew, done, info
+        return obs, rew, terminated, truncated, {'done': (terminated, truncated), 'reward': rew}
     
-    def get_observation(
-            self,
-    ) -> list[float]:
-        obs = np.concatenate((self.adversary[0].dynamics.get_state(),
-                              self.main_object.dynamics.get_state(),
-                              self.path_planner.get_goal_state()[0:3]))
-        return obs
-    
-    def get_reward(
-            self,
-    ):
-        pass
+    def _reward(self) -> float:
+        sat_pos = self.sim.main_object.dynamics.get_pos()
+        sat_vel = self.sim.main_object.dynamics.get_vel()
+        goal_pos = self.sim.get_sat_goal()[0:3]
+
+        sat_to_goal = goal_pos - sat_pos
+        proj = np.dot(sat_to_goal,sat_vel)/(np.linalg.norm(sat_to_goal)**2)*sat_to_goal
+        proj_mag = np.linalg.norm(proj)
+
+        angle = np.arccos(np.dot(sat_to_goal,sat_vel)/(np.linalg.norm(sat_to_goal)*np.linalg.norm(sat_vel)))
+        if abs(angle) < np.pi/2:
+            mult = -1
+        else:
+            mult = 1
+
+        return proj_mag*mult #self.sim.get_distance_to_goal()

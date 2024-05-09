@@ -5,28 +5,28 @@
 
 seed: 1 # set experiment seed
 
-hydra:
+logging:
   job:
     name: adversary_test # set job name
   run:
-    dir: /logs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here
+    dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
   type: ppo
-  nenv: 1
+  nenv: 12
   lr: 0.0001
   batch_size: 256
   gamma: 0.999
   pi: [32, 32]
   vf: [32, 32]
-  device: cpu # cpu, cuda
-  total_timesteps: 5e6 #20e6
+  device: cuda # cpu, cuda
+  total_timesteps: 10e6 #20e6
   
 
 
 env:
   max_timestep: 512
-  max_control: [0.3,0.3,0.3,0.1,0.1,0.1,1000,1000,1000]
+  max_control: [0.3,0.3,0.3]
   action_scaling: clip
   random_initial_state: False  
 
@@ -78,7 +78,7 @@ sim:
   kwargs:
     upper_state_bounds: [1e10,  1e10,  1e10, 1e10, 1e10, 1e10, 0.2, 0.2, 0.2, .25, .25, .25, 1000, 1000, 1000]
     lower_state_bounds: [-1e10,  -1e10,  -1e10, -1e10, -1e10, -1e10, -0.2, -0.2, -0.2, -.25, -.25, -.25, -1000, -1000, -1000]
-    horizon: 20
+    horizon: 8
     valued_actions: 1
 
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!

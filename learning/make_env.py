@@ -21,6 +21,7 @@ from dynamics.static_object import staticObject
 from dynamics.dynamic_object import dynamicObject
 from dynamics.sat_dynamics import satelliteDynamics
 from dynamics.quad_dynamics import quadcopterDynamics
+from envs.adversary_train_env import adversaryTrainEnv
 from trajectory_planning.path_planner import pathPlanner
 
 
@@ -178,7 +179,7 @@ def make_env(filedir: str, cfg: DictConfig):
             
             sim.add_obstacle(obstacle=temp_obstacle)
 
-    env = satGymEnv(
+    env = adversaryTrainEnv(
         sim=sim,
         step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
         max_episode_length=cfg['env']['max_timestep'],

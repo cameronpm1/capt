@@ -162,6 +162,7 @@ class satelliteDynamics(baseDynamics):
         # State cost
         Q = np.eye(self.state.size)
         Q[5, 5] = 5.  # z vel
+        Q[4, 4] = 5.  # y vel
         Q[3, 3] = 5.  # x vel
         Q[0, 0] = 10.  # x pos
         Q[1, 1] = 10.  # y pos

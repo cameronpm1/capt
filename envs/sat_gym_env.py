@@ -125,12 +125,6 @@ class satGymEnv(gymnasium.Env):
     def _get_obs(self) -> OrderedDict:
         """Return observation
 
-        For attributes which can be noisy ex. hand_joint_position,
-        contact_position, contact_normal etc,. both the "accurate" and
-        noisy versions are inluded in the observation dictionary. The
-        noisy version is the one with suffix "_noise". Helpful towards
-        using assymmetric actor-critic architectures.
-
         """
 
         obs = OrderedDict()

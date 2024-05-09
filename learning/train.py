@@ -11,24 +11,30 @@ from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
-from make_env import make_env
-from subproc_vec_env_no_daemon import SubprocVecEnvNoDaemon
+from logger import getlogger
+from learning.make_env import make_env
+from learning.subproc_vec_env_no_daemon import SubprocVecEnvNoDaemon
+
+logger = getlogger(__name__)
 
 def mkdir(folder):
     if os.path.exists(folder):
         shutil.rmtree(folder)
     os.makedirs(folder)
 
-@hydra.main(config_path="conf", config_name="config", version_base='1.1')
-def train(cfg: DictConfig):
-    set_random_seed(cfg["seed"])
-    filedir = sys.path[1]
-    logdir = os.getcwd() #+ HydraConfig.get().run.dir
-    logdir = filedir+logdir[2:]
-    if not os.path.exists(filedir+logdir):
-        print(logdir)
+
+def train(cfg: DictConfig,filedir):
+    filedir = filedir
+    set_random_seed(cfg['seed'])
+    logdir = cfg['logging']['run']['dir']
+    logdir = filedir+logdir
+    if not os.path.exists(logdir):
+        logger.info("Safe directory not found, creating path ...")
+        mkdir(logdir)
+    else:
+        logger.info("Save directory found ...")
     print("current directory:", logdir)
-    logging.basicConfig(filename=logdir+'\log.log') #set up logger file
+    #logging.basicConfig(filename=logdir+'\log.log') #set up logger file
 
     # make parallel envs
     def env_fn(seed):
@@ -50,7 +56,9 @@ def train(cfg: DictConfig):
         )
         return envs
 
+    logger.info("Preparing to initialize parallel environments ...")
     env = make_vec_env(cfg["alg"]["nenv"], cfg["seed"])
+    logger.info("Parallel environments initialized ...")
 
     # define policy network size
     policy_kwargs = dict(net_arch=dict(pi=cfg["alg"]["pi"], vf=cfg["alg"]["vf"]))
@@ -61,7 +69,7 @@ def train(cfg: DictConfig):
         alg = PPO
         alg_kwargs = {}
 
-
+    logger.info("Initializing model ...")
     # define model
     model = alg(
             "MlpPolicy", 
@@ -75,10 +83,10 @@ def train(cfg: DictConfig):
             seed=cfg["seed"],
             device=cfg["alg"]["device"],
             **alg_kwargs,
-            n_steps=10,
             )
 
 
+    logger.info("Beginning training ...")
     # train
     model.learn(
             total_timesteps=cfg["alg"]["total_timesteps"],
@@ -88,10 +96,12 @@ def train(cfg: DictConfig):
 
     # end
     env.close()
+    logger.info("Saving model ...")
     model.save(os.path.join(logdir, "model"))
+
 
 
 if __name__ == "__main__":
     torch.set_num_threads(9)
-    sys.path.insert(1, os.getcwd())
+    DIRECTORY = os.getcwd()
     train()
