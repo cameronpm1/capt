@@ -70,6 +70,12 @@ class baseDynamics:
     def get_state(self) -> list[float]:
         return self.state
 
+    def set_initial_pos(
+        self,
+        pos: list[float],
+    ):
+        self.initial_state[0:3] = pos
+
     def forward_dynamics(self):
         pass
 

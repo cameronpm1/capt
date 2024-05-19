@@ -21,6 +21,7 @@ from dynamics.static_object import staticObject
 from dynamics.dynamic_object import dynamicObject
 from dynamics.sat_dynamics import satelliteDynamics
 from dynamics.quad_dynamics import quadcopterDynamics
+from envs.controler_train_env import controlerTrainEnv
 from envs.adversary_train_env import adversaryTrainEnv
 from trajectory_planning.path_planner import pathPlanner
 
@@ -85,115 +86,143 @@ def make_env(filedir: str, cfg: DictConfig):
         kwargs = kwargs,
     )
 
-    if cfg['obstacles'] is None:
-        cfg['obstacles'] = []
+    if 'adversary' in cfg['env']['scenario']:
+        '''
+        only add obstacles and adversaries if the word adversary is in the env scenario name
+        '''
+        logger.info('Setting up adversarial environment')
 
-    if bool(cfg['adversary'][True]):
-        logger.info('Initializing adversarial agents')
-        for adversary in cfg['adversary']['adversaries']:
-            stl = pv.read(filedir+'/'+cfg['adversary']['adversaries'][adversary]['stl'])
-            stl.points *= cfg['adversary']['adversaries'][adversary]['stl_scale']
+        if cfg['obstacles'] is None:
+            cfg['obstacles'] = []
 
-            adversary_dynamics = satelliteDynamics(
-                timestep = cfg['satellite']['dynamics']['timestep'],
-                horizon = cfg['satellite']['dynamics']['horizon'],
-                pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
-                vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
-                initial_orbit = orbit_params,
-                initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
-                spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
-                max_control = cfg['adversary']['adversaries'][adversary]['control_lim'],
-            )
+        if bool(cfg['adversary'][True]):
+            logger.info('Initializing adversarial agents')
+            for adversary in cfg['adversary']['adversaries']:
+                stl = pv.read(filedir+'/'+cfg['adversary']['adversaries'][adversary]['stl'])
+                stl.points *= cfg['adversary']['adversaries'][adversary]['stl_scale']
 
-            adversary = dynamicObject(
-                dynamics = adversary_dynamics, 
-                mesh = stl,
-                name = cfg['adversary']['adversaries'][adversary]['name'], 
-                pos = cfg['adversary']['adversaries'][adversary]['pos']
-            )
+                adversary_dynamics = satelliteDynamics(
+                    timestep = cfg['satellite']['dynamics']['timestep'],
+                    horizon = cfg['satellite']['dynamics']['horizon'],
+                    pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
+                    vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
+                    initial_orbit = orbit_params,
+                    initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
+                    spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
+                    max_control = cfg['adversary']['adversaries'][adversary]['control_lim'],
+                )
 
-            kwargs = {}
+                adversary = dynamicObject(
+                    dynamics = adversary_dynamics, 
+                    mesh = stl,
+                    name = cfg['adversary']['adversaries'][adversary]['name'], 
+                    pos = cfg['adversary']['adversaries'][adversary]['pos']
+                )
 
-            for kwarg in cfg['sim']['kwargs'].keys():
-                kwargs[kwarg] = cfg['sim']['kwargs'][kwarg]
+                kwargs = {}
+
+                for kwarg in cfg['sim']['kwargs'].keys():
+                    kwargs[kwarg] = cfg['sim']['kwargs'][kwarg]
+                    
+                sim.create_adversary(
+                    adversary=adversary,
+                    kwargs=kwargs,
+                    control_method='MPC'
+                )
+
+
+        
+        if bool(cfg['random'][True]):
+            logger.info('Initializing random obstacles')
+            for n in range(cfg['random']['n']):
+                stl = pv.read(cfg['random']['stl'])
+                stl.points *= cfg['random']['stl_scale']
+
+                xlim = cfg['random']['x_range']
+                ylim = cfg['random']['y_range']
+                zlim = cfg['random']['z_range']
+                pos = [np.random.random()*(xlim[1]-xlim[0])+xlim[0], np.random.random()*(ylim[1]-ylim[0])+ylim[0], np.random.random()*(zlim[1]-zlim[0])+zlim[0]]
+                vel = np.random.random(3,)
+                vel = vel/np.linalg.norm(vel)*(cfg['random']['vel']*np.random.random())
+
+                obs_dynamics = satelliteDynamics(
+                    timestep = cfg['satellite']['dynamics']['timestep'],
+                    horizon = cfg['satellite']['dynamics']['horizon'],
+                    pos = pos,
+                    vel = vel,
+                    initial_orbit = orbit_params,
+                    initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
+                    spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data']
+                )
+
+                temp_obstacle = dynamicObject(
+                    dynamics = obs_dynamics, 
+                    mesh = stl,
+                    name = 'rand'+str(n), 
+                    pos = pos)
                 
-            sim.create_adversary(
-                adversary=adversary,
-                kwargs=kwargs,
-                control_method='MPC'
-            )
+                sim.add_obstacle(obstacle=temp_obstacle)
+        else:
+            logger.info('Initializing obstacles')
+            for obstacle in cfg['obstacles']:
+                
+
+                stl = pv.read(cfg['obstacles'][obstacle]['stl'])
+                stl.points *= cfg['obstacles'][obstacle]['stl_scale']
+
+                obs_dynamics = satelliteDynamics(
+                    timestep = cfg['satellite']['dynamics']['timestep'],
+                    horizon = cfg['satellite']['dynamics']['horizon'],
+                    pos = np.array(cfg['obstacles'][obstacle]['pos']),
+                    vel = np.array(cfg['obstacles'][obstacle]['vel']),
+                    initial_orbit = orbit_params,
+                    initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
+                    spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data']
+                )
+
+                temp_obstacle = dynamicObject(
+                    dynamics = obs_dynamics, 
+                    mesh = stl,
+                    name = cfg['obstacles'][obstacle]['name'], 
+                    pos = cfg['obstacles'][obstacle]['pos'])
+                
+                sim.add_obstacle(obstacle=temp_obstacle)
 
 
+        env = adversaryTrainEnv(
+            sim=sim,
+            step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
+            max_episode_length=cfg['env']['max_timestep'],
+            max_ctrl=cfg['env']['max_control'],
+            action_scaling_type=cfg['env']['action_scaling'],
+            randomize_initial_state=cfg['env']['random_initial_state'],
+        )
+
+        filter_keys=[
+            'sat_state',
+            'adversary0_state',
+        ]
+
+    if 'control' in cfg['env']['scenario']:
+        '''
+        set up control env
+        '''
+        logger.info('Initializing control environment')
+        env = controlerTrainEnv(
+            sim=sim,
+            step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
+            max_episode_length=cfg['env']['max_timestep'],
+            max_ctrl=cfg['env']['max_control'],
+            action_scaling_type=cfg['env']['action_scaling'],
+            randomize_initial_state=cfg['env']['random_initial_state'],
+        )
+
+        filter_keys=[
+            'sat_state',
+            'goal_state'
+        ]
     
-    if bool(cfg['random'][True]):
-        for n in range(cfg['random']['n']):
-            stl = pv.read(cfg['random']['stl'])
-            stl.points *= cfg['random']['stl_scale']
 
-            xlim = cfg['random']['x_range']
-            ylim = cfg['random']['y_range']
-            zlim = cfg['random']['z_range']
-            pos = [np.random.random()*(xlim[1]-xlim[0])+xlim[0], np.random.random()*(ylim[1]-ylim[0])+ylim[0], np.random.random()*(zlim[1]-zlim[0])+zlim[0]]
-            vel = np.random.random(3,)
-            vel = vel/np.linalg.norm(vel)*(cfg['random']['vel']*np.random.random())
-
-            obs_dynamics = satelliteDynamics(
-                timestep = cfg['satellite']['dynamics']['timestep'],
-                horizon = cfg['satellite']['dynamics']['horizon'],
-                pos = pos,
-                vel = vel,
-                initial_orbit = orbit_params,
-                initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
-                spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data']
-            )
-
-            temp_obstacle = dynamicObject(
-                dynamics = obs_dynamics, 
-                mesh = stl,
-                name = 'rand'+str(n), 
-                pos = pos)
-            
-            sim.add_obstacle(obstacle=temp_obstacle)
-    else:
-        for obstacle in cfg['obstacles']:
-            
-
-            stl = pv.read(cfg['obstacles'][obstacle]['stl'])
-            stl.points *= cfg['obstacles'][obstacle]['stl_scale']
-
-            obs_dynamics = satelliteDynamics(
-                timestep = cfg['satellite']['dynamics']['timestep'],
-                horizon = cfg['satellite']['dynamics']['horizon'],
-                pos = np.array(cfg['obstacles'][obstacle]['pos']),
-                vel = np.array(cfg['obstacles'][obstacle]['vel']),
-                initial_orbit = orbit_params,
-                initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
-                spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data']
-            )
-
-            temp_obstacle = dynamicObject(
-                dynamics = obs_dynamics, 
-                mesh = stl,
-                name = cfg['obstacles'][obstacle]['name'], 
-                pos = cfg['obstacles'][obstacle]['pos'])
-            
-            sim.add_obstacle(obstacle=temp_obstacle)
-
-    env = adversaryTrainEnv(
-        sim=sim,
-        step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
-        max_episode_length=cfg['env']['max_timestep'],
-        max_ctrl=cfg['env']['max_control'],
-        action_scaling_type=cfg['env']['action_scaling'],
-        randomize_initial_state=cfg['env']['random_initial_state'],
-    )
-
-
-    filter_keys=[
-        'sat_state',
-        'adversary0_state',
-        #'goal_state'
-    ]
     env = FilterObservation(
         env,
         filter_keys=filter_keys,

@@ -1,15 +1,15 @@
-import time
 import numpy as np
+from collections import OrderedDict
 from typing import Any, Dict, Type, Optional, Union
 
 from space_sim.sim import Sim
 from envs.sat_gym_env import satGymEnv
 from dynamics.dynamic_object import dynamicObject
 from trajectory_planning.path_planner import pathPlanner
-from sim_prompters.one_v_one_prompter import oneVOnePrompter
+from sim_prompters.control_prompter import controlPrompter
 
 
-class adversaryTrainEnv(satGymEnv):
+class controlerTrainEnv(satGymEnv):
 
     def __init__(
             self,
@@ -30,53 +30,71 @@ class adversaryTrainEnv(satGymEnv):
         )
 
         if self.randomize_initial_state:
-            self.prompter = oneVOnePrompter()
+            self.prompter = controlPrompter()
+
+
 
     def reset(self, **kwargs):
         if self.randomize_initial_state:
             prompt = self.prompter.prompt()
-            self.sim.set_sat_initial_pos(pos=prompt['sat_pos'])
-            self.sim.set_adversary_initial_pos(poses=[prompt['adv_pos']])
-            self.sim.set_sat_goal(goal=prompt['sat_goal'])
+            self.sim.set_sat_initial_pos(pos=prompt['sat_pos']) #set initial sat pos
+            self.sim.set_sat_goal(goal=prompt['sat_goal']) #set new sat goal
         self._episode += 1
         self._step = 0
         self.sim.reset()
         return self._get_obs(), {'episode': self._episode}
 
     def step(self, action):
-
-        sat_action = self.sim.compute_evade_control()
-        self.sim.set_sat_control(sat_action)
-
+        #scale sat action and set action
         scalled_action = self.scaling_function(action)
         full_action = np.zeros((9,))
         full_action[0:3] = scalled_action
-        self.sim.set_adversary_control([full_action])
+        self.sim.set_sat_control(full_action)
+        #take step
         self.sim.step()
-
         self._step += 1
         obs = self._get_obs()
         rew = self._reward()
         terminated, truncated = self._end_episode() #end by collision, end by max episode
-        
+
         return obs, rew, terminated, truncated, {'done': (terminated, truncated), 'reward': rew}
+
+    '''
+    def seed(self, seed=None):
+        # Save the seed so we can re-seed during un-pickling
+        self._seed = seed
+
+        # Hash the seed to avoid any correlations
+        #seed = seeding.hash_seed(seed)
+
+        # Seed environment components with randomness
+        seeds =  super().seed()
+
+        if self.randomize_initial_state:
+            print('trying!!!!!!!!!!!!!!!!!!!!!!')
+            seeds.extend(self.prompter.seed(seed))
+
+        return seeds
+    '''
+
+    def _get_obs(self) -> OrderedDict:
+        """Return observation
+
+           only returns sat_state and goal
+        """
+
+        obs = OrderedDict()
+
+        # Satellite
+        obs['sat_state'] = self.sim.main_object.get_state().copy()
+
+        obs['goal_state'] = np.array(self.sim.get_sat_goal().copy())
+
+        return obs
     
     def _reward(self) -> float:
-        '''
-        sat_pos = self.sim.main_object.dynamics.get_pos()
-        sat_vel = self.sim.main_object.dynamics.get_vel()
-        goal_pos = self.sim.get_sat_goal()[0:3]
+        dist = np.linalg.norm(self.sim.main_object.get_state()-np.array(self.sim.get_sat_goal())) #inverse of dif between state and goal
+        return -1*dist
 
-        sat_to_goal = goal_pos - sat_pos
-        proj = np.dot(sat_to_goal,sat_vel)/(np.linalg.norm(sat_to_goal)**2)*sat_to_goal
-        proj_mag = np.linalg.norm(proj)
+        
 
-        angle = np.arccos(np.dot(sat_to_goal,sat_vel)/(np.linalg.norm(sat_to_goal)*np.linalg.norm(sat_vel)))
-        if abs(angle) < np.pi/2:
-            mult = -1
-        else:
-            mult = 1
-
-        return proj_mag*mult 
-        '''
-        return self.sim.get_distance_to_goal()

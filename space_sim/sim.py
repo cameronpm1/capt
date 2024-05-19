@@ -101,7 +101,7 @@ class Sim():
         self.time = 0
         self.reward = 0
         self.adjustment_count = 0
-        self.main_object.dynamics.reset_state()
+        self.main_object.reset()
         for obstacle in self.obstacles:
             if isinstance(obstacle,dynamicObject):
                 obstacle.reset()
@@ -134,6 +134,22 @@ class Sim():
         else:
             for i,control in enumerate(controls):
                 self.adversary[i].dynamics.set_control(control)
+
+    def set_sat_initial_pos(
+        self,
+        pos: list[float],
+    ) -> None:
+        self.main_object.dynamics.set_initial_pos(pos)
+
+    def set_adversary_initial_pos(
+        self,
+        poses: list[list[float]],
+    ) -> None:
+        if len(self.adversary) == 0:
+            pass
+        else:
+            for i,pos in enumerate(poses):
+                self.adversary[i].dynamics.set_initial_pos(pos)
 
     def get_distance_to_goal(self) -> None:
         return np.linalg.norm(self.path_planner.goal[0:3]-self.main_object.dynamics.get_pos())

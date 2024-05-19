@@ -30,7 +30,6 @@ class satGymEnv(gymnasium.Env):
             max_ctrl: list[float],
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
-            scenario_prompter: Optional[Type[oneVOnePrompter]] = None,
     ):
         """
         Args:
@@ -60,7 +59,6 @@ class satGymEnv(gymnasium.Env):
         self.scaling_function = getattr(self,'_'+self.action_scaling_type)
 
         #randomize initial state or not
-        self.scenario_prompter = scenario_prompter
         self.randomize_initial_state = randomize_initial_state
 
 
@@ -117,8 +115,8 @@ class satGymEnv(gymnasium.Env):
         # Seed environment components with randomness
         seeds = [seed]
         seeds.extend(self.sim.seed(seed))
-        #if self._state_sampler is not None:
-        #    seeds.extend(self._state_sampler.seed(seed))
+        if self.randomize_initial_state:
+            seeds.extend(self.prompter.seed(seed=seed))
 
         return seeds
     

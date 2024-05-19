@@ -7,16 +7,16 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: adversary_test # set job name
+    name: control_test # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
   type: ppo
-  nenv: 12
+  nenv:  12
   lr: 0.0001
   batch_size: 256
-  gamma: 0.999
+  gamma: 0.99
   pi: [32, 32]
   vf: [32, 32]
   device: cuda # cpu, cuda
@@ -25,10 +25,11 @@ alg:
 
 
 env:
+  scenario: control
   max_timestep: 512
   max_control: [0.3,0.3,0.3]
   action_scaling: clip
-  random_initial_state: False  
+  random_initial_state: True 
 
 
 satellite:

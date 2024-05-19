@@ -9,7 +9,9 @@ from stable_baselines3 import PPO
 from hydra.core.hydra_config import HydraConfig
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.noise import NormalActionNoise
+from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
+
 
 from logger import getlogger
 from learning.make_env import make_env
@@ -39,7 +41,7 @@ def train(cfg: DictConfig,filedir):
     # make parallel envs
     def env_fn(seed):
         env = make_env(filedir,cfg)
-        env.seed(seed)
+        env.unwrapped.seed(seed)
         return env
 
     class EnvMaker:
@@ -59,7 +61,6 @@ def train(cfg: DictConfig,filedir):
     logger.info("Preparing to initialize parallel environments ...")
     env = make_vec_env(cfg["alg"]["nenv"], cfg["seed"])
     logger.info("Parallel environments initialized ...")
-
     # define policy network size
     policy_kwargs = dict(net_arch=dict(pi=cfg["alg"]["pi"], vf=cfg["alg"]["vf"]))
     
@@ -85,12 +86,21 @@ def train(cfg: DictConfig,filedir):
             **alg_kwargs,
             )
 
+    checkpoint_callback = CheckpointCallback(
+            save_freq=50000,
+            save_path=logdir,
+            name_prefix="midtrain_model",
+            save_replay_buffer=True,
+            save_vecnormalize=True,
+            )
+
 
     logger.info("Beginning training ...")
     # train
     model.learn(
             total_timesteps=cfg["alg"]["total_timesteps"],
             progress_bar=True,
+            callback=checkpoint_callback,
             )
 
 
