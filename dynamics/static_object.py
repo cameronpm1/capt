@@ -25,7 +25,6 @@ class staticObject():
 
         self.name = name
         self.mesh = mesh
-        self.initial_pos = pos
 
         self.temp_mesh = copy.deepcopy(mesh)
         self.point_cloud = None
@@ -36,9 +35,9 @@ class staticObject():
 
     def update_points(self) -> None:
         if self.vista:
-            self.temp_mesh.points += self.initial_pos
+            self.temp_mesh.points += self.dynamics.initial_state[0:3]
         else:
-            self.temp_mesh['points'] += self.initial_pos
+            self.temp_mesh['points'] += self.dynamics.initial_state[0:3]
 
     def point_cloud_from_mesh(self, n) -> list[float]:
         '''
@@ -81,7 +80,7 @@ class staticObject():
             point_cloud.append(point)
 
         if self.radius is None:
-            self.radius = np.average(np.linalg.norm(point_cloud-np.array(self.initial_pos), axis=1))
+            self.radius = np.average(np.linalg.norm(point_cloud-np.array(self.dynamics.initial_state[0:3]), axis=1))
 
         return np.array(point_cloud)
     

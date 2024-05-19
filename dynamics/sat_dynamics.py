@@ -118,10 +118,10 @@ class satelliteDynamics(baseDynamics):
         A[3][4] = 2*self.n
         A[4][3] = -2*self.n
         A[5][2] = -(self.n**2)
-        A[6][8] = self.n
+        A[6][8] = 0
         A[6][9] = 1
         A[7][10] = 1
-        A[8][6] = -self.n
+        A[8][6] = 0
         A[8][11] = 1
         A[9][11] = -(self.spacecraft_data['J_sc'][1]-self.spacecraft_data['J_sc'][2])*self.n/self.spacecraft_data['J_sc'][0]
         A[9][14] = self.n*self.spacecraft_data['alpha'][2]/self.spacecraft_data['J_sc'][0]
@@ -208,10 +208,10 @@ class satelliteDynamics(baseDynamics):
         self.state_matrix[3][4] = 2*self.n
         self.state_matrix[4][3] = -2*self.n
         self.state_matrix[5][2] = -(self.n**2)
-        self.state_matrix[6][8] = self.n
+        self.state_matrix[6][8] = 0
         self.state_matrix[6][9] = 1
         self.state_matrix[7][10] = 1
-        self.state_matrix[8][6] = -self.n
+        self.state_matrix[8][6] = 0
         self.state_matrix[8][11] = 1
         self.state_matrix[9][11] = -(self.spacecraft_data['J_sc'][1]-self.spacecraft_data['J_sc'][2])*self.n/self.spacecraft_data['J_sc'][0]
         self.state_matrix[9][14] = self.n*self.spacecraft_data['alpha'][2]/self.spacecraft_data['J_sc'][0]

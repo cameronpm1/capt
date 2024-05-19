@@ -34,7 +34,7 @@ def simulate_space_env(model_dir, verbose=True) -> None:
 
         for i in range(timesteps):
             if model_dir is None:
-                action = np.zeros(9,)
+                action = np.zeros(3,)
             _,_,_,_,_ = env.step(action)
             if i%15 == 0:
                 if verbose:

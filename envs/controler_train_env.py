@@ -42,6 +42,9 @@ class controlerTrainEnv(satGymEnv):
         self._episode += 1
         self._step = 0
         self.sim.reset()
+        print(prompt['sat_pos'],prompt['sat_goal'])
+        #print(self.sim.main_object.dynamics.get)
+        #print(self.sim.get_sat_goal(),self.sim.main_object.dynamics.get_pos())
         return self._get_obs(), {'episode': self._episode}
 
     def step(self, action):

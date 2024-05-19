@@ -49,6 +49,7 @@ class dynamicObject(staticObject):
 
     def reset(self) -> None:
         self.dynamics.reset_state()
+        self.update_points()
 
     def get_state(self) -> list[float]:
         return self.dynamics.get_state()
