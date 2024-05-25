@@ -87,6 +87,7 @@ class gui(object):
                             #[points[line[0]][2],points[line[1]][2]], color="k")
         self.plot_sat(self._ax1,scale=0.5,center=center,color='w')
         
+        
         if 'goal' in object1.keys():
             #plot current goal path
             if object1['goal'] is not None:
@@ -100,6 +101,7 @@ class gui(object):
         if 'obstacles' in object1.keys():
             for center in object1['obstacles']:
                 self.plot_ball(self._ax1,center=center)
+        
         if 'final goal' in object1.keys():
             self._ax1.scatter(object1['final goal'][0],object1['final goal'][1],object1['final goal'][2], color='g', s=40)
         #self._ax1.set_xticks(np.linspace(self.xlim[0],self.xlim[1],10))

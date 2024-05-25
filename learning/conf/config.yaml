@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: control_test # set job name
+    name: control # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -20,17 +20,16 @@ alg:
   pi: [32, 32]
   vf: [32, 32]
   device: cuda # cpu, cuda
-  total_timesteps: 10e6 #20e6
+  total_timesteps: 20e6 #20e6
   
 
 
 env:
-  scenario: control
+  scenario: adversary #control or adversary
   max_timestep: 512
   max_control: [0.3,0.3,0.3]
   action_scaling: clip
-  random_initial_state: True 
-
+  random_initial_state: True
 
 satellite:
   name: satellite
@@ -41,6 +40,7 @@ satellite:
     timestep: 3
     horizon: 5
     pos: [0, 0, 0]
+    vel: [0, 0, 0] #[0.00147821,  0.00120112,  0.00023816] #
     initial_orbit:
       a: 35786
       ecc: 0.0
@@ -57,7 +57,7 @@ satellite:
     control_lim: [0.5,0.5,0.5,0.1,0.1,0.1,1000,1000,1000]
 
 path_planner:
-  goal_state: [1,20,-4,0,0,0,0,0,0,0,0,0,0,0,0] #[0,20,0,0,0,0,0,0,0,0,0,0,0,0,0] #
+  goal_state: [1,20,-4,0,0,0,0,0,0,0,0,0,0,0,0] # [0.00535069,  0.16561701, -0.04535887,0,0,0,0,0,0,0,0,0,0,0,0] #
   path_planning_algorithm: VFH
   kwargs:
     radius: 10
@@ -71,7 +71,7 @@ path_planner:
   n: 25
 
 sim:
-  control_method: MPC
+  control_method: PPOC
   point_cloud_size: 400
   path_point_tolerance: 0.1
   point_cloud_radius: 30

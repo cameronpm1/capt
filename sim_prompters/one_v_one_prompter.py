@@ -24,7 +24,7 @@ class oneVOnePrompter():
     def prompt(self):
         sat_range = [0,5] #range of satellite from center
         goal_range = [30,40] #range of goal from satellite 
-        adv_range = [15,15] #range of adversary on line between sat and goal
+        adv_range = [10,10] #range of adversary on line between sat and goal
         adv_dev = [0,4] #range of deviation of adversary from straight line between sat and goal
 
         prompt = {}

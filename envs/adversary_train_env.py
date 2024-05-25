@@ -60,6 +60,15 @@ class adversaryTrainEnv(satGymEnv):
         terminated, truncated = self._end_episode() #end by collision, end by max episode
         
         return obs, rew, terminated, truncated, {'done': (terminated, truncated), 'reward': rew}
+
+    def _end_episode(self) -> bool:
+        proximity_tol = 15
+
+        terminated, truncated = super()._end_episode()
+        dist = self.sim.distance_to_obstacle(idx=0)
+        print(dist)
+
+        return terminated, truncated
     
     def _reward(self) -> float:
         '''

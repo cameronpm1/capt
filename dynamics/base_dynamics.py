@@ -76,6 +76,12 @@ class baseDynamics:
     ):
         self.initial_state[0:3] = pos
 
+    def set_initial_vel(
+        self,
+        vel: list[float],
+    ):
+        self.initial_state[3:6] = vel
+
     def forward_dynamics(self):
         pass
 

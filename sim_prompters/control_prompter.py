@@ -22,14 +22,19 @@ class controlPrompter():
         return vec
 
     def prompt(self):
-        sat_range = [0,100]
-        goal_range = [0.5,2]
+        sat_range = [0,0]
+        vel_range = [0,0.01]
+        goal_range = [0.1,0.3]
 
         prompt = {}
 
         vec = self.random_unit_vec()
         sat_pos = vec * (self._np_random.random()*(sat_range[1]-sat_range[0]) + sat_range[0])
         prompt['sat_pos'] = sat_pos
+
+        vec = self.random_unit_vec()
+        sat_vel = vec * (self._np_random.random()*(vel_range[1]-vel_range[0]) + vel_range[0])
+        prompt['sat_vel'] = sat_vel
 
         vec = self.random_unit_vec()
         goal_vec = vec * (self._np_random.random()*(goal_range[1]-goal_range[0]) + goal_range[0])

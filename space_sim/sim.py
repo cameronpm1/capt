@@ -7,6 +7,7 @@ import cvxpy as cp
 import numpy as np
 import pyvista as pv
 import matplotlib.pyplot as plt
+from stable_baselines3 import PPO
 from gymnasium.utils import seeding
 from typing import Any, Dict, Type, Optional, Union
 
@@ -36,16 +37,17 @@ class Sim():
             self,
             main_object: Type[dynamicObject],
             path_planner: Type[pathPlanner],
-            control_method: str, #MPC
+            control_method: str, #MPC,PPO
             kwargs: Optional[Dict[str, Any]],
             point_cloud_radius: float = 5,
-            path_point_tolerance: float = 0.1,
+            path_point_tolerance: float = 0.01,
             point_cloud_size: float = 3000,
-            goal_tolerance: float = 0.0001,
+            goal_tolerance: float = 0.001,
             time_tolerance: float = 300,
             collision_tolerance: float = 1,
             perturbation_force: Optional[float] = None,
             plot_cloud: bool = False,
+            control_model_path: Optional[str] = '/home/cameron/magpie_rl/logs/control/2024-05-21/retrained_model.zip',
     ):
         
         logger.info('Initializing simulation...')
@@ -65,8 +67,11 @@ class Sim():
         self.point_cloud = None
         self.dynamic_obstacles = False
 
+
         if len(control_method) == 0:
             self.control_method = None
+        elif 'PPO' in control_method:
+            self.control_method = getattr(self,control_method)(control_model_path)
         else:
             kwargs['dynamics'] = main_object.dynamics
             self.control_method = getattr(self,control_method)(**kwargs)
@@ -141,6 +146,12 @@ class Sim():
     ) -> None:
         self.main_object.dynamics.set_initial_pos(pos)
 
+    def set_sat_initial_vel(
+        self,
+        vel: list[float],
+    ) -> None:
+        self.main_object.dynamics.set_initial_vel(vel)
+
     def set_adversary_initial_pos(
         self,
         poses: list[list[float]],
@@ -170,6 +181,13 @@ class Sim():
     ) -> list[float]:
 
         return self.path_planner.goal
+
+    def distance_to_obstacle(
+        self,
+        idx: int,
+    ) -> float:
+        return np.linalg.norm(self.obstacles[idx].dynamics.get_pos()-self.main_object.dynamics.get_pos())
+
     
     def get_object_data(self) -> list[Dict[str, Any]]:
         '''
@@ -213,7 +231,7 @@ class Sim():
         if self.current_path.size == 0:
             self.first_goal = True
             self.get_new_path()
-        main_object_action = self.control_method.compute_action(goal=self.current_path[0])
+        main_object_action = self.control_method.compute_action(goal=self.current_path[0],state=self.main_object.dynamics.state)
         return main_object_action
 
     def compute_schedule(
@@ -406,6 +424,86 @@ class Sim():
         self.update_point_cloud()
         self.get_new_path()
 
+    class PPOC():
+
+        def __init__(
+                self,
+                modeldir: str,
+                scale: str = 'clip',
+        ):
+            
+            logger.info('initializing PPO controller')
+        
+            self.model = PPO.load(modeldir)
+            self.scaling_function = getattr(self,'_'+scale)
+
+            self.max_ctrl = [0.3,0.3,0.3]
+            self.state = None
+
+            self.current_goal = None
+            self.rel_goal = None
+            self.rel_state = None
+
+        def update_state(self):
+            pass
+
+        def compute_action(
+                self,
+                goal: list[float],
+                state: list[float],
+        ) -> list[list[float]]:
+            '''
+            CHANGE GOAL TO RELATIVE GOAL
+            '''
+
+            if self.rel_goal is None:
+                self.rel_goal = goal
+                self.rel_state = state
+                self.current_goal = goal
+            else:
+                if np.linalg.norm(self.current_goal-goal) > 0.01:
+                    self.rel_state = state.copy()
+                    self.current_goal = goal.copy()
+                    self.rel_goal = np.zeros((goal.size,))
+                    self.rel_goal[0:3] = self.current_goal[0:3] - state[0:3]
+                    
+            
+            obs_state = state.copy()
+            obs_state[0:3] -= self.rel_state[0:3]
+
+            obs = np.concatenate((self.rel_goal,obs_state), axis=None) 
+            action, _states = self.model.predict(obs)
+            scalled_action = self.scaling_function(action)
+
+            full_action = np.zeros((9,))
+            full_action[0:3] = scalled_action 
+
+            return full_action
+
+        def _clip(
+                self,
+                action: list[float],
+        ) -> list[float]:
+            return np.multiply(self.max_ctrl,np.clip(action,a_min=-1,a_max=1))
+        
+        def _std(
+                self,
+                action: list[float],
+        ) -> list[float]:
+            if np.std(action) > 1:
+                return np.multiply(self.max_ctrl,action/np.std(action))
+            else:
+                return np.multiply(self.max_ctrl,action)
+        
+        def _scale(
+                self,
+                action: list[float],
+        ) -> list[float]:
+            if abs(action).max > 1:
+                return np.multiply(self.max_ctrl,action/np.linalg.norm(action))
+            else:
+                return np.multiply(self.max_ctrl,action)
+
     
     class MPC():
 
@@ -454,6 +552,7 @@ class Sim():
         def compute_action(
                 self,
                 goal: list[float],
+                state: list[float],
         ) -> list[list[float]]:
         
             cost = 0

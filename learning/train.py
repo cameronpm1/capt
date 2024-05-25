@@ -109,6 +109,83 @@ def train(cfg: DictConfig,filedir):
     logger.info("Saving model ...")
     model.save(os.path.join(logdir, "model"))
 
+def retrain(cfg: DictConfig,filedir,modeldir):
+    filedir = filedir
+    set_random_seed(cfg['seed'])
+    logdir = cfg['logging']['run']['dir']
+    logdir = filedir+logdir
+    if not os.path.exists(logdir):
+        logger.info("Safe directory not found, creating path ...")
+        mkdir(logdir)
+    else:
+        logger.info("Save directory found ...")
+    print("current directory:", logdir)
+    #logging.basicConfig(filename=logdir+'\log.log') #set up logger file
+
+    # make parallel envs
+    def env_fn(seed):
+        env = make_env(filedir,cfg)
+        env.unwrapped.seed(seed)
+        return env
+
+    class EnvMaker:
+        def __init__(self, seed):
+            self.seed = seed
+
+        def __call__(self):
+            return env_fn(self.seed)
+
+
+    def make_vec_env(nenvs, seed):
+        envs = VecMonitor(
+            SubprocVecEnvNoDaemon([EnvMaker(seed + i) for i in range(nenvs)])
+        )
+        return envs
+
+    logger.info("Preparing to initialize parallel environments ...")
+    env = make_vec_env(cfg["alg"]["nenv"], cfg["seed"])
+    logger.info("Parallel environments initialized ...")
+    # define policy network size
+    policy_kwargs = dict(net_arch=dict(pi=cfg["alg"]["pi"], vf=cfg["alg"]["vf"]))
+    
+
+    # alg kw for sac or td3
+    if cfg["alg"]["type"] == "ppo":
+        alg = PPO
+        alg_kwargs = {}
+
+    logger.info("Loading model ...")
+    # load model
+    model = PPO.load(modeldir)
+    model.tensorboard_log = logdir
+
+    logger.info("Loading parallel environments ...")
+    # load env
+    model.set_env(env)
+
+    checkpoint_callback = CheckpointCallback(
+            save_freq=50000,
+            save_path=logdir,
+            name_prefix="retrain_model",
+            save_replay_buffer=True,
+            save_vecnormalize=True,
+            )
+
+
+    logger.info("Beginning training ...")
+    # train
+    model.learn(
+            total_timesteps=cfg["alg"]["total_timesteps"],
+            progress_bar=True,
+            callback=checkpoint_callback,
+            )
+
+
+    # end
+    env.close()
+    logger.info("Saving model ...")
+    model.save(os.path.join(logdir, "retrained_model"))
+
 
 
 if __name__ == "__main__":

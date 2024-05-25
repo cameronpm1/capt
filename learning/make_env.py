@@ -48,6 +48,7 @@ def make_env(filedir: str, cfg: DictConfig):
         timestep = cfg['satellite']['dynamics']['timestep'],
         horizon = cfg['satellite']['dynamics']['horizon'],
         pos = np.array(cfg['satellite']['dynamics']['pos']),
+        vel = np.array(cfg['satellite']['dynamics']['vel']),
         initial_orbit = orbit_params,
         initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
         spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
