@@ -80,11 +80,16 @@ class gui(object):
         self._ax1.grid(False)
         points = object1['points']
         lines = object1['lines']
-        center = np.average(points, axis=0) + np.array([-0.5,-1,-0.5])
+        
         #for line in object1['lines']:
             #self._ax1.plot([points[line[0]][0],points[line[1]][0]],
                             #[points[line[0]][1],points[line[1]][1]],
                             #[points[line[0]][2],points[line[1]][2]], color="k")
+        if 'obstacles' in object1.keys():
+            for center in object1['obstacles']:
+                self.plot_sat(self._ax1,scale=0.3,center=center,color='r')
+
+        center = np.average(points, axis=0) + np.array([-0.5,-1,-0.5])
         self.plot_sat(self._ax1,scale=0.5,center=center,color='w')
         
         
@@ -98,9 +103,6 @@ class gui(object):
                 if (point[0] < self.xlim[0] or point[0] > self.xlim[1]) or (point[1] < self.ylim[0] or point[1] > self.ylim[1]) or (point[2] < self.zlim[0] or point[2] > self.zlim[1]):
                     object1['point cloud']=np.delete(object1['point cloud'], i, 0) 
             self._ax1.scatter(object1['point cloud'][:][:,0],object1['point cloud'][:][:,1],object1['point cloud'][:][:,2], color='r',s=8)
-        if 'obstacles' in object1.keys():
-            for center in object1['obstacles']:
-                self.plot_ball(self._ax1,center=center)
         
         if 'final goal' in object1.keys():
             self._ax1.scatter(object1['final goal'][0],object1['final goal'][1],object1['final goal'][2], color='g', s=40)

@@ -1,6 +1,7 @@
+import time
+import copy
 import numpy as np
 import pyvista as pv
-import copy
 import matplotlib.pyplot as plt
 from typing import Any, Dict, Type, Optional, Union
 

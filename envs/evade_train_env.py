@@ -1,5 +1,6 @@
 import time
 import numpy as np
+from stable_baselines3 import PPO
 from typing import Any, Dict, Type, Optional, Union
 
 from space_sim.sim import Sim
@@ -9,7 +10,7 @@ from trajectory_planning.path_planner import pathPlanner
 from sim_prompters.one_v_one_prompter import oneVOnePrompter
 
 
-class adversaryTrainEnv(satGymEnv):
+class evadeTrainEnv(satGymEnv):
 
     def __init__(
             self,
@@ -18,6 +19,7 @@ class adversaryTrainEnv(satGymEnv):
             max_episode_length: int,
             max_ctrl: list[float],
             total_train_steps: float,
+            adversary_model_path: str,
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
     ):
@@ -31,12 +33,17 @@ class adversaryTrainEnv(satGymEnv):
             randomize_initial_state=randomize_initial_state,
         )
 
+        sim.set_collision_tolerance(tolerance=1) #IMPORTANT (to prevent evade model from learning to be close to adversary)
+
         if self.randomize_initial_state:
             self.prompter = oneVOnePrompter()
 
+        self.adversary_model = PPO.load(adversary_model_path)
+
+        self._obs = None
+        self._rew = None
         self.initial_goal_distance = 0
-
-
+        self.min_distance = 0
 
     def reset(self, **kwargs):
         if self.randomize_initial_state:
@@ -45,80 +52,61 @@ class adversaryTrainEnv(satGymEnv):
             self.sim.set_adversary_initial_pos(poses=[prompt['adv_pos']])
             self.sim.set_sat_goal(goal=prompt['sat_goal'])
             self.initial_goal_distance = np.linalg.norm(prompt['sat_goal'][0:3]-prompt['sat_pos'][0:3])
+            self.min_distance = self.initial_goal_distance
         self._episode += 1
         self._step = 0
         self.sim.reset()
-        return self._get_obs(), {'episode': self._episode}
+        self._obs = self._get_obs()
+        self._rew = 0
+        return self._obs, {'episode': self._episode}
 
     def step(self, action):
-        #compute EVADE control for sat
-        sat_action = self.sim.compute_evade_control()
-        self.sim.set_sat_control(sat_action)
-        #preprocess model action for adversary
+        #preprocesses control for sat
         scalled_action = self.scaling_function(action)
         full_action = np.zeros((9,))
         full_action[0:3] = scalled_action
-        self.sim.set_adversary_control([full_action])
+        self.sim.set_sat_control(full_action)
+        #preprocess model action for adversary
+        adversary_action = self.compute_adversary_control()
+        self.sim.set_adversary_control([adversary_action])
         #step
         self.sim.step()
         #record new state
         self._step += 1
         self._train_step += 1
-        obs = self._get_obs()
-        rew = self._reward()
+        self._obs = self._get_obs()
+        self._rew = self._reward()
         terminated, truncated = self._end_episode() #end by collision, end by max episode
-        return obs, rew, terminated, truncated, {'done': (terminated, truncated), 'reward': rew}
-
+        return self._obs, self._rew, terminated, truncated, {'done': (terminated, truncated), 'reward': self._rew}
     
     def _end_episode(self) -> bool:
-        proximity_tol = 15
+        dist = self.sim.distance_to_goal()
         
         terminated, truncated = super()._end_episode()
-        dist = self.sim.distance_to_obstacle(idx=0)
 
-        return dist >= proximity_tol or terminated, truncated
-    
+        return dist >= 1.5*self.initial_goal_distance or terminated, truncated
+
     
     def _reward(self) -> float:
+        dist = self.sim.distance_to_goal()
 
-        '''
-        REWARD #1: go to point on path
-        '''
-        #rew = 1/self.sim.min_distance_to_path(pos=self.sim.get_adversary_pos())
-        #if rew > 5: 
-        #    rew = 5
-
-
-        '''
-        REWARD #2: distance between satellite and goal
-        '''
-        #rew = self.sim.distance_to_goal() #add derivative term?
-        
-
-        #if np.linalg.norm(self.sim.get_adversary_vel()) > 0.005: 
-        #    rew = 0
-        
-
-        '''
-        CURRICULUM LEARNING (THROUGH REWARD)
-        '''
-
-        ts_ratio = self._train_step/self.total_train_steps
-
-        if ts_ratio < 0.4:
-            rew = 1/self.sim.min_distance_to_path(pos=self.sim.get_adversary_pos())
-            if rew > 5: 
-                rew = 5
-            rew /= 5
-        elif ts_ratio > 0.8:
-            rew = self.sim.distance_to_goal()/self.initial_goal_distance
+        if dist < self.min_distance:
+            self.min_distance = dist
+            rew = 1/dist
         else:
-            rew1 = 1/self.sim.min_distance_to_path(pos=self.sim.get_adversary_pos())
-            if rew1 > 5: 
-                rew1 = 5
-            rew1 /= 5
-            rew2 = self.sim.distance_to_goal()
-            cr_ratio = (ts_ratio-0.4)/0.4
-            rew = (1-cr_ratio)*rew1/5 + cr_ratio*rew2/self.initial_goal_distance
+            rew = 0
+
+        #rew = (1/dist) * (1 - self._step/1024) #/self.initial_goal_distance divide by timestep?
 
         return rew
+
+    def compute_adversary_control(self):
+        obs = np.concatenate((self._obs['adversary0_state'],self._obs['sat_state']), axis=None) 
+
+        action, _states = self.adversary_model.predict(obs)
+        scalled_action = self.scaling_function(action)
+        full_action = np.zeros((9,))
+        full_action[0:3] = scalled_action 
+
+        return full_action
+        

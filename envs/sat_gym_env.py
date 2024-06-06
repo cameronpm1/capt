@@ -28,6 +28,7 @@ class satGymEnv(gymnasium.Env):
             step_duration: float,
             max_episode_length: int,
             max_ctrl: list[float],
+            total_train_steps: float,
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
     ):
@@ -45,10 +46,12 @@ class satGymEnv(gymnasium.Env):
         logger.info("Initializing env ...")
 
         self._episode = 0
+        self._train_step = 0
         self._seed = None
         self.action_dim = len(max_ctrl)
         self.step_duration = step_duration
         self.max_episode_length = max_episode_length
+        self.total_train_steps = total_train_steps
 
         #Initialize Simulation
         self.sim = sim
@@ -96,6 +99,7 @@ class satGymEnv(gymnasium.Env):
         self.sim.set_adversary_control([self.scaling_function(action)])
         self.sim.step()
         self._step += 1
+        self._train_step += 1
         obs = self._get_obs()
         rew = self._reward()
         terminated, truncated = self._end_episode() #end by collision, end by max episode
@@ -128,20 +132,20 @@ class satGymEnv(gymnasium.Env):
         obs = OrderedDict()
 
         # Satellite
-        obs['sat_state'] = self.sim.main_object.get_state().copy()
+        obs['sat_state'] = self.sim.main_object.get_state().copy()[0:6]
 
-        obs['goal_state'] = np.array(self.sim.get_sat_goal().copy())
+        obs['goal_state'] = np.array(self.sim.get_sat_goal().copy())[0:3]
 
         a = 0
         o = 0
         for obstacle in self.sim.obstacles:
             #Adversaries
             if 'adversary' in obstacle.get_name():
-                obs['adversary'+str(a)+'_state'] = obstacle.get_state().copy()
+                obs['adversary'+str(a)+'_state'] = obstacle.get_state().copy()[0:6]
                 a += 1
             #Obstacles
             if 'obstacle' in obstacle.get_name():
-                obs['obstacle'+str(o)+'_state'] = obstacle.get_state().copy()
+                obs['obstacle'+str(o)+'_state'] = obstacle.get_state().copy()[0:6]
                 o += 1
         return obs
 
@@ -149,6 +153,7 @@ class satGymEnv(gymnasium.Env):
         return 0.0
     
     def _end_episode(self) -> bool:
+
         collision = self.sim.collision_check()
         goal_reached = self.sim.goal_check()
 

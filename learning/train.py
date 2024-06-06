@@ -6,6 +6,7 @@ import logging
 import numpy as np
 from omegaconf import DictConfig
 from stable_baselines3 import PPO
+from stable_baselines3 import SAC
 from hydra.core.hydra_config import HydraConfig
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.noise import NormalActionNoise
@@ -62,12 +63,18 @@ def train(cfg: DictConfig,filedir):
     env = make_vec_env(cfg["alg"]["nenv"], cfg["seed"])
     logger.info("Parallel environments initialized ...")
     # define policy network size
-    policy_kwargs = dict(net_arch=dict(pi=cfg["alg"]["pi"], vf=cfg["alg"]["vf"]))
+    
     
 
     # alg kw for sac or td3
     if cfg["alg"]["type"] == "ppo":
         alg = PPO
+        policy_kwargs = dict(net_arch=dict(pi=cfg["alg"]["pi"], vf=cfg["alg"]["vf"]))
+        alg_kwargs = {}
+
+    if cfg["alg"]["type"] == "sac":
+        alg = SAC
+        policy_kwargs = dict(net_arch=dict(pi=cfg["alg"]["pi"], qf=cfg["alg"]["vf"]))
         alg_kwargs = {}
 
     logger.info("Initializing model ...")

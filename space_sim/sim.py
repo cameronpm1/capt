@@ -1,6 +1,7 @@
 import sys
-sys.path.insert(1, 'c:/Users/Cameron Mehlman/Documents/Magpie')
+#sys.path.insert(1, 'c:/Users/Cameron Mehlman/Documents/Magpie')
 
+import time
 import copy
 import control
 import cvxpy as cp
@@ -47,11 +48,13 @@ class Sim():
             collision_tolerance: float = 1,
             perturbation_force: Optional[float] = None,
             plot_cloud: bool = False,
-            control_model_path: Optional[str] = '/home/cameron/magpie_rl/logs/control/2024-05-21/retrained_model.zip',
+            control_model_path: Optional[str] = '/home/cameron/magpie_rl/models/3DOFcontrol.zip',
+            track_point_cloud: bool = True,
     ):
         
         logger.info('Initializing simulation...')
         
+        #main variables
         self.main_object = main_object
         self.path_planner = path_planner
         self.point_cloud_radius = point_cloud_radius
@@ -62,34 +65,43 @@ class Sim():
         self.collision_tolerance = collision_tolerance
         self.obstacles = []
         
+        #point cloud variables
         self.plot_cloud = plot_cloud
         self.point_cloud_plot = None
         self.point_cloud = None
         self.dynamic_obstacles = False
+        self.raw_point_cloud = []
+        self.track_point_cloud = track_point_cloud
 
 
         if len(control_method) == 0:
             self.control_method = None
+            self.use_controller = False
         elif 'PPO' in control_method:
             self.control_method = getattr(self,control_method)(control_model_path)
+            self.use_controller = True
         else:
             kwargs['dynamics'] = main_object.dynamics
             self.control_method = getattr(self,control_method)(**kwargs)
             self.control_method.update_state()
+            self.use_controller = True
+        
 
+        #adversary variables
         self.adversary = []
         self.adversary_control_method = []
         self.adversary_path = []
         self.adversary_goal = []
         self.adversary_path_planner = None
 
-
+        #general EVADE sim variables
         self.time = 0
         self.done = False
         self.reward = 0
         self.current_path = None
         self.expected_time = None
         self.adjustment_count = 0
+
 
     
         self.first_goal = True #has first goal been reached?
@@ -111,17 +123,22 @@ class Sim():
             if isinstance(obstacle,dynamicObject):
                 obstacle.reset()
         self.update_point_cloud()
-        self.get_new_path()
+        if self.use_controller:
+            self.get_new_path()
 
     def step(
             self,
     ) -> None:
-        #self.collision_check()
         self.main_object.step()
-        self.control_method.update_state()
+        if self.use_controller:
+            self.control_method.update_state()
         for obstacle in self.obstacles:
             if isinstance(obstacle,dynamicObject):
                 obstacle.step()
+        if self.dynamic_obstacles and self.track_point_cloud and self.path_planner.distance_to_goal(state=self.main_object.dynamics.get_state()) > 1:
+            self.update_point_cloud(propagate=True)
+        else:
+            self.update_point_cloud(propagate=False)
         self.time += 1
     
     def set_sat_control(
@@ -162,7 +179,19 @@ class Sim():
             for i,pos in enumerate(poses):
                 self.adversary[i].dynamics.set_initial_pos(pos)
 
-    def get_distance_to_goal(self) -> None:
+    def get_adversary_pos(
+        self,
+        idx: int = 0,
+    ) -> list[float]:
+        return self.adversary[idx].dynamics.get_pos()
+
+    def get_adversary_vel(
+        self,
+        idx: int = 0,
+    ) -> list[float]:
+        return self.adversary[idx].dynamics.get_vel()
+
+    def distance_to_goal(self) -> None:
         return np.linalg.norm(self.path_planner.goal[0:3]-self.main_object.dynamics.get_pos())
     
     def goal_check(self) -> bool:
@@ -187,6 +216,34 @@ class Sim():
         idx: int,
     ) -> float:
         return np.linalg.norm(self.obstacles[idx].dynamics.get_pos()-self.main_object.dynamics.get_pos())
+
+    def min_distance_to_path(
+        self,
+        pos: list[float],
+    ) -> float:
+        '''
+        path_start = 0.35
+        path_end = 0.5
+        path_len = len(self.current_path)
+
+        start_idx = int(path_start*path_len)
+        end_idx = int(path_start*path_len)
+        path = self.current_path[start_idx:end_idx+1]
+        '''
+        path_point = 0.5
+        path_len = len(self.current_path)
+
+        path_idx = int(path_point*path_len)
+        path = [self.current_path[path_idx]]
+
+        min_dist = 1000
+
+        for point in path:
+            dist = np.linalg.norm(point[0:3]-pos)
+            if dist < min_dist:
+                min_dist = dist
+
+        return min_dist
 
     
     def get_object_data(self) -> list[Dict[str, Any]]:
@@ -217,16 +274,17 @@ class Sim():
         self._np_random, seed = seeding.np_random(seed)
         return seeds
 
+    def set_collision_tolerance(
+        self,
+        tolerance: float,
+    ) -> None:
+        self.collision_tolerance = tolerance
+
     '''
     EVADE SUPPORT FUNCTIONS
     '''
 
-    def compute_evade_control(self):
-        if self.dynamic_obstacles:
-            if self.path_planner.distance_to_goal(state=self.main_object.dynamics.get_state()) < 1:
-                self.update_point_cloud(propagate=False)
-            else:
-                self.update_point_cloud(propagate=True) 
+    def compute_evade_control(self): 
         self.check_reached_path_point()
         if self.current_path.size == 0:
             self.first_goal = True
@@ -268,19 +326,17 @@ class Sim():
         new_path = self.path_planner.compute_desired_path(state=self.main_object.dynamics.state, point_cloud=point_cloud)
         self.adjustment_count += 1
         self.current_path = new_path[1:]
-    
+
     '''
     POINT CLOUD HANDELING FUNCTIONS
     '''    
 
     def collision_check(self) -> None:
-        if self.point_cloud is None:
+        if self.raw_point_cloud is None:
             pass
         else:
-            self.update_point_cloud(propagate=False)
             location = self.main_object.dynamics.get_pos()
-
-            for point in self.point_cloud:
+            for point in self.raw_point_cloud:
                 new_point = point-location
                 if np.linalg.norm(new_point) < self.collision_tolerance: 
                     return True
@@ -310,22 +366,27 @@ class Sim():
     
     def update_point_cloud(
             self,
-            propagate: bool = True,
+            propagate: bool = False,
         ) -> None:
         self.point_cloud = None
+        self.raw_point_cloud = None
         if len(self.obstacles) > 0:
             object_cloud_size = int(self.point_cloud_size/len(self.obstacles))
-        for obstacle in self.obstacles:
+        for i,obstacle in enumerate(self.obstacles):
             local_point_cloud = np.array(obstacle.point_cloud_from_mesh(n=object_cloud_size))
+            if i == 0:
+                self.raw_point_cloud = local_point_cloud
+            else:
+                self.raw_point_cloud = np.concatenate((self.raw_point_cloud,local_point_cloud))
             if not self.first_goal and propagate and isinstance(obstacle,dynamicObject):
                 local_point_cloud = self.propagate_point_cloud(obstacle, local_point_cloud)
-            if self.point_cloud is None:
+            if i == 0:
                 self.point_cloud = local_point_cloud
             else:
                 self.point_cloud = np.concatenate((self.point_cloud,local_point_cloud))
 
         #dont plot point clouds greater than 2000 points
-        self.point_cloud_plot = copy.deepcopy(self.point_cloud)
+        #self.point_cloud_plot = copy.deepcopy(self.point_cloud)
         '''
         if self.point_cloud_size > 2000:
             idx = np.random.randint(self.point_cloud_size, size=2000)
@@ -392,8 +453,6 @@ class Sim():
     def create_adversary(
             self,
             adversary: Type[dynamicObject],
-            kwargs: Dict[str, Any],
-            control_method: str, #MPC
     ) -> None:
         self.adversary.append(adversary)
         self.add_obstacle(obstacle=adversary)
@@ -443,6 +502,7 @@ class Sim():
             self.current_goal = None
             self.rel_goal = None
             self.rel_state = None
+            self.count = 0
 
         def update_state(self):
             pass
@@ -455,18 +515,16 @@ class Sim():
             '''
             CHANGE GOAL TO RELATIVE GOAL
             '''
+            #print(goal[0:3],state[0:6])
 
-            if self.rel_goal is None:
-                self.rel_goal = goal
-                self.rel_state = state
-                self.current_goal = goal
-            else:
-                if np.linalg.norm(self.current_goal-goal) > 0.01:
-                    self.rel_state = state.copy()
-                    self.current_goal = goal.copy()
-                    self.rel_goal = np.zeros((goal.size,))
-                    self.rel_goal[0:3] = self.current_goal[0:3] - state[0:3]
-                    
+            if self.rel_goal is None or np.linalg.norm(self.current_goal-goal) > 0.01 or self.count > 20:
+                self.rel_state = state.copy()
+                self.current_goal = goal.copy()
+                self.rel_goal = np.zeros((goal.size,))
+                self.rel_goal[0:3] = self.current_goal[0:3] - state[0:3]
+                self.count = 0
+
+            self.count += 1                   
             
             obs_state = state.copy()
             obs_state[0:3] -= self.rel_state[0:3]
@@ -474,7 +532,6 @@ class Sim():
             obs = np.concatenate((self.rel_goal,obs_state), axis=None) 
             action, _states = self.model.predict(obs)
             scalled_action = self.scaling_function(action)
-
             full_action = np.zeros((9,))
             full_action[0:3] = scalled_action 
 

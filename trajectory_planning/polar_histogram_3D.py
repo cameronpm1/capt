@@ -363,56 +363,79 @@ class polarHistogram3D():
     def check_point_safety(
             self,
             min_distance: float,
-            point: List[float],           
+            point: List[float],  
+            fast: bool = True,    
     ) -> bool:
-        #t0 = time.time()
+        if fast:
+            theta1,theta2,dist = self.convert_cartesian_to_polar(point)
 
-        theta1,theta2,dist = self.convert_cartesian_to_polar(point)
-        b1,b2,l = self.convert_polar_to_bin([theta1,theta2,dist])
-        bin = [b1,b2,l]
-        fs = 0.5 #factor of safety, point must be more than 10% closer to min_distance to change route
+            if dist < min_distance:
+                layer0 = 0
+            else:
+                layer0 = int((dist-min_distance)//self.layer_depth)
 
-        if dist > self.radius:
+            if (dist + min_distance) > self.radius:
+                layerN = self.layers
+            else:
+                layerN = int(np.ceil((dist+min_distance)/self.layer_depth))
+                
+            layers = range(layer0,layerN)
+
+            b1,b2,l = self.convert_polar_to_bin([theta1,theta2,dist])
+
+            for i in layers:
+                safe = self.check_obstacle_bins(point=point,bin=[b1,b2,l],distance=min_distance, layer=i)
+                if not safe:
+                    return False
             return True
         else:
-            layer = int(dist//self.layer_depth)
 
-        layers = range(self.layers)
+            theta1,theta2,dist = self.convert_cartesian_to_polar(point)
+            b1,b2,l = self.convert_polar_to_bin([theta1,theta2,dist])
+            bin = [b1,b2,l]
+            fs = 0.5 #factor of safety, point must be more than 10% closer to min_distance to change route
 
-        obstacle_bins = self.sort_obstacle_bins(point=point,bin=bin,distance=min_distance,layer=layers[0])
-
-        for i in layers[1:]:
-            temp_obstacle_bins = self.sort_obstacle_bins(point=point,bin=bin,distance=min_distance, layer=i)
-            if len(obstacle_bins) == 0:
-                obstacle_bins = temp_obstacle_bins
+            if dist > self.radius:
+                return True
             else:
-                if(len(temp_obstacle_bins)) == 0:
-                    continue
+                layer = int(dist//self.layer_depth)
+
+            layers = range(self.layers)
+
+            obstacle_bins = self.sort_obstacle_bins(point=point,bin=bin,distance=min_distance,layer=layers[0])
+
+            for i in layers[1:]:
+                temp_obstacle_bins = self.sort_obstacle_bins(point=point,bin=bin,distance=min_distance, layer=i)
+                if len(obstacle_bins) == 0:
+                    obstacle_bins = temp_obstacle_bins
                 else:
-                    obstacle_bins = np.vstack((obstacle_bins,temp_obstacle_bins))
+                    if(len(temp_obstacle_bins)) == 0:
+                        continue
+                    else:
+                        obstacle_bins = np.vstack((obstacle_bins,temp_obstacle_bins))
 
-        if len(obstacle_bins) > 0:
-            obstacle_bins = obstacle_bins[obstacle_bins[:, 0].argsort()]
+            if len(obstacle_bins) > 0:
+                obstacle_bins = obstacle_bins[obstacle_bins[:, 0].argsort()]
 
-        for bad_bin in obstacle_bins:
-            obstacle = self.histogram3D[int(bad_bin[1])][int(bad_bin[2])][int(bad_bin[3])][0:3]
-            obstacle_std = self.histogram3D[int(bad_bin[1])][int(bad_bin[2])][int(bad_bin[3])][3:6]
-            obstacle_probability = gaussian_prob(mu=obstacle, std=obstacle_std, x=point-obstacle)
-            #if gaussian dist. is not in the same dimensions as goal (std dev of x,y, or z is0),
-            #there is no probability of there being an obstacle, else, it is distance from 
-            #center of the ellipsoide
-            zeros = np.where(obstacle_probability == 0)[0]
-            if zeros.size != 0:
-                for zero in zeros:
-                    if abs(point[zero]-obstacle[zero]) > 0:
-                        fobstacle_probability = 0
-                        break
-            else:
-                fobstacle_probability = min(obstacle_probability)
-            if fobstacle_probability > self.probability_tol or np.linalg.norm(point-obstacle) < min_distance*fs:
-                return False  
-        #print(time.time() - t0)
-        return True
+            for bad_bin in obstacle_bins:
+                obstacle = self.histogram3D[int(bad_bin[1])][int(bad_bin[2])][int(bad_bin[3])][0:3]
+                obstacle_std = self.histogram3D[int(bad_bin[1])][int(bad_bin[2])][int(bad_bin[3])][3:6]
+                obstacle_probability = gaussian_prob(mu=obstacle, std=obstacle_std, x=point-obstacle)
+                #if gaussian dist. is not in the same dimensions as goal (std dev of x,y, or z is0),
+                #there is no probability of there being an obstacle, else, it is distance from 
+                #center of the ellipsoide
+                zeros = np.where(obstacle_probability == 0)[0]
+                if zeros.size != 0:
+                    for zero in zeros:
+                        if abs(point[zero]-obstacle[zero]) > 0:
+                            fobstacle_probability = 0
+                            break
+                else:
+                    fobstacle_probability = min(obstacle_probability)
+                if fobstacle_probability > self.probability_tol or np.linalg.norm(point-obstacle) < min_distance*fs:
+                    return False  
+            #print(time.time() - t0)
+            return True
 
     def confirm_candidate_distance(
             self,

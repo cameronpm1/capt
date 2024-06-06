@@ -68,6 +68,10 @@ class pathPlanner(basePathPlanner):
             goals: list[list[float]],
             state: list[float] = None,
     ) -> bool:
+        #only check safety of frist 10 points on the path
+        if len(goals) > 10:
+            goals = goals[0:10]
+
         for goal in goals:
             goal = goal[0:3]
             safe = self.algorithm.check_goal_safety(goal - state)

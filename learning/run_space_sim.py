@@ -20,46 +20,45 @@ def runSpaceSim(
 
     filedir = filedir
     env = make_env(filedir,cfg)
-    for i in range(10):
+
+    for i in range(1):
+
         obs, _ = env.reset()
-        print(obs)
-        print(env.unwrapped.sim.path_planner.goal)
 
-    if render:
-        renderer = Renderer(
-            xlim = [-10,10],
-            ylim = [-5,30],
-            zlim = [-10,10],
-            vista = False,
-        )
-        renderer.plot(env.render())
-
-    if modeldir is not None:
-        model = PPO.load(modeldir)
-
-    time.sleep(10)
-    timesteps = 1500
-    timestep = 0
-    done = False
-    '''
-    for i in range(timesteps):
-        if modeldir is None:
-            action = np.zeros(3,)
-        else:
-            action, _states = model.predict(obs)
-        obs,rewards,terminated,truncated,_ = env.step(action)
-        if i%15 == 0:
-            if verbose:
-                print('at timestep',i,'distance to goal:', env.unwrapped.sim.get_distance_to_goal())
-        if terminated or truncated:
-            timestep = i
-            break
         if render:
+            renderer = Renderer(
+                xlim = [-10,10],
+                ylim = [-5,30],
+                zlim = [-10,10],
+                vista = False,
+            )
             renderer.plot(env.render())
 
+        if modeldir is not None:
+            model = PPO.load(modeldir)
 
-    print('Simulation ended at timestep',timestep)
-    '''
+        time.sleep(10)
+        timesteps = 1500
+        timestep = 0
+        done = False
+
+        for i in range(timesteps):
+            if modeldir is None:
+                action = np.zeros(3,)
+            else:
+                action, _states = model.predict(obs)
+            obs,rewards,terminated,truncated,_ = env.step(action)
+            if i%15 == 0:
+                if verbose:
+                    print('at timestep',i,'distance to goal:', env.unwrapped.sim.distance_to_goal())
+            if terminated or truncated:
+                timestep = i
+                break
+            if render:
+                renderer.plot(env.render())
+
+        print('Simulation ended at timestep',timestep)
+    
 
 if __name__ == "__main__":
     sys.path.insert(1, os.getcwd())
