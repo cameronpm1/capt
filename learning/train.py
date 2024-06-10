@@ -3,6 +3,7 @@ import sys
 import hydra
 import torch
 import logging
+import shutil
 import numpy as np
 from omegaconf import DictConfig
 from stable_baselines3 import PPO
