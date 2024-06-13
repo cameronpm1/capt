@@ -5,6 +5,7 @@ import time
 import hydra
 import numpy as np
 from stable_baselines3 import PPO
+from stable_baselines3 import SAC
 from omegaconf import DictConfig, OmegaConf
 
 from envs.gui import Renderer
@@ -35,7 +36,11 @@ def runSpaceSim(
             renderer.plot(env.render())
 
         if modeldir is not None:
-            model = PPO.load(modeldir)
+            if cfg["alg"]["type"] == "ppo":
+                model = PPO.load(modeldir)
+            if cfg["alg"]["type"] == "ppo":
+                model = SAC.load(modeldir)
+
 
         time.sleep(10)
         timesteps = 1500
