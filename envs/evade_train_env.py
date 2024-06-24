@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, SAC
 from typing import Any, Dict, Type, Optional, Union
 
 from space_sim.sim import Sim
@@ -8,12 +8,15 @@ from envs.sat_gym_env import satGymEnv
 from dynamics.dynamic_object import dynamicObject
 from trajectory_planning.path_planner import pathPlanner
 from sim_prompters.one_v_one_prompter import oneVOnePrompter
+import hydra
+from omegaconf import DictConfig
 
 
 class evadeTrainEnv(satGymEnv):
 
     def __init__(
             self,
+            cfg: DictConfig,
             sim: Type[Sim],
             step_duration: float,
             max_episode_length: int,
@@ -33,12 +36,17 @@ class evadeTrainEnv(satGymEnv):
             randomize_initial_state=randomize_initial_state,
         )
 
+        self.cfg = cfg  # Store cfg
+        
         sim.set_collision_tolerance(tolerance=1) #IMPORTANT (to prevent evade model from learning to be close to adversary)
 
         if self.randomize_initial_state:
             self.prompter = oneVOnePrompter()
 
-        self.adversary_model = PPO.load(adversary_model_path)
+        if cfg["alg"]["type"] == "ppo":
+            self.adversary_model = PPO.load(adversary_model_path)
+        if cfg["alg"]["type"] == "sac":
+            self.adversary_model = SAC.load(adversary_model_path)
 
         self._obs = None
         self._rew = None

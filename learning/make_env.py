@@ -257,6 +257,7 @@ def make_env(filedir: str, cfg: DictConfig):
         initialize_obstacles(sim)
 
         env = evadeTrainEnv(
+            cfg=cfg,
             sim=sim,
             step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
             max_episode_length=cfg['env']['max_timestep'],

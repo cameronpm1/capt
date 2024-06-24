@@ -38,7 +38,7 @@ def runSpaceSim(
         if modeldir is not None:
             if cfg["alg"]["type"] == "ppo":
                 model = PPO.load(modeldir)
-            if cfg["alg"]["type"] == "ppo":
+            if cfg["alg"]["type"] == "sac":
                 model = SAC.load(modeldir)
 
 

@@ -12,7 +12,7 @@ from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
-
+import shutil
 
 from logger import getlogger
 from learning.make_env import make_env
