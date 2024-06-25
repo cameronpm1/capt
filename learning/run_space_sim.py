@@ -57,6 +57,10 @@ def runSpaceSim(
                 if verbose:
                     print('at timestep',i,'distance to goal:', env.unwrapped.sim.distance_to_goal())
             if terminated or truncated:
+                if terminated:
+                    print("Collision")
+                if truncated:
+                    print("Time Step")
                 timestep = i
                 break
             if render:
