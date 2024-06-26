@@ -98,19 +98,14 @@ class evadeTrainEnv(satGymEnv):
     
     def _reward(self) -> float:
         dist = self.sim.distance_to_goal()
-
-        if dist < self.min_distance:
+        
+        if(dist<self.min_distance):
             self.min_distance = dist
-            rew = 1/dist
-            self.max_reward = rew
+            rew = self.initial_goal_distance - dist
+
         else:
-            #rew = 0
-            #Added something to perhaps help with the evader overshooting and drifting off after getting close to the goal.
-            reward = 1/dist
-            rew = reward - self.max_reward
-
-        #rew = (1/dist) * (1 - self._step/1024) #/self.initial_goal_distance divide by timestep?
-
+            rew = self.min_distance - dist
+        
         return rew
 
     def compute_adversary_control(self):
