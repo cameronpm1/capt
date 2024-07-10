@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: evade4m_rew3 # set job name
+    name: pos_test # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -25,9 +25,10 @@ alg:
 
 
 env:
-  scenario: evade #control, adversary, evade
+  scenario: adversary #control, adversary, evade
   max_timestep: 512
   max_control: [0.3,0.3,0.3]
+  ctrl_type: position
   action_scaling: clip
   random_initial_state: True
   adversary_model_path: /home/cameron/magpie_rl/logs/adversary_rew3/2024-05-31/model.zip #/home/cameron/magpie_rl/logs/adversary_rew2/2024-05-28/midtrain_model_17000000_steps.zip

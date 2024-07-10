@@ -29,5 +29,5 @@ def run_rl_model(cfg: DictConfig):
 if __name__ == "__main__":
     torch.set_num_threads(12)
     DIRECTORY = os.getcwd()
-    run_rl_model()
+    train_rl_model()
     

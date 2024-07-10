@@ -179,6 +179,9 @@ class Sim():
             for i,pos in enumerate(poses):
                 self.adversary[i].dynamics.set_initial_pos(pos)
 
+    def get_sat_pos(self) -> list[float]:
+        return self.main_object.dynamics.get_pos()
+
     def get_adversary_pos(
         self,
         idx: int = 0,
@@ -290,6 +293,13 @@ class Sim():
             self.first_goal = True
             self.get_new_path()
         main_object_action = self.control_method.compute_action(goal=self.current_path[0],state=self.main_object.dynamics.state)
+        return main_object_action
+
+    def compute_main_object_control(
+            self,
+            goal: list[float],
+    ) -> list[float]:
+        main_object_action = self.control_method.compute_action(goal=goal,state=self.main_object.dynamics.state)
         return main_object_action
 
     def compute_schedule(
@@ -460,7 +470,22 @@ class Sim():
     def remove_adversary(self,i) -> None:
         adversary = self.adversary.pop(i)
         del adversary
+
+    def create_adversary_controller(
+            self,
+            control_model_path: str = '/home/cameron/magpie_rl/models/3DOFcontrol.zip',
+    ) -> None:
+
+        self.adversary_control_method.append(getattr(self,'PPOC')(control_model_path))
     
+    def compute_adversary_control(
+            self,
+            goal: list[float],
+            idx: int = 0,
+    ) -> list[float]:
+        adversary_action = self.adversary_control_method[idx].compute_action(goal=goal,state=self.adversary[idx].dynamics.state)
+        return adversary_action
+
     def add_obstacle(
             self,
             obstacle: Union[Type[dynamicObject],Type[staticObject]],

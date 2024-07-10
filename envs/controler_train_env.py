@@ -33,7 +33,6 @@ class controlerTrainEnv(satGymEnv):
             self.prompter = controlPrompter()
 
 
-
     def reset(self, **kwargs):
         if self.randomize_initial_state:
             prompt = self.prompter.prompt()

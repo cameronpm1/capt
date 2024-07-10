@@ -64,6 +64,8 @@ class satGymEnv(gymnasium.Env):
         #randomize initial state or not
         self.randomize_initial_state = randomize_initial_state
 
+        self.state_dim = len(self.sim.main_object.dynamics.state)
+
 
     @property
     def action_space(
@@ -132,7 +134,7 @@ class satGymEnv(gymnasium.Env):
         obs = OrderedDict()
 
         # Satellite
-        obs['sat_state'] = self.sim.main_object.get_state().copy()[0:6]
+        obs['sat_state'] = self.sim.get_sat_pos().copy()[0:6]
 
         obs['goal_state'] = np.array(self.sim.get_sat_goal().copy())[0:3]
 

@@ -2,4 +2,5 @@
 logs/
 magpie_rl/
 outputs/
-token
+token.txt
+learning/conf/

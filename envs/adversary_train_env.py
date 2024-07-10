@@ -18,6 +18,7 @@ class adversaryTrainEnv(satGymEnv):
             max_episode_length: int,
             max_ctrl: list[float],
             total_train_steps: float,
+            ctrl_type: str = 'thrust',
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
     ):
@@ -33,6 +34,10 @@ class adversaryTrainEnv(satGymEnv):
 
         if self.randomize_initial_state:
             self.prompter = oneVOnePrompter()
+
+        self.ctrl_type = ctrl_type
+        if 'pos' in self.ctrl_type:
+            self.sim.create_adversary_controller()
 
         self.initial_goal_distance = 0
 
@@ -56,8 +61,11 @@ class adversaryTrainEnv(satGymEnv):
         self.sim.set_sat_control(sat_action)
         #preprocess model action for adversary
         scalled_action = self.scaling_function(action)
-        full_action = np.zeros((9,))
-        full_action[0:3] = scalled_action
+        if 'pos' in self.ctrl_type:
+            full_action = self.sim.compute_adversary_control(goal=np.concatenate((scalled_action+self.get_adversary_pos(),np.zeros((self.state_dim-3,)))))
+        else:
+            full_action = np.zeros((9,))
+            full_action[0:3] = scalled_action
         self.sim.set_adversary_control([full_action])
         #step
         self.sim.step()
