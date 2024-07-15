@@ -96,6 +96,16 @@ def dcm_zyx(E):
       
       return dcm
 
+def dcm_xy(theta):
+      theta = theta[0]
+
+      dcm = np.array(
+            [[np.cos(theta), -1*np.sin(theta)],
+            [np.sin(theta), np.cos(theta)]]
+      )
+
+      return dcm
+
 def triangle_area(v):
       '''
       Computes the area of a triangle given 3 3-dimensional coordinates

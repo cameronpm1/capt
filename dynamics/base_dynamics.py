@@ -29,6 +29,7 @@ class baseDynamics:
         #self.quat = quat
         self.omega = np.array(omega)
         self.cf = cf
+        self.dim = len(self.pos)
         self.time = 0
         self.state = None
         self.control = None
@@ -43,29 +44,39 @@ class baseDynamics:
 
     def reset_state(self) -> None:
         self.time = 0
-        self.pos = self.initial_state[0:3]
-        self.vel = self.initial_state[3:6]
-        self.euler = self.initial_state[6:9]
-        self.omega = self.initial_state[9:12]
+        self.pos = self.initial_state[0:self.dim]
+        self.vel = self.initial_state[self.dim:self.dim*2]
+        if self.dim == 2:
+            self.euler = self.initial_state[self.dim*2:self.dim*2+1]
+            self.omega = self.initial_state[self.dim*2+1:self.dim*2+2]
+        else:
+            self.euler = self.initial_state[self.dim*2:self.dim*3]
+            self.omega = self.initial_state[self.dim*3:self.dim*4]
         self.initialize_state()
 
     def initialize_state_matrix(self) -> None:
         self.state_matrix = np.zeros((self.state.size,self.state.size))
 
     def get_euler(self) -> list[float]:
-        return self.state[6:9]
+        if self.dim == 2:
+            return self.state[self.dim*2:self.dim*2+1]
+        else:
+            return self.state[self.dim*2:self.dim*3]
     
     def get_pos(self) -> list[float]:
-        return self.state[0:3]
+        return self.state[0:self.dim]
     
     def get_vel(self) -> list[float]:
-        return self.state[3:6]
+        return self.state[self.dim:self.dim*2]
     
     def get_omega(self) -> list[float]:
-        return self.state[9:12]
+        if self.dim == 2:
+            return self.state[self.dim*2+1:self.dim*2+2]
+        else:
+            return self.state[self.dim*2:self.dim*3]
     
     def get_speed(self) -> float:
-        return np.linalg.norm(self.state[3:6])
+        return np.linalg.norm(self.state[self.dim:self.dim*2])
     
     def get_state(self) -> list[float]:
         return self.state
@@ -74,13 +85,13 @@ class baseDynamics:
         self,
         pos: list[float],
     ):
-        self.initial_state[0:3] = pos
+        self.initial_state[0:self.dim] = pos
 
     def set_initial_vel(
         self,
         vel: list[float],
     ):
-        self.initial_state[3:6] = vel
+        self.initial_state[self.dim:self.dim*2] = vel
 
     def forward_dynamics(self):
         pass

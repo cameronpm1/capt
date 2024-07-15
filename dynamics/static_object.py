@@ -15,6 +15,7 @@ class staticObject():
             mesh: Union[Dict[str, list[Any]],Type[pv.DataSet]], #a list of vertices and lines connecting them, or VistMesh
             name: Optional[str] = None,
             pos: list[float] = [0,0,0],
+            dim: int = 3,
     ):
         if mesh is None:
             print('Error: no mesh data given')
@@ -30,16 +31,16 @@ class staticObject():
         self.temp_mesh = copy.deepcopy(mesh)
         self.point_cloud = None
         self.radius = None
+        self.dim = 3
 
     def get_name(self) -> str:
         return self.name
 
     def update_points(self) -> None:
         if self.vista:
-            self.temp_mesh.points += self.dynamics.initial_state[0:3]
+            self.temp_mesh.points += self.dynamics.get_pos()
         else:
-            self.temp_mesh['points'] += self.dynamics.initial_state[0:3]
-
+            self.temp_mesh['points'] += self.dynamics.get_pos()
     def point_cloud_from_mesh(self, n) -> list[float]:
         '''
         takes a vista mesh, and returns a point cloud of n points

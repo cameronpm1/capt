@@ -16,12 +16,14 @@ class dynamicObject(staticObject):
             mesh: Union[Dict[str, list[Any]],Type[pv.DataSet]],
             name: Optional[str] = None,
             pos: list[float] = [0,0,0],
+            dim: int = 3,
     ):
         
         super().__init__(
             mesh = mesh,
             name = name,
             pos=pos,
+            dim=dim,
         )
 
         self.dynamics = dynamics
@@ -36,7 +38,10 @@ class dynamicObject(staticObject):
                 self.temp_mesh.points[i] = new_point
 
         else:
-            dcm = dcm_zyx(self.dynamics.get_euler())
+            if self.dim == 2:
+                dcm = dcm_xy(self.dynamics.get_euler())
+            else:
+                dcm = dcm_zyx(self.dynamics.get_euler())
             current_pos = self.dynamics.get_pos()
             for i,point in enumerate(self.mesh['points']):
                 new_point = np.matmul(dcm,point) + current_pos

@@ -28,7 +28,7 @@ env:
   scenario: adversary #control, adversary, evade
   max_timestep: 512
   max_control: [0.3,0.3,0.3]
-  ctrl_type: position
+  ctrl_type: thrust
   action_scaling: clip
   random_initial_state: True
   adversary_model_path: /home/cameron/magpie_rl/logs/adversary_rew3/2024-05-31/model.zip #/home/cameron/magpie_rl/logs/adversary_rew2/2024-05-28/midtrain_model_17000000_steps.zip
