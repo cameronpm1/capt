@@ -118,15 +118,13 @@ class satelliteDynamics(baseDynamics):
         A[3][4] = 2*self.n
         A[4][3] = -2*self.n
         A[5][2] = -(self.n**2)
-        A[6][8] = 0
         A[6][9] = 1
         A[7][10] = 1
-        A[8][6] = 0
         A[8][11] = 1
-        A[9][11] = -(self.spacecraft_data['J_sc'][1]-self.spacecraft_data['J_sc'][2])*self.n/self.spacecraft_data['J_sc'][0]
-        A[9][14] = self.n*self.spacecraft_data['alpha'][2]/self.spacecraft_data['J_sc'][0]
-        A[11][9] = -(self.spacecraft_data['J_sc'][0]-self.spacecraft_data['J_sc'][1])*self.n/self.spacecraft_data['J_sc'][2]
-        A[11][12] = self.n*self.spacecraft_data['alpha'][0]/self.spacecraft_data['J_sc'][2]
+        #A[9][11] = -(self.spacecraft_data['J_sc'][1]-self.spacecraft_data['J_sc'][2])*self.n/self.spacecraft_data['J_sc'][0]
+        #A[9][14] = self.n*self.spacecraft_data['alpha'][2]/self.spacecraft_data['J_sc'][0]
+        #A[11][9] = -(self.spacecraft_data['J_sc'][0]-self.spacecraft_data['J_sc'][1])*self.n/self.spacecraft_data['J_sc'][2]
+        #A[11][12] = self.n*self.spacecraft_data['alpha'][0]/self.spacecraft_data['J_sc'][2]
         return A
     
     @property
@@ -136,12 +134,12 @@ class satelliteDynamics(baseDynamics):
         B[3][0] = 1/self.mass
         B[4][1] = 1/self.mass
         B[5][2] = 1/self.mass
-        B[9][3] = -self.spacecraft_data['alpha'][0]/self.spacecraft_data['J_sc'][0]
-        B[9][6] = 1/self.spacecraft_data['J_sc'][0]
-        B[10][4] = -self.spacecraft_data['alpha'][1]/self.spacecraft_data['J_sc'][1]
-        B[10][7] = 1/self.spacecraft_data['J_sc'][1]
-        B[11][5] = -self.spacecraft_data['alpha'][2]/self.spacecraft_data['J_sc'][2]
-        B[11][8] = 1/self.spacecraft_data['J_sc'][2]
+        B[9][6] = -self.spacecraft_data['alpha'][0]/self.spacecraft_data['J_sc'][0]
+        B[9][3] = 1/self.spacecraft_data['J_sc'][0]
+        B[10][7] = -self.spacecraft_data['alpha'][1]/self.spacecraft_data['J_sc'][1]
+        B[10][4] = 1/self.spacecraft_data['J_sc'][1]
+        B[11][8] = -self.spacecraft_data['alpha'][2]/self.spacecraft_data['J_sc'][2]
+        B[11][5] = 1/self.spacecraft_data['J_sc'][2]
         B[12][3] = 1
         B[13][4] = 1
         B[14][5] = 1
@@ -213,10 +211,10 @@ class satelliteDynamics(baseDynamics):
         self.state_matrix[7][10] = 1
         self.state_matrix[8][6] = 0
         self.state_matrix[8][11] = 1
-        self.state_matrix[9][11] = -(self.spacecraft_data['J_sc'][1]-self.spacecraft_data['J_sc'][2])*self.n/self.spacecraft_data['J_sc'][0]
-        self.state_matrix[9][14] = self.n*self.spacecraft_data['alpha'][2]/self.spacecraft_data['J_sc'][0]
-        self.state_matrix[11][9] = -(self.spacecraft_data['J_sc'][0]-self.spacecraft_data['J_sc'][1])*self.n/self.spacecraft_data['J_sc'][2]
-        self.state_matrix[11][12] = self.n*self.spacecraft_data['alpha'][0]/self.spacecraft_data['J_sc'][2]
+        #self.state_matrix[9][11] = -(self.spacecraft_data['J_sc'][1]-self.spacecraft_data['J_sc'][2])*self.n/self.spacecraft_data['J_sc'][0]
+        #self.state_matrix[9][14] = self.n*self.spacecraft_data['alpha'][2]/self.spacecraft_data['J_sc'][0]
+        #self.state_matrix[11][9] = -(self.spacecraft_data['J_sc'][0]-self.spacecraft_data['J_sc'][1])*self.n/self.spacecraft_data['J_sc'][2]
+        #self.state_matrix[11][12] = self.n*self.spacecraft_data['alpha'][0]/self.spacecraft_data['J_sc'][2]
         '''
         self.state_matrix_discretized = np.exp(self.state_matrix*self.timestep)
         '''
@@ -226,12 +224,12 @@ class satelliteDynamics(baseDynamics):
         self.control_matrix[3][0] = 1/self.mass
         self.control_matrix[4][1] = 1/self.mass
         self.control_matrix[5][2] = 1/self.mass
-        self.control_matrix[9][3] = -self.spacecraft_data['alpha'][0]/self.spacecraft_data['J_sc'][0]
-        self.control_matrix[9][6] = 1/self.spacecraft_data['J_sc'][0]
-        self.control_matrix[10][4] = -self.spacecraft_data['alpha'][1]/self.spacecraft_data['J_sc'][1]
-        self.control_matrix[10][7] = 1/self.spacecraft_data['J_sc'][1]
-        self.control_matrix[11][5] = -self.spacecraft_data['alpha'][2]/self.spacecraft_data['J_sc'][2]
-        self.control_matrix[11][8] = 1/self.spacecraft_data['J_sc'][2]
+        self.control_matrix[9][6] = -self.spacecraft_data['alpha'][0]/self.spacecraft_data['J_sc'][0]
+        self.control_matrix[9][3] = 1/self.spacecraft_data['J_sc'][0]
+        self.control_matrix[10][7] = -self.spacecraft_data['alpha'][1]/self.spacecraft_data['J_sc'][1]
+        self.control_matrix[10][4] = 1/self.spacecraft_data['J_sc'][1]
+        self.control_matrix[11][8] = -self.spacecraft_data['alpha'][2]/self.spacecraft_data['J_sc'][2]
+        self.control_matrix[11][5] = 1/self.spacecraft_data['J_sc'][2]
         self.control_matrix[12][6] = 1
         self.control_matrix[13][7] = 1
         self.control_matrix[14][8] = 1
