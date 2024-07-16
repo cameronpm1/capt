@@ -24,11 +24,13 @@ class pathPlanner(basePathPlanner):
             interpolation_method: str = 'linear',
             avg_speed: float = 0.5,
             n: int = 50,
+            dim: int = 3,
     ):
         
         super().__init__(
             path_planning_algorithm=path_planning_algorithm,
             kwargs=kwargs,
+            dim=dim,
         )
 
         self.goal = goal_state
@@ -51,7 +53,7 @@ class pathPlanner(basePathPlanner):
             self,
             state: list[float],
     ) -> float:
-        return np.linalg.norm(state[0:3] - self.goal[0:3])
+        return np.linalg.norm(state[0:self.dim] - self.goal[0:self.dim])
 
 
     def update_point_cloud(
@@ -73,7 +75,7 @@ class pathPlanner(basePathPlanner):
             goals = goals[0:10]
 
         for goal in goals:
-            goal = goal[0:3]
+            goal = goal[0:self.dim]
             safe = self.algorithm.check_goal_safety(goal - state)
             if not safe:
                 return False
@@ -87,18 +89,18 @@ class pathPlanner(basePathPlanner):
     ) -> list[float]:
 
         state_offset = np.zeros((state.size,))
-        state_offset[0:3] = state[0:3]
+        state_offset[0:self.dim] = state[0:self.dim]
         current_state = state
 
         if point_cloud is None:
-            next_location = self.goal[0:3] - state[0:3]
+            next_location = self.goal[0:self.dim] - state[0:self.dim]
             if np.linalg.norm(next_location) < 0.25*self.algorithm.radius:
-                next_location = [current_state[0:3] - state[0:3], next_location]
+                next_location = [current_state[0:self.dim] - state[0:self.dim], next_location]
             else:
-                next_location = [current_state[0:3] - state[0:3], next_location/np.linalg.norm(next_location)*0.25*self.algorithm.radius]
+                next_location = [current_state[0:self.dim] - state[0:self.dim], next_location/np.linalg.norm(next_location)*0.25*self.algorithm.radius]
         else:
             goal = self.goal-state_offset
-            if np.linalg.norm(goal[0:3]) < self.algorithm.get_layer_size():
+            if np.linalg.norm(goal[0:self.dim]) < self.algorithm.get_layer_size():
                 next_location = [current_state - state_offset, goal]
             else:
                 #t0 = time.time()
@@ -110,12 +112,12 @@ class pathPlanner(basePathPlanner):
 
             for i in range(len(next_location)):
 
-                vel_vector = next_location[i][:] - current_state[0:3]
+                vel_vector = next_location[i][:] - current_state[0:self.dim]
                 vel_vector = vel_vector/np.linalg.norm(vel_vector) * self.avg_speed
         
                 next_state = copy.deepcopy(state_offset)
-                next_state[0:3] += next_location[i][:]
-                next_state[3:6] = vel_vector
+                next_state[0:self.dim] += next_location[i][:]
+                next_state[self.dim:self.dim*2] = vel_vector
                 new_path = self.interpolator([current_state,next_state])
                 if i==0:
                     path = new_path
@@ -127,7 +129,7 @@ class pathPlanner(basePathPlanner):
             if len(path) == 0:
                 return []
             else:
-                filler = np.zeros((len(path),len(state)-3))
+                filler = np.zeros((len(path),len(state)-self.dim))
                 path = np.concatenate((path,filler),axis=1)
         return path
 
@@ -137,8 +139,8 @@ class pathPlanner(basePathPlanner):
             trajectory: list[list[float]],
     ) -> list[float]:
         
-        start = np.array(trajectory[0][0:3])
-        end = np.array(trajectory[-1][0:3])
+        start = np.array(trajectory[0][0:self.dim])
+        end = np.array(trajectory[-1][0:self.dim])
 
         n = int(np.linalg.norm(start-end)//self.max_distance + 1)
 
@@ -156,13 +158,22 @@ class pathPlanner(basePathPlanner):
         if k >= len(trajectory):
             k = len(trajectory)-1
 
-        tck, u = interpolate.splprep([trajectory[:,0],trajectory[:,1], trajectory[:,2]],k=k, s=2)
-        u_fine = np.linspace(0,1,pts)
-        x, y, z = interpolate.splev(u_fine, tck)
-        points = []
+        if self.dim == 3:
+            tck, u = interpolate.splprep([trajectory[:,0],trajectory[:,1], trajectory[:,2]],k=k, s=2)
+            u_fine = np.linspace(0,1,pts)
+            x, y, z = interpolate.splev(u_fine, tck)
+            points = []
 
-        for i,px in enumerate(x):
-            points.append([px,y[i],z[i]])
+            for i,px in enumerate(x):
+                points.append([px,y[i],z[i]])
+        if self.dim == 2:
+            tck, u = interpolate.splprep([trajectory[:,0],trajectory[:,1]])
+            u_fine = np.linspace(0,1,pts)
+            x, y = interpolate.splev(u_fine, tck)
+            points = []
+
+            for i,px in enumerate(x):
+                points.append([px,y[i]])
             
         return points
 

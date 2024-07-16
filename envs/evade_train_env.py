@@ -8,6 +8,7 @@ from envs.sat_gym_env import satGymEnv
 from dynamics.dynamic_object import dynamicObject
 from trajectory_planning.path_planner import pathPlanner
 from sim_prompters.one_v_one_prompter import oneVOnePrompter
+from sim_prompters.twod_one_v_one_prompter import twodOneVOnePrompter
 
 
 class evadeTrainEnv(satGymEnv):
@@ -36,7 +37,9 @@ class evadeTrainEnv(satGymEnv):
 
         sim.set_collision_tolerance(tolerance=1) #IMPORTANT (to prevent evade model from learning to be close to adversary)
 
-        if self.randomize_initial_state:
+        if self.randomize_initial_state and self.dim == 2:
+            self.prompter = twodOneVOnePrompter()
+        if self.randomize_initial_state and self.dim == 3:
             self.prompter = oneVOnePrompter()
 
         self.ctrl_type = ctrl_type
@@ -56,7 +59,7 @@ class evadeTrainEnv(satGymEnv):
             self.sim.set_sat_initial_pos(pos=prompt['sat_pos'])
             self.sim.set_adversary_initial_pos(poses=[prompt['adv_pos']])
             self.sim.set_sat_goal(goal=prompt['sat_goal'])
-            self.initial_goal_distance = np.linalg.norm(prompt['sat_goal'][0:3]-prompt['sat_pos'][0:3])
+            self.initial_goal_distance = np.linalg.norm(prompt['sat_goal'][0:self.dim]-prompt['sat_pos'][0:self.dim])
             self.min_distance = self.initial_goal_distance
         self._episode += 1
         self._step = 0
@@ -71,8 +74,12 @@ class evadeTrainEnv(satGymEnv):
         if 'pos' in self.ctrl_type:
             full_action = self.sim.compute_main_object_control(goal=np.concatenate((scalled_action+self.sim.get_sat_pos(),np.zeros((self.state_dim-3,)))))
         else:
-            full_action = np.zeros((9,))
-            full_action[0:3] = scalled_action
+            if self.dim == 3:
+                full_action = np.zeros((9,))
+                full_action[0:3] = scalled_action
+            if self.dim == 2:
+                full_action = np.zeros((3,))
+                full_action[0:2] = scalled_action
         self.sim.set_sat_control(full_action)
         #preprocess model action for adversary
         adversary_action = self.compute_adversary_control()

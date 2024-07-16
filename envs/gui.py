@@ -33,6 +33,7 @@ class gui(object):
             zlim: list[float] = [-5,5],
             vista: bool = False,
             gif: bool = True,
+            dim: int = 3,
     ):
         self.rate = rate
         self.xlim = xlim
@@ -45,6 +46,7 @@ class gui(object):
         self.incr = 0.5
         self.frames = []
         self.gif = gif
+        self.dim = dim
 
 
     def call_back(self, misc=None):
@@ -63,7 +65,10 @@ class gui(object):
     def __call__(self, pipe):
         print('starting plotter...')
         self._fig = plt.figure(figsize=(10, 10))
-        self._ax1 = self._fig.add_subplot(1, 1, 1, projection='3d')
+        if self.dim == 3:
+            self._ax1 = self._fig.add_subplot(1, 1, 1, projection='3d')
+        if self.dim == 2:
+            self._ax1 = self._fig.add_subplot(1,1,1)
         
         self.pipe = pipe
         timer = self._fig.canvas.new_timer(interval=1)
@@ -72,12 +77,42 @@ class gui(object):
         plt.show()
 
         print('...done')
-        
 
-    def plot_object(self, object1) -> None:
+    def plot_object2d(self, object1) -> None:
         path_skip = 1 #dont plot the first point in goal path (may have to be tuned)
         self._ax1.clear()
         self._ax1.grid(False)
+
+        points = object1['points']
+        lines = object1['lines']
+
+        if 'obstacles' in object1.keys():
+            for center in object1['obstacles']:
+                self._ax1.scatter(center[0],center[1],color='r')
+
+        self._ax1.scatter(points[0][0],points[0][1],color='k')
+        
+        
+        if 'goal' in object1.keys():
+            #plot current goal path
+            if object1['goal'] is not None:
+                self._ax1.plot(object1['goal'][path_skip:,0],object1['goal'][path_skip:,1],color='g')
+        if 'point cloud' in object1.keys():
+            #remove point cloud data outside of axis limits
+            for i,point in reversed(list(enumerate(object1['point cloud']))):
+                if (point[0] < self.xlim[0] or point[0] > self.xlim[1]) or (point[1] < self.ylim[0] or point[1] > self.ylim[1]):
+                    object1['point cloud']=np.delete(object1['point cloud'], i, 0) 
+            self._ax1.scatter(object1['point cloud'][:][:,0],object1['point cloud'][:][:,1], color='r',s=8)
+        
+        if 'final goal' in object1.keys():
+            self._ax1.scatter(object1['final goal'][0],object1['final goal'][1], color='g', s=40)
+      
+
+    def plot_object3d(self, object1) -> None:
+        path_skip = 1 #dont plot the first point in goal path (may have to be tuned)
+        self._ax1.clear()
+        self._ax1.grid(False)
+        print(object1)
         points = object1['points']
         lines = object1['lines']
         
@@ -138,7 +173,10 @@ class gui(object):
 
     def plot(self, objects) -> None:
         self._ax1.clear()
-        self.plot_object(objects)
+        if self.dim == 3:
+            self.plot_object3d(objects)
+        if self.dim == 2:
+            self.plot_object2d(objects)
 
         self._fig.canvas.draw()
 
@@ -256,11 +294,15 @@ class Renderer:
         ylim: list[float] = [-5,5],
         zlim: list[float] = [-5,5],
         vista: bool = False,
+        dim: int = 3,
     ):
         self.vista = vista
+
+        self.dim = dim
+
         if not self.vista:
             self.plot_pipe, plotter_pipe = mp.Pipe()
-            self.plotter = gui(xlim=xlim,ylim=ylim,zlim=zlim,vista=vista)
+            self.plotter = gui(xlim=xlim,ylim=ylim,zlim=zlim,vista=vista,dim=dim)
             self.plot_process = mp.Process(
                 target=self.plotter, args=(plotter_pipe,), daemon=True)
             self.plot_process.start()

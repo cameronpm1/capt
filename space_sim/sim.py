@@ -48,7 +48,7 @@ class Sim():
             collision_tolerance: float = 1,
             perturbation_force: Optional[float] = None,
             plot_cloud: bool = False,
-            control_model_path: Optional[str] = '/home/cameron/magpie_rl/models/3DOFcontrol.zip',
+            control_model_path: Optional[str] = '/home/cameron/magpie_rl/models/3DOFcontrol.zip', #'C:/Users/Cameron Mehlman/Documents/magpie_rl/models/3DOFcontrol.zip',
             track_point_cloud: bool = True,
     ):
         
@@ -64,6 +64,7 @@ class Sim():
         self.time_tolerance = time_tolerance
         self.collision_tolerance = collision_tolerance
         self.obstacles = []
+        self.dim = self.main_object.dim
         
         #point cloud variables
         self.plot_cloud = plot_cloud
@@ -78,7 +79,12 @@ class Sim():
             self.control_method = None
             self.use_controller = False
         elif 'PPO' in control_method:
-            self.control_method = getattr(self,control_method)(control_model_path)
+            kwargs = {
+                'modeldir' : control_model_path, 
+                'max_ctrl' : kwargs['max_ctrl'],
+                'dim' : self.dim,
+                }
+            self.control_method = getattr(self,control_method)(**kwargs)
             self.use_controller = True
         else:
             kwargs['dynamics'] = main_object.dynamics
@@ -101,8 +107,6 @@ class Sim():
         self.current_path = None
         self.expected_time = None
         self.adjustment_count = 0
-
-
     
         self.first_goal = True #has first goal been reached?
 
@@ -195,7 +199,7 @@ class Sim():
         return self.adversary[idx].dynamics.get_vel()
 
     def distance_to_goal(self) -> None:
-        return np.linalg.norm(self.path_planner.goal[0:3]-self.main_object.dynamics.get_pos())
+        return np.linalg.norm(self.path_planner.goal[0:self.dim]-self.main_object.dynamics.get_pos())
     
     def goal_check(self) -> bool:
         if np.linalg.norm(self.path_planner.goal-self.main_object.dynamics.state) < self.goal_tolerance:
@@ -242,7 +246,7 @@ class Sim():
         min_dist = 1000
 
         for point in path:
-            dist = np.linalg.norm(point[0:3]-pos)
+            dist = np.linalg.norm(point[0:self.dim]-pos)
             if dist < min_dist:
                 min_dist = dist
 
@@ -307,13 +311,13 @@ class Sim():
             speed: float,
     ) -> None:
         time = []
-        time.append(np.linalg.norm(self.current_path[0][0:3]-self.main_object.dynamics.get_pos())/speed)
+        time.append(np.linalg.norm(self.current_path[0][0:self.dim]-self.main_object.dynamics.get_pos())/speed)
         for i in range(len(self.current_path)-1):
-            time.append(time[-1] + np.linalg.norm(self.current_path[i+1][0:3]-self.current_path[i][0:3])/speed)
+            time.append(time[-1] + np.linalg.norm(self.current_path[i+1][0:self.dim]-self.current_path[i][0:self.dim])/speed)
         self.expected_time = time
 
     def check_reached_path_point(self) -> None:
-        if np.linalg.norm(self.current_path[0][0:3]-self.main_object.dynamics.state[0:3]) < self.path_point_tolerance:
+        if np.linalg.norm(self.current_path[0][0:self.dim]-self.main_object.dynamics.get_pos()) < self.path_point_tolerance:
             if self.first_goal:
                 self.compute_schedule(self.main_object.dynamics.get_speed())
                 self.first_goal = False
@@ -323,7 +327,7 @@ class Sim():
                 self.compute_schedule(self.main_object.dynamics.get_speed())
                 point_cloud = self.generate_proximal_point_cloud()
                 self.path_planner.update_point_cloud(point_cloud=point_cloud)
-                safe = self.path_planner.check_goal_safety(goals=self.current_path,state=self.main_object.dynamics.state[0:3])
+                safe = self.path_planner.check_goal_safety(goals=self.current_path,state=self.main_object.dynamics.get_pos())
                 if not safe:
                     self.adjustment_count += 1
                     self.current_path = np.array([])
@@ -429,7 +433,7 @@ class Sim():
         new_cloud = point_cloud
 
         for i,goal in enumerate(self.current_path):
-            rel_goal = goal[0:3]-obs_pos
+            rel_goal = goal[0:self.dim]-obs_pos
             min_distance, dist_traveled = line_to_point(line = obs_vel, point = rel_goal)
             if dist_traveled < 0:
                 continue
@@ -513,7 +517,9 @@ class Sim():
         def __init__(
                 self,
                 modeldir: str,
+                max_ctrl: list[float],
                 scale: str = 'clip',
+                dim: int = 3,
         ):
             
             logger.info('initializing PPO controller')
@@ -521,13 +527,14 @@ class Sim():
             self.model = PPO.load(modeldir)
             self.scaling_function = getattr(self,'_'+scale)
 
-            self.max_ctrl = [0.3,0.3,0.3]
+            self.max_ctrl = max_ctrl
             self.state = None
 
             self.current_goal = None
             self.rel_goal = None
             self.rel_state = None
             self.count = 0
+            self.dim = dim
 
         def update_state(self):
             pass
@@ -546,19 +553,22 @@ class Sim():
                 self.rel_state = state.copy()
                 self.current_goal = goal.copy()
                 self.rel_goal = np.zeros((goal.size,))
-                self.rel_goal[0:3] = self.current_goal[0:3] - state[0:3]
+                self.rel_goal[0:self.dim] = self.current_goal[0:self.dim] - state[0:self.dim]
                 self.count = 0
 
             self.count += 1                   
             
             obs_state = state.copy()
-            obs_state[0:3] -= self.rel_state[0:3]
+            obs_state[0:self.dim] -= self.rel_state[0:self.dim]
 
             obs = np.concatenate((self.rel_goal,obs_state), axis=None) 
             action, _states = self.model.predict(obs)
             scalled_action = self.scaling_function(action)
-            full_action = np.zeros((9,))
-            full_action[0:3] = scalled_action 
+            if self.dim == 3:
+                full_action = np.zeros((9,))
+            if self.dim == 2:
+                full_action = np.zeros((3,))
+            full_action[0:self.dim] = scalled_action 
 
             return full_action
 
@@ -594,6 +604,7 @@ class Sim():
                 dynamics: Type[baseDynamics], #only works w/ quadcopterDynamics satelliteDynamics not supported yet
                 upper_state_bounds: list[float],
                 lower_state_bounds: list[float],
+                max_ctrl: Optional[list[float]],
                 upper_control_bounds: Optional[list[float]] = None,
                 lower_control_bounds: Optional[list[float]] = None,
                 horizon: int = 20,
@@ -639,7 +650,6 @@ class Sim():
         
             cost = 0
             constr = [self.x[:, 0] == self.x_init]
-
             for t in range(self.horizon):
                 cost += cp.quad_form(goal - self.x[:, t], self.dynamics.Q) + cp.quad_form(self.u[:, t], self.dynamics.R)
                 constr += [self.state_bounds[0] <= self.x[:, t], self.x[:, t] <= self.state_bounds[1]]

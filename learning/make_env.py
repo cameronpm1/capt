@@ -17,6 +17,7 @@ from logger import getlogger
 from envs.gui import Renderer
 from space_sim.sim import Sim
 from envs.sat_gym_env import satGymEnv
+from dynamics.twod_dynamics import twodDynamics
 from dynamics.static_object import staticObject
 from dynamics.dynamic_object import dynamicObject
 from dynamics.sat_dynamics import satelliteDynamics
@@ -99,34 +100,48 @@ def make_env(filedir: str, cfg: DictConfig):
                     pos = cfg['obstacles'][obstacle]['pos'])
                 
                 sim.add_obstacle(obstacle=temp_obstacle)
-    
-    orbit_params = correct_orbit_units(cfg['satellite']['dynamics']['initial_orbit'])
 
-    dynamics = satelliteDynamics(
-        timestep = cfg['satellite']['dynamics']['timestep'],
-        horizon = cfg['satellite']['dynamics']['horizon'],
-        pos = np.array(cfg['satellite']['dynamics']['pos']),
-        vel = np.array(cfg['satellite']['dynamics']['vel']),
-        initial_orbit = orbit_params,
-        initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
-        spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
-        max_control = cfg['satellite']['dynamics']['control_lim']
-    )
+    if cfg['env']['dim'] == 2:
+        dynamics = twodDynamics(
+            timestep = cfg['satellite']['dynamics']['timestep'],
+            horizon = cfg['satellite']['dynamics']['horizon'],
+            pos = np.array(cfg['satellite']['dynamics']['pos']),
+            vel = np.array(cfg['satellite']['dynamics']['vel']),
+            euler = np.array(cfg['satellite']['dynamics']['euler']),
+            data = cfg['satellite']['dynamics']['data'],
+            max_control = cfg['satellite']['dynamics']['control_lim']
+        )
+    else:
+        orbit_params = correct_orbit_units(cfg['satellite']['dynamics']['initial_orbit'])
+
+        dynamics = satelliteDynamics(
+            timestep = cfg['satellite']['dynamics']['timestep'],
+            horizon = cfg['satellite']['dynamics']['horizon'],
+            pos = np.array(cfg['satellite']['dynamics']['pos']),
+            vel = np.array(cfg['satellite']['dynamics']['vel']),
+            initial_orbit = orbit_params,
+            initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
+            spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
+            max_control = cfg['satellite']['dynamics']['control_lim']
+        )
+        
 
     satellite = dynamicObject(
         dynamics = dynamics,
         mesh = {'points':np.array(cfg['satellite']['mesh']['points']),'lines':np.array(cfg['satellite']['mesh']['lines'])},
         name = cfg['satellite']['name'],
         pos = np.array(cfg['satellite']['dynamics']['pos']),
+        dim = cfg['env']['dim'],
     )
 
     path_planner = pathPlanner(
         goal_state = cfg['path_planner']['goal_state'],
         path_planning_algorithm = cfg['path_planner']['path_planning_algorithm'],
-        kwargs = cfg['path_planner']['kwargs'],
+        kwargs = OmegaConf.to_container(cfg['path_planner']['kwargs'], resolve=True),
         max_distance = cfg['path_planner']['max_distance'],
         interpolation_method = cfg['path_planner']['interpolation_method'],
-        n = cfg['path_planner']['n'] 
+        n = cfg['path_planner']['n'],
+        dim = cfg['env']['dim'],
     )
 
     kwargs = {}
@@ -159,25 +174,44 @@ def make_env(filedir: str, cfg: DictConfig):
         if bool(cfg['adversary'][True]):
             logger.info('Initializing adversarial agents')
             for adversary in cfg['adversary']['adversaries']:
-                stl = pv.read(filedir+'/'+cfg['adversary']['adversaries'][adversary]['stl'])
-                stl.points *= cfg['adversary']['adversaries'][adversary]['stl_scale']
 
-                adversary_dynamics = satelliteDynamics(
-                    timestep = cfg['satellite']['dynamics']['timestep'],
-                    horizon = cfg['satellite']['dynamics']['horizon'],
-                    pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
-                    vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
-                    initial_orbit = orbit_params,
-                    initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
-                    spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
-                    max_control = cfg['adversary']['adversaries'][adversary]['control_lim'],
-                )
+                if cfg['env']['dim'] == 2:
+                    stl = {
+                        'points':np.array(cfg['adversary']['adversaries'][adversary]['mesh']['points']),
+                        'lines':np.array(cfg['adversary']['adversaries'][adversary]['mesh']['lines'])
+                        }
 
+                    adversary_dynamics = twodDynamics(
+                        timestep = cfg['satellite']['dynamics']['timestep'],
+                        horizon = cfg['satellite']['dynamics']['horizon'],
+                        pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
+                        vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
+                        euler = np.array(cfg['adversary']['adversaries'][adversary]['euler']),
+                        data = cfg['adversary']['adversaries'][adversary]['data'],
+                        max_control = cfg['adversary']['adversaries'][adversary]['control_lim']
+                    )
+                else:
+                    stl = pv.read(filedir+'/'+cfg['adversary']['adversaries'][adversary]['stl'])
+                    stl.points *= cfg['adversary']['adversaries'][adversary]['stl_scale']
+
+                    adversary_dynamics = satelliteDynamics(
+                        timestep = cfg['satellite']['dynamics']['timestep'],
+                        horizon = cfg['satellite']['dynamics']['horizon'],
+                        pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
+                        vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
+                        initial_orbit = orbit_params,
+                        initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
+                        spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
+                        max_control = cfg['adversary']['adversaries'][adversary]['control_lim'],
+                    )
+
+                
                 adversary = dynamicObject(
                     dynamics = adversary_dynamics, 
                     mesh = stl,
                     name = cfg['adversary']['adversaries'][adversary]['name'], 
-                    pos = cfg['adversary']['adversaries'][adversary]['pos']
+                    pos = cfg['adversary']['adversaries'][adversary]['pos'],
+                    dim = cfg['env']['dim'],
                 )
      
                 sim.create_adversary(
@@ -230,25 +264,43 @@ def make_env(filedir: str, cfg: DictConfig):
         if bool(cfg['adversary'][True]):
             logger.info('Initializing adversarial agents')
             for adversary in cfg['adversary']['adversaries']:
-                stl = pv.read(filedir+'/'+cfg['adversary']['adversaries'][adversary]['stl'])
-                stl.points *= cfg['adversary']['adversaries'][adversary]['stl_scale']
 
-                adversary_dynamics = satelliteDynamics(
-                    timestep = cfg['satellite']['dynamics']['timestep'],
-                    horizon = cfg['satellite']['dynamics']['horizon'],
-                    pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
-                    vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
-                    initial_orbit = orbit_params,
-                    initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
-                    spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
-                    max_control = cfg['adversary']['adversaries'][adversary]['control_lim'],
-                )
+                if cfg['env']['dim'] == 2:
+                    stl = {
+                        'points':np.array(cfg['adversary']['adversaries'][adversary]['mesh']['points']),
+                        'lines':np.array(cfg['adversary']['adversaries'][adversary]['mesh']['lines'])
+                        }
+
+                    adversary_dynamics = twodDynamics(
+                        timestep = cfg['satellite']['dynamics']['timestep'],
+                        horizon = cfg['satellite']['dynamics']['horizon'],
+                        pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
+                        vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
+                        euler = np.array(cfg['adversary']['adversaries'][adversary]['euler']),
+                        data = cfg['adversary']['adversaries'][adversary]['data'],
+                        max_control = cfg['adversary']['adversaries'][adversary]['control_lim']
+                    )
+                else:
+                    stl = pv.read(filedir+'/'+cfg['adversary']['adversaries'][adversary]['stl'])
+                    stl.points *= cfg['adversary']['adversaries'][adversary]['stl_scale']
+
+                    adversary_dynamics = satelliteDynamics(
+                        timestep = cfg['satellite']['dynamics']['timestep'],
+                        horizon = cfg['satellite']['dynamics']['horizon'],
+                        pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
+                        vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
+                        initial_orbit = orbit_params,
+                        initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
+                        spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
+                        max_control = cfg['adversary']['adversaries'][adversary]['control_lim'],
+                    )
 
                 adversary = dynamicObject(
                     dynamics = adversary_dynamics, 
                     mesh = stl,
                     name = cfg['adversary']['adversaries'][adversary]['name'], 
-                    pos = cfg['adversary']['adversaries'][adversary]['pos']
+                    pos = cfg['adversary']['adversaries'][adversary]['pos'],
+                    dim = cfg['env']['dim'],
                 )
                     
                 sim.create_adversary(

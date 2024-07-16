@@ -3,6 +3,7 @@ import numpy as np
 from typing import Dict, Any, Type
 
 from trajectory_planning.polar_histogram_3D import polarHistogram3D
+from trajectory_planning.polar_histogram_2D import polarHistogram2D
 
 class basePathPlanner():
 
@@ -10,7 +11,11 @@ class basePathPlanner():
             self,
             path_planning_algorithm: str,
             kwargs: Dict[str, Any],
+            dim: int = 3,
     ):
+        self.dim = dim
+
+        kwargs['dim'] = self.dim
         self.algorithm = getattr(self,path_planning_algorithm)(**kwargs)
 
     class VFH():
@@ -29,14 +34,24 @@ class basePathPlanner():
                 min_obstacle_distance: float = 1,
                 probability_tolerance: float = 0.05,
                 distance_tolerance: float = 0.2,
+                dim: int = 3
         ):
+            self.dim = dim
 
-            self.histogram = polarHistogram3D(radius=radius, 
-                                              layers=layers, 
-                                              angle_sections=angle_sections,
-                                              probability_tolerance=probability_tolerance,
-                                              distance_tolerance=distance_tolerance,
-                                              )
+            if self.dim == 3:
+                self.histogram = polarHistogram3D(radius=radius, 
+                                                layers=layers, 
+                                                angle_sections=angle_sections,
+                                                probability_tolerance=probability_tolerance,
+                                                distance_tolerance=distance_tolerance,
+                                                )
+            if self.dim == 2:
+                self.histogram = polarHistogram2D(radius=radius, 
+                                                layers=layers, 
+                                                angle_sections=angle_sections,
+                                                probability_tolerance=probability_tolerance,
+                                                distance_tolerance=distance_tolerance,
+                                                )
             self.min_distance = min_obstacle_distance
             self.iterations = iterations
             self.layers = layers
@@ -61,9 +76,9 @@ class basePathPlanner():
         ) -> list[float]:
             
             
-            off_set = [0,0,0]
+            off_set = np.zeros((self.dim,))
             computed_points = [off_set]
-            filler = np.zeros((goal.size-3,))
+            filler = np.zeros((goal.size-self.dim,))
 
             past_bin = None
             past_bin2 = None
@@ -92,8 +107,8 @@ class basePathPlanner():
                                 if j >= 1:
                                     past_bin2 = past_bin
                                 past_bin = [int(candidate[1]),int(candidate[2])]
-                            target, done = self.histogram.get_target_point_from_bin(bin=[candidate[1],candidate[2]],goal=goal[0:3],layer=j)
-                            computed_points.append(target+off_set)
+                            target, done = self.histogram.get_target_point_from_bin(bin=[candidate[1],candidate[2]],goal=goal[0:self.dim],layer=j)
+                            computed_points.append(target[0:self.dim]+off_set)
                             break
                     if done:
                         break

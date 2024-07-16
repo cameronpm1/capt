@@ -7,6 +7,7 @@ from envs.sat_gym_env import satGymEnv
 from dynamics.dynamic_object import dynamicObject
 from trajectory_planning.path_planner import pathPlanner
 from sim_prompters.one_v_one_prompter import oneVOnePrompter
+from sim_prompters.twod_one_v_one_prompter import twodOneVOnePrompter
 
 
 class adversaryTrainEnv(satGymEnv):
@@ -32,7 +33,9 @@ class adversaryTrainEnv(satGymEnv):
             randomize_initial_state=randomize_initial_state,
         )
 
-        if self.randomize_initial_state:
+        if self.randomize_initial_state and self.dim == 2:
+            self.prompter = twodOneVOnePrompter()
+        if self.randomize_initial_state and self.dim == 3:
             self.prompter = oneVOnePrompter()
 
         self.ctrl_type = ctrl_type
@@ -49,7 +52,7 @@ class adversaryTrainEnv(satGymEnv):
             self.sim.set_sat_initial_pos(pos=prompt['sat_pos'])
             self.sim.set_adversary_initial_pos(poses=[prompt['adv_pos']])
             self.sim.set_sat_goal(goal=prompt['sat_goal'])
-            self.initial_goal_distance = np.linalg.norm(prompt['sat_goal'][0:3]-prompt['sat_pos'][0:3])
+            self.initial_goal_distance = np.linalg.norm(prompt['sat_goal'][0:self.dim]-prompt['sat_pos'][0:self.dim])
         self._episode += 1
         self._step = 0
         self.sim.reset()
@@ -64,8 +67,12 @@ class adversaryTrainEnv(satGymEnv):
         if 'pos' in self.ctrl_type:
             full_action = self.sim.compute_adversary_control(goal=np.concatenate((scalled_action+self.get_adversary_pos(),np.zeros((self.state_dim-3,)))))
         else:
-            full_action = np.zeros((9,))
-            full_action[0:3] = scalled_action
+            if self.dim == 3:
+                full_action = np.zeros((9,))
+                full_action[0:3] = scalled_action
+            if self.dim == 2:
+                full_action = np.zeros((3,))
+                full_action[0:2] = scalled_action
         self.sim.set_adversary_control([full_action])
         #step
         self.sim.step()
@@ -79,7 +86,7 @@ class adversaryTrainEnv(satGymEnv):
 
     
     def _end_episode(self) -> bool:
-        proximity_tol = 15
+        proximity_tol = 100 #15
         
         terminated, truncated = super()._end_episode()
         dist = self.sim.distance_to_obstacle(idx=0)

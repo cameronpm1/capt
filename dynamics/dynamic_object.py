@@ -18,7 +18,7 @@ class dynamicObject(staticObject):
             pos: list[float] = [0,0,0],
             dim: int = 3,
     ):
-        
+
         super().__init__(
             mesh = mesh,
             name = name,

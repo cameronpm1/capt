@@ -32,6 +32,7 @@ def runSpaceSim(
                 ylim = [-5,30],
                 zlim = [-10,10],
                 vista = False,
+                dim = env.unwrapped.dim,
             )
             renderer.plot(env.render())
 
@@ -49,7 +50,7 @@ def runSpaceSim(
 
         for i in range(timesteps):
             if modeldir is None:
-                action = np.zeros(3,)
+                action = np.zeros(env.unwrapped.dim,)
             else:
                 action, _states = model.predict(obs)
             obs,rewards,terminated,truncated,_ = env.step(action)
@@ -60,7 +61,7 @@ def runSpaceSim(
                 timestep = i
                 break
             if render:
-                renderer.plot(env.render())
+                renderer.plot(env.unwrapped.render())
 
         print('Simulation ended at timestep',timestep)
     

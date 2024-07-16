@@ -55,6 +55,7 @@ class satGymEnv(gymnasium.Env):
 
         #Initialize Simulation
         self.sim = sim
+        self.dim = self.sim.dim
 
         # Control clipping
         self.max_ctrl = max_ctrl

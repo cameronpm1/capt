@@ -24,6 +24,7 @@ class staticObject():
             self.vista = True
         else:
             self.vista = False
+        self.vista_flag = False
 
         self.name = name
         self.mesh = mesh
@@ -31,7 +32,7 @@ class staticObject():
         self.temp_mesh = copy.deepcopy(mesh)
         self.point_cloud = None
         self.radius = None
-        self.dim = 3
+        self.dim = dim
 
     def get_name(self) -> str:
         return self.name
@@ -49,7 +50,9 @@ class staticObject():
         '''
 
         if not self.vista:
-            print('Error: cannot generate point cloud data from simplified mesh, use pyvista, using corner points')
+            if not self.vista_flag:
+                print('Warning: cannot generate point cloud data from simplified mesh, for point cloud augmentation use pyvista. Using corner points')
+                self.vista_flag = True
             return self.temp_mesh['points']
 
         #calculate face areas and sample faces to generate points on

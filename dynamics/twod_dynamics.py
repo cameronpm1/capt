@@ -105,7 +105,6 @@ class twodDynamics(baseDynamics):
     def R(self):
         # Actuator cost
         R = np.eye(self.control.size)*.1
-        R[4, 4] = 0.001
         return R
 
     '''
