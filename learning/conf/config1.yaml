@@ -1,0 +1,111 @@
+#defaults:  
+#  - _self_  
+#  - override hydra/hydra_logging: disabled  
+#  - override hydra/job_logging: disabled
+
+seed: 1 # set experiment seed
+
+logging:
+  job:
+    name: pos_test # set job name
+  run:
+    dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
+
+alg:
+  type: ppo
+  nenv:  1
+  lr: 0.0001
+  batch_size: 256
+  gamma: 0.99
+  pi: [128, 128]
+  vf: [128, 128]
+  device: cpu # cpu, cuda
+  total_timesteps: 20e6 #20e6
+  
+
+
+env:
+  scenario: adversary #control, adversary, evade
+  dim: 3
+  max_timestep: 512
+  max_control: [0.3,0.3,0.3]
+  ctrl_type: thrust
+  action_scaling: clip
+  random_initial_state: True
+  adversary_model_path: /home/cameron/magpie_rl/logs/adversary_rew3/2024-05-31/model.zip #/home/cameron/magpie_rl/logs/adversary_rew2/2024-05-28/midtrain_model_17000000_steps.zip
+
+satellite:
+  name: satellite
+  mesh: 
+    points: [[1.0,0.5,0.5],[-1.0,0.5,0.5],[1.0,0.5,-0.5],[-1.0,0.5,-0.5],[1.0,-0.5,0.5],[-1.0,-0.5,0.5],[1.0,-0.5,-0.5],[-1.0,-0.5,-0.5]]
+    lines: [[0,1],[0,2],[1,3],[2,3],[4,5],[4,6],[5,7],[6,7],[0,4],[1,5],[2,6],[3,7]]
+  dynamics:
+    timestep: 3
+    horizon: 5
+    pos: [0, 0, 0]
+    vel: [0, 0, 0] #[0.00147821,  0.00120112,  0.00023816] #
+    initial_orbit:
+      a: 35786
+      ecc: 0.0
+      inc: 1.85
+      raan: 49.526
+      argp: 286.537
+      nu: 0
+    initial_state_data:
+      momentum_wheel_vel: [0,0,0]
+    spacecraft_data:
+      J_sc: [1.7e4, 2.7e4, 2.7e4]
+      alpha: [0.8, 0.8, 0.8]
+      mass: 4000
+    control_lim: [0.5,0.5,0.5,0.1,0.1,0.1,1000,1000,1000]
+
+path_planner:
+  goal_state: [1,20,-4,0,0,0,0,0,0,0,0,0,0,0,0] # [0.00535069,  0.16561701, -0.04535887,0,0,0,0,0,0,0,0,0,0,0,0] #
+  path_planning_algorithm: VFH
+  kwargs:
+    radius: 10
+    min_obstacle_distance: 4
+    iterations: 1
+    distance_tolerance: 0.5
+    layers: 7
+    angle_sections: 12
+  max_distance: 0.3
+  interpolation_method: spline
+  n: 25
+
+sim:
+  control_method: PPOC
+  point_cloud_size: 50
+  path_point_tolerance: 0.1
+  point_cloud_radius: 30
+  goal_tolerance: 0.1
+  kwargs:
+    upper_state_bounds: [1e10,  1e10,  1e10, 1e10, 1e10, 1e10, 0.2, 0.2, 0.2, .25, .25, .25, 1000, 1000, 1000]
+    lower_state_bounds: [-1e10,  -1e10,  -1e10, -1e10, -1e10, -1e10, -0.2, -0.2, -0.2, -.25, -.25, -.25, -1000, -1000, -1000]
+    horizon: 8
+    valued_actions: 1
+    max_ctrl: [0.5,0.5,0.5]
+
+adversary:
+  on: True
+  adversaries:
+    adversary1:
+      name: adversary1
+      pos: [-2, 7, 0]
+      vel: [0, 0, 0]
+      stl: stl_files/ball_simplified.stl
+      stl_scale: 0.001
+      control_lim: [0.3,0.3,0.3,0.1,0.1,0.1,1000,1000,1000]
+
+obstacles:
+
+#IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
+random:
+  on: False
+  n: 10
+  vel: 0.0005
+  x_range: [-7,7] #[-7,7]
+  y_range: [4,18] #[5,15]
+  z_range: [-7,7] #[-7,7]
+  stl: stl_files/ball_simplified.stl
+  stl_scale: 0.001
