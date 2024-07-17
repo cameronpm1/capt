@@ -12,7 +12,7 @@ logging:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
-  type: ppo
+  type: sac
   nenv:  1
   lr: 0.0001
   batch_size: 256
@@ -25,7 +25,7 @@ alg:
 
 
 env:
-  scenario: adversary #control, adversary, evade
+  scenario: control #control, adversary, evade
   max_timestep: 512
   max_control: [0.3,0.3]
   ctrl_type: thrust

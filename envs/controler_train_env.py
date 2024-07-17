@@ -52,8 +52,11 @@ class controlerTrainEnv(satGymEnv):
     def step(self, action):
         #scale sat action and set action
         scalled_action = self.scaling_function(action)
-        full_action = np.zeros((9,))
-        full_action[0:3] = scalled_action
+        if self.dim == 3:
+            full_action = np.zeros((9,))
+        if self.dim ==2:
+            full_action = np.zeros((3,))
+        full_action[0:self.dim] = scalled_action
         self.sim.set_sat_control(full_action)
         #take step
         self.sim.step()
