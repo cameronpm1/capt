@@ -18,6 +18,7 @@ class controlerTrainEnv(satGymEnv):
             step_duration: float,
             max_episode_length: int,
             max_ctrl: list[float],
+            total_train_steps: float,
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
     ):
@@ -26,6 +27,7 @@ class controlerTrainEnv(satGymEnv):
             step_duration=step_duration,
             max_episode_length=max_episode_length,
             max_ctrl=max_ctrl,
+            total_train_steps=total_train_steps,
             action_scaling_type=action_scaling_type,
             randomize_initial_state=randomize_initial_state,
         )
