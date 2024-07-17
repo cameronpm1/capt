@@ -356,7 +356,6 @@ def make_env(filedir: str, cfg: DictConfig):
 
         filter_keys=[
             'sat_state',
-            'adversary0_state',
             'goal_state'
         ]
 
