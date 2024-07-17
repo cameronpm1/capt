@@ -107,18 +107,18 @@ class pathPlanner(basePathPlanner):
                 next_location = self.algorithm.compute_next_point(points=point_cloud, goal=goal)
                 #print(time.time() - t0)
                 
-        if self.interpolation_method == 'linear':
+        if self.interpolation_method == 'linear' or len(next_location) < 3:
             path = np.array([])
 
             for i in range(len(next_location)):
 
-                vel_vector = next_location[i][:] - current_state[0:self.dim]
+                vel_vector = next_location[i][0:self.dim] - current_state[0:self.dim]
                 vel_vector = vel_vector/np.linalg.norm(vel_vector) * self.avg_speed
         
                 next_state = copy.deepcopy(state_offset)
-                next_state[0:self.dim] += next_location[i][:]
+                next_state[0:self.dim] += next_location[i][0:self.dim]
                 next_state[self.dim:self.dim*2] = vel_vector
-                new_path = self.interpolator([current_state,next_state])
+                new_path = self.linear_interpolator([current_state,next_state])
                 if i==0:
                     path = new_path
                 else:
@@ -157,7 +157,7 @@ class pathPlanner(basePathPlanner):
         k = 2
         if k >= len(trajectory):
             k = len(trajectory)-1
-
+        #print(trajectory,'######################')
         if self.dim == 3:
             tck, u = interpolate.splprep([trajectory[:,0],trajectory[:,1], trajectory[:,2]],k=k, s=2)
             u_fine = np.linspace(0,1,pts)

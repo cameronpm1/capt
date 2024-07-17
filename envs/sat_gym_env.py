@@ -137,18 +137,18 @@ class satGymEnv(gymnasium.Env):
         # Satellite
         obs['sat_state'] = self.sim.get_sat_pos().copy()[0:6]
 
-        obs['goal_state'] = np.array(self.sim.get_sat_goal().copy())[0:3]
+        obs['goal_state'] = np.array(self.sim.get_sat_goal().copy())[0:self.dim]
 
         a = 0
         o = 0
         for obstacle in self.sim.obstacles:
             #Adversaries
             if 'adversary' in obstacle.get_name():
-                obs['adversary'+str(a)+'_state'] = obstacle.get_state().copy()[0:6]
+                obs['adversary'+str(a)+'_state'] = obstacle.get_state().copy()[0:self.dim*2]
                 a += 1
             #Obstacles
             if 'obstacle' in obstacle.get_name():
-                obs['obstacle'+str(o)+'_state'] = obstacle.get_state().copy()[0:6]
+                obs['obstacle'+str(o)+'_state'] = obstacle.get_state().copy()[0:self.dim*2]
                 o += 1
         return obs
 

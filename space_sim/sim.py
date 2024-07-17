@@ -139,7 +139,7 @@ class Sim():
         for obstacle in self.obstacles:
             if isinstance(obstacle,dynamicObject):
                 obstacle.step()
-        if self.dynamic_obstacles and self.track_point_cloud and self.path_planner.distance_to_goal(state=self.main_object.dynamics.get_state()) > 1:
+        if self.dim == 3 and self.dynamic_obstacles and self.track_point_cloud and self.path_planner.distance_to_goal(state=self.main_object.dynamics.get_state()) > 1:
             self.update_point_cloud(propagate=True)
         else:
             self.update_point_cloud(propagate=False)
@@ -450,11 +450,11 @@ class Sim():
                         std /= len(point_cloud)
 
                         vel_step = obs_vel/obs_speed * std
-                        propogations = np.ceil((dist_traveled*(1-multiplier) + obs_speed*t_pos)/std)
+                        propagations = np.ceil((dist_traveled*(1-multiplier) + obs_speed*t_pos)/std)
                         forward_step = (obs_vel/obs_speed * dist_traveled*multiplier)
                         new_cloud += forward_step
-                        for j in range(int(propogations)):
-                            prop_obs = (point_cloud - obs_pos)*(j/propogations*3+1) + obs_pos + (j+1)*vel_step + forward_step
+                        for j in range(int(propagations)):
+                            prop_obs = (point_cloud - obs_pos)*(j/propagations*3+1) + obs_pos + (j+1)*vel_step + forward_step
                             new_cloud = np.concatenate((new_cloud,prop_obs))
                         return new_cloud
         

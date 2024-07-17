@@ -9,7 +9,7 @@ from learning.run_space_sim import runSpaceSim
 
 DIRECTORY = None
 
-@hydra.main(config_path="learning/conf", config_name="config1", version_base='1.1')
+@hydra.main(config_path="learning/conf", config_name="config2", version_base='1.1')
 def train_rl_model(cfg: DictConfig):
     train(cfg,DIRECTORY)
 
@@ -29,5 +29,5 @@ def run_rl_model(cfg: DictConfig):
 if __name__ == "__main__":
     torch.set_num_threads(12)
     DIRECTORY = os.getcwd()
-    run_rl_model()
+    train_rl_model()
     
