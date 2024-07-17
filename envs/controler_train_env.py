@@ -7,6 +7,7 @@ from envs.sat_gym_env import satGymEnv
 from dynamics.dynamic_object import dynamicObject
 from trajectory_planning.path_planner import pathPlanner
 from sim_prompters.control_prompter import controlPrompter
+from sim_prompters.twod_control_prompter import twodControlPrompter
 
 
 class controlerTrainEnv(satGymEnv):
@@ -29,7 +30,9 @@ class controlerTrainEnv(satGymEnv):
             randomize_initial_state=randomize_initial_state,
         )
 
-        if self.randomize_initial_state:
+        if self.randomize_initial_state and self.dim == 2:
+            self.prompter = twodControlPrompter()
+        if self.randomize_initial_state and self.dim == 3:
             self.prompter = controlPrompter()
 
 

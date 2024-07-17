@@ -359,7 +359,7 @@ def make_env(filedir: str, cfg: DictConfig):
             'adversary0_state',
             'goal_state'
         ]
-    
+
 
     env = FilterObservation(
         env,
