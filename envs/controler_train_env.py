@@ -67,36 +67,16 @@ class controlerTrainEnv(satGymEnv):
 
         return obs, rew, terminated, truncated, {'done': (terminated, truncated), 'reward': rew}
 
-    '''
-    def seed(self, seed=None):
-        # Save the seed so we can re-seed during un-pickling
-        self._seed = seed
-
-        # Hash the seed to avoid any correlations
-        #seed = seeding.hash_seed(seed)
-
-        # Seed environment components with randomness
-        seeds =  super().seed()
-
-        if self.randomize_initial_state:
-            print('trying!!!!!!!!!!!!!!!!!!!!!!')
-            seeds.extend(self.prompter.seed(seed))
-
-        return seeds
-    '''
-
     def _get_obs(self) -> OrderedDict:
         """Return observation
 
            only returns sat_state and goal
         """
 
-        obs = OrderedDict()
+        obs = super()._get_obs()
 
         # Satellite
-        obs['sat_state'] = self.sim.main_object.get_state().copy()
-
-        obs['goal_state'] = np.array(self.sim.get_sat_goal().copy())
+        obs['rel_goal_state'] = obs['goal_state'] - obs['sat_state']
 
         return obs
     

@@ -185,6 +185,9 @@ class Sim():
 
     def get_sat_pos(self) -> list[float]:
         return self.main_object.dynamics.get_pos()
+    
+    def get_sat_state(self) -> list[float]:
+        return self.main_object.dynamics.get_state()
 
     def get_adversary_pos(
         self,

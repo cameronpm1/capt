@@ -135,9 +135,9 @@ class satGymEnv(gymnasium.Env):
         obs = OrderedDict()
 
         # Satellite
-        obs['sat_state'] = self.sim.get_sat_pos().copy()[0:6]
+        obs['sat_state'] = self.sim.get_sat_state().copy()[0:self.dim*2]
 
-        obs['goal_state'] = np.array(self.sim.get_sat_goal().copy())[0:self.dim]
+        obs['goal_state'] = np.array(self.sim.get_sat_goal().copy())[0:self.dim*2]
 
         a = 0
         o = 0
