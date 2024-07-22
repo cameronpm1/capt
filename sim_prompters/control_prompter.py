@@ -1,11 +1,16 @@
 import numpy as np
 from gymnasium.utils import seeding
+from sim_prompters.twod_control_prompter import twodControlPrompter
 
 
-class controlPrompter():
+class controlPrompter(twodControlPrompter):
     
     def __init__(self):
-        self._np_random = None
+        super().__init__()
+
+        self.sat_range = [0,0]
+        self.vel_range = [0,0.01]
+        self.goal_range = [0.1,0.3]
 
     def seed(self, seed=None):
         seeds = []
@@ -22,22 +27,18 @@ class controlPrompter():
         return vec
 
     def prompt(self):
-        sat_range = [0,0]
-        vel_range = [0,0.01]
-        goal_range = [0.1,0.3]
-
         prompt = {}
 
         vec = self.random_unit_vec()
-        sat_pos = vec * (self._np_random.random()*(sat_range[1]-sat_range[0]) + sat_range[0])
+        sat_pos = vec * (self._np_random.random()*(self.sat_range[1]-self.sat_range[0]) + self.sat_range[0])
         prompt['sat_pos'] = sat_pos
 
         vec = self.random_unit_vec()
-        sat_vel = vec * (self._np_random.random()*(vel_range[1]-vel_range[0]) + vel_range[0])
+        sat_vel = vec * (self._np_random.random()*(self.vel_range[1]-self.vel_range[0]) + self.vel_range[0])
         prompt['sat_vel'] = sat_vel
 
         vec = self.random_unit_vec()
-        goal_vec = vec * (self._np_random.random()*(goal_range[1]-goal_range[0]) + goal_range[0])
+        goal_vec = vec * (self._np_random.random()*(self.goal_range[1]-self.goal_range[0]) + self.goal_range[0])
         goal_pos = np.zeros((15,))
         goal_pos[0:3] = sat_pos + goal_vec
         prompt['sat_goal'] = goal_pos

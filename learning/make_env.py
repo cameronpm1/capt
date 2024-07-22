@@ -48,9 +48,6 @@ def make_env(filedir: str, cfg: DictConfig):
         if bool(cfg['random'][True]):
             logger.info('Initializing random obstacles')
             for n in range(cfg['random']['n']):
-                stl = pv.read(cfg['random']['stl'])
-                stl.points *= cfg['random']['stl_scale']
-
                 xlim = cfg['random']['x_range']
                 ylim = cfg['random']['y_range']
                 zlim = cfg['random']['z_range']
@@ -70,10 +67,14 @@ def make_env(filedir: str, cfg: DictConfig):
 
                     temp_obstacle = dynamicObject(
                         dynamics = obs_dynamics, 
-                        mesh = mesh = {'points':np.array([pos[0:2]]),'lines':np.array([])},
-                        name = 'rand'+str(n), 
+                        mesh = {'points':np.array([pos[0:2]]),'lines':np.array([])},
+                        name = 'obstacle'+str(n), 
                         pos = pos)
+                    
                 else:
+                    stl = pv.read(cfg['random']['stl'])
+                    stl.points *= cfg['random']['stl_scale']
+
                     obs_dynamics = satelliteDynamics(
                         timestep = cfg['satellite']['dynamics']['timestep'],
                         horizon = cfg['satellite']['dynamics']['horizon'],
@@ -89,7 +90,7 @@ def make_env(filedir: str, cfg: DictConfig):
                         mesh = stl,
                         name = 'rand'+str(n), 
                         pos = pos)
-                
+
                 sim.add_obstacle(obstacle=temp_obstacle)
         else:
             logger.info('Initializing obstacles')
@@ -194,6 +195,7 @@ def make_env(filedir: str, cfg: DictConfig):
             point_cloud_radius = cfg['sim']['point_cloud_radius'],
             control_method = cfg['sim']['control_method'],
             goal_tolerance = cfg['sim']['goal_tolerance'],
+            collision_tolerance = cfg['sim']['collision_tolerance'],
             kwargs = kwargs,
         )
 
@@ -283,6 +285,7 @@ def make_env(filedir: str, cfg: DictConfig):
             point_cloud_radius = cfg['sim']['point_cloud_radius'],
             control_method = cfg['sim']['control_method'],
             goal_tolerance = cfg['sim']['goal_tolerance'],
+            collision_tolerance = cfg['sim']['collision_tolerance'],
             kwargs = kwargs,
             track_point_cloud = False,
         )
@@ -371,6 +374,7 @@ def make_env(filedir: str, cfg: DictConfig):
             point_cloud_radius = cfg['sim']['point_cloud_radius'],
             control_method = cfg['sim']['control_method'],
             goal_tolerance = cfg['sim']['goal_tolerance'],
+            collision_tolerance = cfg['sim']['collision_tolerance'],
             kwargs = kwargs,
         )
 
@@ -393,7 +397,7 @@ def make_env(filedir: str, cfg: DictConfig):
 
         if bool(cfg['random'][True]):
             for n in range(cfg['random']['n']):
-                obs_key = 'obstacle'+str(n)+'_state'
+                obs_key = 'rel_obstacle'+str(n)+'_state'
                 filter_keys.append(obs_key)
 
     env = FilterObservation(

@@ -75,7 +75,7 @@ class Sim():
         self.track_point_cloud = track_point_cloud
 
 
-        if len(control_method) == 0:
+        if control_method == 'none':
             self.control_method = None
             self.use_controller = False
         elif 'PPO' in control_method:
@@ -91,7 +91,6 @@ class Sim():
             self.control_method = getattr(self,control_method)(**kwargs)
             self.control_method.update_state()
             self.use_controller = True
-        
 
         #adversary variables
         self.adversary = []
@@ -476,7 +475,12 @@ class Sim():
 
     def remove_adversary(self,i) -> None:
         adversary = self.adversary.pop(i)
+        name = adversary.get_name()
         del adversary
+        for i in range(len(self.obstacles)):
+            if name == self.obstacles[i].get_name():
+                obstacle = self.obstacles.pop(i)
+                del obstacle
 
     def create_adversary_controller(
             self,
@@ -514,6 +518,21 @@ class Sim():
                 self.obstacles.pop(i)
         self.update_point_cloud()
         self.get_new_path()
+
+    def get_obstacles_idx(self) -> int:
+        obstacle_idx = []
+        for i,obstacle in enumerate(self.obstacles):
+            if 'obstacle' in obstacle.get_name():
+                obstacle_idx.append(i)
+        return obstacle_idx
+    
+    def set_obs_initial_pos(
+            self,
+            pos: list[float],
+            idx: int,
+    ) -> None:
+        
+        self.obstacles[idx].dynamics.set_initial_pos(pos)
 
     class PPOC():
 

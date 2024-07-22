@@ -37,13 +37,22 @@ class controlerTrainEnv(satGymEnv):
         if self.randomize_initial_state and self.dim == 3:
             self.prompter = controlPrompter()
 
+        self.obs_idx = self.sim.get_obstacles_idx()
+        self.n_obs = len(self.obs_idx)
+
+        if self.n_obs > 0:
+            self.prompter.set_num_obstacles(self.n_obs)
+
 
     def reset(self, **kwargs):
         if self.randomize_initial_state:
             prompt = self.prompter.prompt()
             self.sim.set_sat_initial_pos(pos=prompt['sat_pos']) #set initial sat position
-            self.sim.set_sat_initial_vel(vel=prompt['sat_vel']) #set initial sat velocity
+            #self.sim.set_sat_initial_vel(vel=prompt['sat_vel']) #set initial sat velocity
             self.sim.set_sat_goal(goal=prompt['sat_goal']) #set new sat goal
+            for i in range(self.n_obs):
+                label = 'obs' + str(i) + '_pos'
+                self.sim.set_obs_initial_pos(pos=prompt[label],idx=self.obs_idx[i])
         self._episode += 1
         self._step = 0
         self.sim.reset()
@@ -77,6 +86,10 @@ class controlerTrainEnv(satGymEnv):
 
         # Satellite
         obs['rel_goal_state'] = obs['goal_state'] - obs['sat_state']
+
+        for i in range(self.n_obs):
+            label = 'rel_obstacle'+str(i)+'_state'
+            obs[label] = obs['obstacle'+str(i)+'_state'] - obs['sat_state']
 
         return obs
     

@@ -65,11 +65,12 @@ path_planner:
   n: 25
 
 sim:
-  control_method: MPC #PPOC
+  control_method: none #MPC #PPOC
   point_cloud_size: 50
   path_point_tolerance: 0.1
   point_cloud_radius: 30
   goal_tolerance: 0.1
+  collision_tolerance: 1
   kwargs:
     upper_state_bounds: [1e10,  1e10,  1e10, 1e10, 1e10, 1e10]
     lower_state_bounds: [-1e10,  -1e10,  -1e10, -1e10, -1e10, -1e10]
@@ -97,8 +98,8 @@ obstacles:
 
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
 random:
-  on: False
-  n: 10
+  on: True
+  n: 5
   vel: 0.0005
   x_range: [-7,7] #[-7,7]
   y_range: [4,18] #[5,15]

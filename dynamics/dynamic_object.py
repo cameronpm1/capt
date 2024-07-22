@@ -27,6 +27,7 @@ class dynamicObject(staticObject):
         )
 
         self.dynamics = dynamics
+        self.dim = self.dynamics.dim
     
     def update_points(self) -> None:
         #return spacecraft mesh points translated to current location using euler angles

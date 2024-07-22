@@ -138,7 +138,6 @@ class twodDynamics(baseDynamics):
             self.control[i] = control[i]
 
     def compute_derivatives(self, state, t) -> list[float]:
-
         dxdt = np.matmul(self.state_matrix,state) + np.squeeze(np.matmul(self.control_matrix,self.control))
         return dxdt
     
