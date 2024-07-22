@@ -58,46 +58,77 @@ def make_env(filedir: str, cfg: DictConfig):
                 vel = np.random.random(3,)
                 vel = vel/np.linalg.norm(vel)*(cfg['random']['vel']*np.random.random())
 
-                obs_dynamics = satelliteDynamics(
-                    timestep = cfg['satellite']['dynamics']['timestep'],
-                    horizon = cfg['satellite']['dynamics']['horizon'],
-                    pos = pos,
-                    vel = vel,
-                    initial_orbit = orbit_params,
-                    initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
-                    spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data']
-                )
+                if cfg['env']['dim'] == 2:
+                    obs_dynamics = twodDynamics(
+                        timestep = cfg['satellite']['dynamics']['timestep'],
+                        horizon = cfg['satellite']['dynamics']['horizon'],
+                        pos = pos[0:2],
+                        vel = vel[0:2],
+                        euler = [0],
+                        data = cfg['satellite']['dynamics']['data'],
+                    )
 
-                temp_obstacle = dynamicObject(
-                    dynamics = obs_dynamics, 
-                    mesh = stl,
-                    name = 'rand'+str(n), 
-                    pos = pos)
+                    temp_obstacle = dynamicObject(
+                        dynamics = obs_dynamics, 
+                        mesh = mesh = {'points':np.array([pos[0:2]]),'lines':np.array([])},
+                        name = 'rand'+str(n), 
+                        pos = pos)
+                else:
+                    obs_dynamics = satelliteDynamics(
+                        timestep = cfg['satellite']['dynamics']['timestep'],
+                        horizon = cfg['satellite']['dynamics']['horizon'],
+                        pos = pos,
+                        vel = vel,
+                        initial_orbit = orbit_params,
+                        initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
+                        spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data']
+                    )
+
+                    temp_obstacle = dynamicObject(
+                        dynamics = obs_dynamics, 
+                        mesh = stl,
+                        name = 'rand'+str(n), 
+                        pos = pos)
                 
                 sim.add_obstacle(obstacle=temp_obstacle)
         else:
             logger.info('Initializing obstacles')
             for obstacle in cfg['obstacles']:
                 
+                if cfg['env']['dim'] == 2:
+                    obs_dynamics = twodDynamics(
+                        timestep = cfg['satellite']['dynamics']['timestep'],
+                        horizon = cfg['satellite']['dynamics']['horizon'],
+                        pos = np.array(cfg['obstacles'][obstacle]['pos'][0:2]),
+                        vel = np.array(cfg['obstacles'][obstacle]['vel'][0:2]),
+                        euler = [0],
+                        data = cfg['satellite']['dynamics']['data'],
+                    )
 
-                stl = pv.read(cfg['obstacles'][obstacle]['stl'])
-                stl.points *= cfg['obstacles'][obstacle]['stl_scale']
+                    temp_obstacle = dynamicObject(
+                        dynamics = obs_dynamics, 
+                        mesh = {'points':np.array([pos[0:2]]),'lines':np.array([])},
+                        name = cfg['obstacles'][obstacle]['name'], 
+                        pos = cfg['obstacles'][obstacle]['pos'][0:2])
+                else:
+                    stl = pv.read(cfg['obstacles'][obstacle]['stl'])
+                    stl.points *= cfg['obstacles'][obstacle]['stl_scale']
 
-                obs_dynamics = satelliteDynamics(
-                    timestep = cfg['satellite']['dynamics']['timestep'],
-                    horizon = cfg['satellite']['dynamics']['horizon'],
-                    pos = np.array(cfg['obstacles'][obstacle]['pos']),
-                    vel = np.array(cfg['obstacles'][obstacle]['vel']),
-                    initial_orbit = orbit_params,
-                    initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
-                    spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data']
-                )
+                    obs_dynamics = satelliteDynamics(
+                        timestep = cfg['satellite']['dynamics']['timestep'],
+                        horizon = cfg['satellite']['dynamics']['horizon'],
+                        pos = np.array(cfg['obstacles'][obstacle]['pos']),
+                        vel = np.array(cfg['obstacles'][obstacle]['vel']),
+                        initial_orbit = orbit_params,
+                        initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
+                        spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data']
+                    )
 
-                temp_obstacle = dynamicObject(
-                    dynamics = obs_dynamics, 
-                    mesh = stl,
-                    name = cfg['obstacles'][obstacle]['name'], 
-                    pos = cfg['obstacles'][obstacle]['pos'])
+                    temp_obstacle = dynamicObject(
+                        dynamics = obs_dynamics, 
+                        mesh = stl,
+                        name = cfg['obstacles'][obstacle]['name'], 
+                        pos = cfg['obstacles'][obstacle]['pos'])
                 
                 sim.add_obstacle(obstacle=temp_obstacle)
 
@@ -343,6 +374,8 @@ def make_env(filedir: str, cfg: DictConfig):
             kwargs = kwargs,
         )
 
+        initialize_obstacles(sim)
+
         logger.info('Initializing control environment')
         env = controlerTrainEnv(
             sim=sim,
@@ -358,6 +391,10 @@ def make_env(filedir: str, cfg: DictConfig):
             'rel_goal_state'
         ]
 
+        if bool(cfg['random'][True]):
+            for n in range(cfg['random']['n']):
+                obs_key = 'obstacle'+str(n)+'_state'
+                filter_keys.append(obs_key)
 
     env = FilterObservation(
         env,
