@@ -27,6 +27,7 @@ class controlPrompter(twodControlPrompter):
         return vec
 
     def prompt(self):
+        distance_tol = 5
         prompt = {}
 
         vec = self.random_unit_vec()
@@ -42,5 +43,20 @@ class controlPrompter(twodControlPrompter):
         goal_pos = np.zeros((15,))
         goal_pos[0:3] = sat_pos + goal_vec
         prompt['sat_goal'] = goal_pos
+
+        if self.n_obs > 1:
+            goal_dist = np.linalg.norm(goal_vec)
+            center_to_goal = vec*goal_dist/2
+            obs_dist = goal_dist/2*0.9
+            for i in range(self.n_obs):
+                not_safe = True
+                while not_safe:
+                    vec = self.random_unit_vec()
+                    obs_vec = vec * self._np_random.random() * obs_dist
+                    obs_pos = center_to_goal + obs_vec
+                    if np.linalg.norm(obs_pos-sat_pos) > distance_tol and np.linalg.norm(obs_pos-goal_pos[0:3]) > distance_tol:
+                        label = 'obs' + str(i) + '_pos'
+                        prompt[label] = obs_pos
+                        not_safe = False
 
         return prompt
