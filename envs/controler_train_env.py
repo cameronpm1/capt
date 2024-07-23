@@ -43,6 +43,8 @@ class controlerTrainEnv(satGymEnv):
         if self.n_obs > 0:
             self.prompter.set_num_obstacles(self.n_obs)
 
+        self.distance_max = 60
+
 
     def reset(self, **kwargs):
         if self.randomize_initial_state:
@@ -72,9 +74,12 @@ class controlerTrainEnv(satGymEnv):
         self._step += 1
         obs = self._get_obs()
         rew = self._reward()
-        terminated, truncated = self._end_episode() #end by collision, end by max episode
+        terminated_bad, terminated_good, truncated = self._end_episode() #end by collision, end by max episode
 
-        return obs, rew, terminated, truncated, {'done': (terminated, truncated), 'reward': rew}
+        if terminated_bad:
+            rew -= 600
+
+        return obs, rew, terminated_bad or terminated_good, truncated, {'done': (terminated_bad or terminated_good, truncated), 'reward': rew}
 
     def _get_obs(self) -> OrderedDict:
         """Return observation
@@ -94,8 +99,20 @@ class controlerTrainEnv(satGymEnv):
         return obs
     
     def _reward(self) -> float:
-        dist = np.linalg.norm(self.sim.main_object.get_state()-np.array(self.sim.get_sat_goal())) #inverse of dif between state and goal
+        dist = np.linalg.norm(self.sim.main_object.get_state()-np.array(self.sim.get_sat_goal()))/self.distance_max #inverse of dif between state and goal
         return -1*dist
+    
+    def _end_episode(self) -> bool:
+
+        collision = self.sim.collision_check()
+        goal_reached = self.sim.goal_check()
+
+        if self.sim.distance_to_goal() > self.distance_max:
+            too_far = True
+        else:
+            too_far = False
+
+        return collision or too_far, goal_reached, self._step >= self.max_episode_length
 
         
 

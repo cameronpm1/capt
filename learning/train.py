@@ -153,13 +153,22 @@ def retrain(cfg: DictConfig,filedir,modeldir):
     env = make_vec_env(cfg["alg"]["nenv"], cfg["seed"])
     logger.info("Parallel environments initialized ...")
     # define policy network size
-    policy_kwargs = dict(net_arch=dict(pi=cfg["alg"]["pi"], vf=cfg["alg"]["vf"]))
     
 
-    # alg kw for sac or td3
     if cfg["alg"]["type"] == "ppo":
         alg = PPO
-        alg_kwargs = {}
+        logger.info("Loading model ...")
+        model = PPO.load(modeldir)
+    elif cfg["alg"]["type"] == "sac":
+        alg = SAC
+        logger.info("Loading model ...")
+        model = SAC.load(modeldir)
+
+
+    model.tensorboard_log = logdir
+    logger.info("Loading parallel environments ...")
+    # load env
+    model.set_env(env)
 
     logger.info("Loading model ...")
     # load model
