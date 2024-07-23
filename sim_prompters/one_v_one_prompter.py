@@ -1,6 +1,6 @@
 import numpy as np
 from gymnasium.utils import seeding
-from twod_one_v_one_prompter import twodOneVOnePrompter
+from sim_prompters.twod_one_v_one_prompter import twodOneVOnePrompter
 
 
 class oneVOnePrompter(twodOneVOnePrompter):

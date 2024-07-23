@@ -79,6 +79,4 @@ class twodOneVOnePrompter():
         
 
 if __name__ == "__main__":
-    prompter = oneVOnePrompter()
-    prompter.seed()
-    prompter.prompt()
+    pass
