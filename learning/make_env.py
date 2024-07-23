@@ -92,6 +92,7 @@ def make_env(filedir: str, cfg: DictConfig):
                         pos = pos)
 
                 sim.add_obstacle(obstacle=temp_obstacle)
+        '''
         else:
             logger.info('Initializing obstacles')
             for obstacle in cfg['obstacles']:
@@ -132,6 +133,7 @@ def make_env(filedir: str, cfg: DictConfig):
                         pos = cfg['obstacles'][obstacle]['pos'])
                 
                 sim.add_obstacle(obstacle=temp_obstacle)
+        '''
 
     if cfg['env']['dim'] == 2:
         dynamics = twodDynamics(
