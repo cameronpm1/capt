@@ -1,4 +1,5 @@
 import time
+
 import gymnasium
 import numpy as np
 from gymnasium import spaces
@@ -108,8 +109,8 @@ class evadePursuitEnv(MultiAgentEnv):
 
         
         space = spaces.Dict({
-            'evader': spaces.Box(low=-1, high=1, shape=(len(obs['evader']),), dtype=np.float32),
-            'adversary': spaces.Box(low=-1, high=1, shape=(len(obs['adversary']),), dtype=np.float32),
+            'evader': spaces.Box(low=-np.inf, high=np.inf, shape=(len(obs['evader']),), dtype=np.float32),
+            'adversary': spaces.Box(low=-np.inf, high=np.inf, shape=(len(obs['adversary']),), dtype=np.float32),
             })
 
         return space

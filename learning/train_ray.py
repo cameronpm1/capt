@@ -16,6 +16,7 @@ from ray.rllib.algorithms.sac import SACConfig
 
 from logger import getlogger
 from learning.make_env import make_env
+from envs.evade_pursuit_env import evadePursuitEnv
 
 
 logger = getlogger(__name__)
@@ -51,21 +52,23 @@ def train_ray(cfg: DictConfig,filedir):
     #ensure that evader and adversary agents always use the correct policy
     def policy_mapping_fn(agent_id, episode, worker, **kwargs):
         if agent_id.startswith('evader'):
-            return 'evade'
-        if agent_id.startswith('pursuit'):
-            return 'pursuit'
+            return 'evader'
+        if agent_id.startswith('adversary'):
+            return 'adversary'
         print('Error: unknown agent id')
         exit()
 
     if 'sac' in cfg['alg']['type']:
         algo = SACConfig()
 
+    test_env = env_maker({})
+
     #initialize MARL training algorithm
     algo_config = (algo
               .environment(env=env_name,
                            env_config={},)
               .framework("torch")
-              .env_runners(num_env_runners=1,
+              .env_runners(num_env_runners=2,
                            num_cpus_per_env_runner=1
                            )
               .resources(num_gpus=0)
@@ -73,11 +76,16 @@ def train_ray(cfg: DictConfig,filedir):
                            policies={
                                'evader':(
                                    None, #policy_class
-                                   None, #observation_space
-                                   None, #action_space
+                                   test_env.observation_space['evader'], #observation_space
+                                   test_env.action_space['evader'], #action_space
                                    {} #config (gamma,lr,etc.)
                                ),
-                               'adversary':(None,None,None,{})
+                               'adversary':(
+                                   None, #policy_class
+                                   test_env.observation_space['adversary'], #observation_space
+                                   test_env.action_space['adversary'], #action_space
+                                   {} #config (gamma,lr,etc.)
+                               ),
                            })
               .training(gamma=0.99, 
                         lr=0.00005,
@@ -87,8 +95,11 @@ def train_ray(cfg: DictConfig,filedir):
                             'replay_sequence_length': 1,
                             })
     )
+    del test_env
 
     algo_build = algo_config.build()
     algo_build.train()
+
+    print('ALL DONE')
 
 
