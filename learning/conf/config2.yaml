@@ -12,6 +12,7 @@ logging:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
+  lib: ray
   type: sac
   nenv:  1
   lr: 0.0001
@@ -25,7 +26,7 @@ alg:
 
 
 env:
-  scenario: control #control, adversary, evade
+  scenario: multi #control, adversary, evade
   max_timestep: 512
   max_control: [0.3,0.3]
   ctrl_type: thrust
@@ -98,8 +99,8 @@ obstacles:
 
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
 random:
-  on: True
-  n: 10
+  on: False
+  n: 2
   vel: 0.0005
   x_range: [-7,7] #[-7,7]
   y_range: [4,18] #[5,15]

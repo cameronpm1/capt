@@ -84,17 +84,17 @@ class controlerTrainEnv(satGymEnv):
     def _get_obs(self) -> OrderedDict:
         """Return observation
 
-           only returns sat_state and goal
+           only returns evader_state and goal
         """
 
         obs = super()._get_obs()
 
         # Satellite
-        obs['rel_goal_state'] = obs['goal_state'] - obs['sat_state']
+        obs['rel_goal_state'] = obs['goal_state'] - obs['evader_state']
 
         for i in range(self.n_obs):
             label = 'rel_obstacle'+str(i)+'_state'
-            obs[label] = obs['obstacle'+str(i)+'_state'] - obs['sat_state']
+            obs[label] = obs['obstacle'+str(i)+'_state'] - obs['evader_state']
 
         return obs
     

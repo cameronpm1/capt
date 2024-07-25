@@ -2,9 +2,9 @@ import os
 import sys
 import time
 import hydra
+import gymnasium
 import numpy as np
 import pyvista as pv
-import gymnasium
 from gymnasium import spaces
 from astropy import units as u
 from gymnasium.utils import seeding
@@ -86,10 +86,6 @@ class satGymEnv(gymnasium.Env):
 
         return spaces.Dict(space)
 
-    '''
-    TO DO:
-        -seed every reset?
-    '''
     def reset(self, **kwargs):
         self._episode += 1
         self._step = 0
@@ -116,10 +112,6 @@ class satGymEnv(gymnasium.Env):
         # Save the seed so we can re-seed during un-pickling
         self._seed = seed
 
-        # Hash the seed to avoid any correlations
-        #seed = seeding.hash_seed(seed)
-
-        # Seed environment components with randomness
         seeds = [seed]
         seeds.extend(self.sim.seed(seed))
         if self.randomize_initial_state:
@@ -135,7 +127,7 @@ class satGymEnv(gymnasium.Env):
         obs = OrderedDict()
 
         # Satellite
-        obs['sat_state'] = self.sim.get_sat_state().copy()[0:self.dim*2]
+        obs['evader_state'] = self.sim.get_sat_state().copy()[0:self.dim*2]
 
         obs['goal_state'] = np.array(self.sim.get_sat_goal().copy())[0:self.dim*2]
 

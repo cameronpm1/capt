@@ -116,7 +116,7 @@ class evadeTrainEnv(satGymEnv):
         return rew
 
     def compute_adversary_control(self):
-        obs = np.concatenate((self._obs['adversary0_state'],self._obs['sat_state']), axis=None) 
+        obs = np.concatenate((self._obs['adversary0_state'],self._obs['evader_state']), axis=None) 
 
         action, _states = self.adversary_model.predict(obs)
         scalled_action = self.scaling_function(action)

@@ -17,12 +17,13 @@ from logger import getlogger
 from envs.gui import Renderer
 from space_sim.sim import Sim
 from envs.sat_gym_env import satGymEnv
+from envs.evade_train_env import evadeTrainEnv
+from envs.evade_pursuit_env import evadePursuitEnv
 from dynamics.twod_dynamics import twodDynamics
 from dynamics.static_object import staticObject
 from dynamics.dynamic_object import dynamicObject
 from dynamics.sat_dynamics import satelliteDynamics
 from dynamics.quad_dynamics import quadcopterDynamics
-from envs.evade_train_env import evadeTrainEnv
 from envs.controler_train_env import controlerTrainEnv
 from envs.adversary_train_env import adversaryTrainEnv
 from trajectory_planning.path_planner import pathPlanner
@@ -269,7 +270,7 @@ def make_env(filedir: str, cfg: DictConfig):
         )
 
         filter_keys=[
-            'sat_state',
+            'evader_state',
             'adversary0_state',
         ]
 
@@ -359,7 +360,97 @@ def make_env(filedir: str, cfg: DictConfig):
 
         filter_keys=[
             'goal_state',
-            'sat_state',
+            'evader_state',
+            'adversary0_state',
+        ]
+
+    elif 'multi' in cfg['env']['scenario']:
+
+        '''
+        only add obstacles and adversaries if the word adversary is in the env scenario name
+        '''
+
+        sim = Sim(
+            main_object = satellite,
+            path_planner = path_planner,
+            point_cloud_size = cfg['sim']['point_cloud_size'],
+            path_point_tolerance = cfg['sim']['path_point_tolerance'],
+            point_cloud_radius = cfg['sim']['point_cloud_radius'],
+            control_method = cfg['sim']['control_method'],
+            goal_tolerance = cfg['sim']['goal_tolerance'],
+            collision_tolerance = cfg['sim']['collision_tolerance'],
+            kwargs = kwargs,
+            track_point_cloud = False,
+        )
+
+        logger.info('Setting up evasion environment')
+
+        if cfg['obstacles'] is None:
+            cfg['obstacles'] = []
+
+        if bool(cfg['adversary'][True]):
+            logger.info('Initializing adversarial agents')
+            for adversary in cfg['adversary']['adversaries']:
+
+                if cfg['env']['dim'] == 2:
+                    stl = {
+                        'points':np.array(cfg['adversary']['adversaries'][adversary]['mesh']['points']),
+                        'lines':np.array(cfg['adversary']['adversaries'][adversary]['mesh']['lines'])
+                        }
+
+                    adversary_dynamics = twodDynamics(
+                        timestep = cfg['satellite']['dynamics']['timestep'],
+                        horizon = cfg['satellite']['dynamics']['horizon'],
+                        pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
+                        vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
+                        euler = np.array(cfg['adversary']['adversaries'][adversary]['euler']),
+                        data = cfg['adversary']['adversaries'][adversary]['data'],
+                        max_control = cfg['adversary']['adversaries'][adversary]['control_lim']
+                    )
+                else:
+                    stl = pv.read(filedir+'/'+cfg['adversary']['adversaries'][adversary]['stl'])
+                    stl.points *= cfg['adversary']['adversaries'][adversary]['stl_scale']
+
+                    adversary_dynamics = satelliteDynamics(
+                        timestep = cfg['satellite']['dynamics']['timestep'],
+                        horizon = cfg['satellite']['dynamics']['horizon'],
+                        pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
+                        vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
+                        initial_orbit = orbit_params,
+                        initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
+                        spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
+                        max_control = cfg['adversary']['adversaries'][adversary]['control_lim'],
+                    )
+
+                adversary = dynamicObject(
+                    dynamics = adversary_dynamics, 
+                    mesh = stl,
+                    name = cfg['adversary']['adversaries'][adversary]['name'], 
+                    pos = cfg['adversary']['adversaries'][adversary]['pos'],
+                    dim = cfg['env']['dim'],
+                )
+                    
+                sim.create_adversary(
+                    adversary=adversary,
+                )
+
+        initialize_obstacles(sim)
+
+        env = evadePursuitEnv(
+            sim=sim,
+            step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
+            max_episode_length=cfg['env']['max_timestep'],
+            max_ctrl=cfg['env']['max_control'],
+            ctrl_type=cfg['env']['ctrl_type'],
+            total_train_steps=cfg['alg']['total_timesteps']/cfg['alg']['nenv'],
+            action_scaling_type=cfg['env']['action_scaling'],
+            randomize_initial_state=cfg['env']['random_initial_state'],
+            adversary_model_path=cfg['env']['adversary_model_path']
+        )
+
+        filter_keys=[
+            'goal_state',
+            'evader_state',
             'adversary0_state',
         ]
 
@@ -401,13 +492,6 @@ def make_env(filedir: str, cfg: DictConfig):
             for n in range(cfg['random']['n']):
                 obs_key = 'rel_obstacle'+str(n)+'_state'
                 filter_keys.append(obs_key)
-
-    env = FilterObservation(
-        env,
-        filter_keys=filter_keys,
-    )
-    env = FlattenObservation(env)
-    env.unwrapped.seed(cfg["seed"])
 
     return env
 

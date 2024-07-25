@@ -225,6 +225,12 @@ class Sim():
         idx: int,
     ) -> float:
         return np.linalg.norm(self.obstacles[idx].dynamics.get_pos()-self.main_object.dynamics.get_pos())
+    
+    def distance_to_adversary(
+        self,
+        idx: int,
+    ) -> float:
+        return np.linalg.norm(self.adversary[idx].dynamics.get_pos()-self.main_object.dynamics.get_pos())
 
     def min_distance_to_path(
         self,

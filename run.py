@@ -4,14 +4,18 @@ import torch
 from omegaconf import DictConfig
 
 from logger import getlogger
-from learning.train import train, retrain
+from learning.train_ray import train_ray
+from learning.train_sb3 import train, retrain
 from learning.run_space_sim import runSpaceSim
 
 DIRECTORY = None
 
 @hydra.main(config_path="learning/conf", config_name="config2", version_base='1.1')
 def train_rl_model(cfg: DictConfig):
-    train(cfg,DIRECTORY)
+    if 'ray' in cfg['alg']['lib']:
+        train_ray(cfg,DIRECTORY)
+    else:
+        train(cfg,DIRECTORY)
 
 @hydra.main(config_path="learning/conf", config_name="config1", version_base='1.1')
 def retrain_rl_model(cfg: DictConfig):
@@ -29,5 +33,5 @@ def run_rl_model(cfg: DictConfig):
 if __name__ == "__main__":
     torch.set_num_threads(12)
     DIRECTORY = os.getcwd()
-    run_rl_model()
+    train_rl_model()
     
