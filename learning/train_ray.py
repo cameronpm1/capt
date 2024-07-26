@@ -6,6 +6,7 @@ import shutil
 import logging
 import numpy as np
 from omegaconf import DictConfig
+from ray.tune.logger import pretty_print
 from hydra.core.hydra_config import HydraConfig
 from ray.rllib.utils.test_utils import (
     add_rllib_example_script_args,
@@ -88,7 +89,7 @@ def train_ray(cfg: DictConfig,filedir):
                                ),
                            })
               .training(gamma=0.99, 
-                        lr=0.00005,
+                        lr=0.0001,
                         replay_buffer_config={
                             'type': 'MultiAgentReplayBuffer', 
                             'capacity': 1000000, 
@@ -98,8 +99,9 @@ def train_ray(cfg: DictConfig,filedir):
     del test_env
 
     algo_build = algo_config.build()
-    algo_build.train()
+    for i in range(200):
+        result = algo_build.train()
+        print(pretty_print(result))
 
-    print('ALL DONE')
 
 
