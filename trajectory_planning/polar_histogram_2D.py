@@ -116,6 +116,10 @@ class polarHistogram2D():
     def reset_histogram(self) -> None:
         self.histogram3D[:] = 0
 
+    def get_binary_histogram(self):
+        condensed_histogram = self.histogram3D[:,:,:,6].reshape(self.sections,self.layers)
+        return (condensed_histogram>0).astype(int)
+
     def input_points(
             self, 
             points: List[List[float]],
@@ -457,14 +461,19 @@ class polarHistogram2D():
 
 
 if __name__ == '__main__':
-    histogram = polarHistogram3D()
+    histogram = polarHistogram2D(radius=13,layers=5,angle_sections=5)
 
-    t0 = time.time()
-    for i in range(100):
-        bins = histogram.sort_bins(goal=[1,0,0])
-    t1 = time.time()
-    print(bins)
-    print(t1-t0)
+    points = []
+    for i in range(40):
+        vec = (np.random.random((2,)) - 0.5) * 2
+        vec = vec/np.linalg.norm(vec)
+        point = vec * np.random.random()*13
+        points.append(point)
+
+    histogram.input_points(points)
+    a = histogram.get_histogram()
+    print(a)
+    print((histogram.get_histogram()>0).astype(int))
     '''
     test = histogram.refrerence_histogram3D
 

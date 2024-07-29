@@ -123,6 +123,10 @@ class polarHistogram3D():
     def reset_histogram(self) -> None:
         self.histogram3D[:] = 0
 
+    def get_binary_histogram(self):
+        condensed_histogram = self.histogram3D[:,:,:,6].reshape(self.sections,self.sections,self.layers)
+        return (condensed_histogram>0).astype(int)
+
     def input_points(
             self, 
             points: List[List[float]],

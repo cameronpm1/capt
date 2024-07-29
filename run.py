@@ -14,7 +14,7 @@ DIRECTORY = None
 @hydra.main(config_path="learning/conf", config_name="config2", version_base='1.1')
 def train_rl_model(cfg: DictConfig):
     if 'ray' in cfg['alg']['lib']:
-        ray.init(runtime_env={'working_dir': r'C:\Users\Cameron Mehlman\Documents\magpie_rl',
+        ray.init(runtime_env={'working_dir': '/home/cameron/magpie_rl',
                               'env_vars': {'PYTHONWARNINGS': 'ignore::DeprecationWarning'}})
         train_ray(cfg,DIRECTORY)
     else:

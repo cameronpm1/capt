@@ -20,13 +20,13 @@ alg:
   gamma: 0.99
   pi: [128, 128]
   vf: [128, 128]
-  device: cpu # cpu, cuda
+  device: cuda # cpu, cuda
   total_timesteps: 20e6 #20e6
   
 
 
 env:
-  scenario: multi #control, adversary, evade
+  scenario: control #control, adversary, evade, multi
   max_timestep: 512
   max_control: [0.3,0.3]
   ctrl_type: thrust

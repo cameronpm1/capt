@@ -61,6 +61,10 @@ class controlerTrainEnv(satGymEnv):
         return self._get_obs(), {'episode': self._episode}
 
     def step(self, action):
+        '''
+        TO DO:
+            integrate get_voxelized_point_cloud() so that RL observation is evade state representation
+        '''
         #scale sat action and set action
         scalled_action = self.scaling_function(action)
         if self.dim == 3:

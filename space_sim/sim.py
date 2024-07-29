@@ -467,6 +467,11 @@ class Sim():
                         return new_cloud
         
         return new_cloud
+
+    def get_voxelized_point_cloud(self) -> None:
+        point_cloud = self.generate_proximal_point_cloud()
+        self.path_planner.update_point_cloud(point_cloud=point_cloud)
+        return self.path_planner.get_voxelized_point_cloud()
     
     '''
     DYNAMIC OBJECT HANDELING FUNCTIONS

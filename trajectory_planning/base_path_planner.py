@@ -69,6 +69,9 @@ class basePathPlanner():
         def get_layer_size(self) -> float:
             return self.histogram.layer_depth
 
+        def get_voxelized_point_cloud(self):
+            return self.histogram.get_binary_histogram()
+
         def compute_next_point(
                 self,
                 points: list[list[float]],

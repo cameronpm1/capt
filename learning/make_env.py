@@ -493,6 +493,10 @@ def make_env(filedir: str, cfg: DictConfig):
                 obs_key = 'rel_obstacle'+str(n)+'_state'
                 filter_keys.append(obs_key)
 
+        env = FilterObservation(env,filter_keys=filter_keys)
+        env = FlattenObservation(env)
+
+
     return env
 
     
