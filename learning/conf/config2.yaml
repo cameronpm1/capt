@@ -7,26 +7,26 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: 2d_test # set job name
+    name: img_vec_test512 # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
-  lib: ray
+  lib: sb3
   type: sac
-  nenv:  1
-  lr: 0.0001
+  nenv:  20
+  lr: 0.0003
   batch_size: 256
   gamma: 0.99
-  pi: [128, 128]
-  vf: [128, 128]
+  pi: [512, 512]
+  vf: [512, 512]
   device: cuda # cpu, cuda
   total_timesteps: 20e6 #20e6
   
 
 
 env:
-  scenario: control #control, adversary, evade, multi
+  scenario: controlImage #control, controlImage, adversary, evade, multi
   max_timestep: 512
   max_control: [0.3,0.3]
   ctrl_type: thrust
@@ -55,7 +55,7 @@ path_planner:
   goal_state: [1,20,0,0,0,0] 
   path_planning_algorithm: VFH
   kwargs:
-    radius: 10
+    radius: 17
     min_obstacle_distance: 4
     iterations: 1
     distance_tolerance: 0.5
@@ -70,7 +70,7 @@ sim:
   point_cloud_size: 50
   path_point_tolerance: 0.1
   point_cloud_radius: 30
-  goal_tolerance: 0.1
+  goal_tolerance: 1
   collision_tolerance: 1
   kwargs:
     upper_state_bounds: [1e10,  1e10,  1e10, 1e10, 1e10, 1e10]
@@ -99,8 +99,8 @@ obstacles:
 
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
 random:
-  on: False
-  n: 2
+  on: True
+  n: 3
   vel: 0.0005
   x_range: [-7,7] #[-7,7]
   y_range: [4,18] #[5,15]

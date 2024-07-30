@@ -118,7 +118,7 @@ class polarHistogram2D():
 
     def get_binary_histogram(self):
         condensed_histogram = self.histogram3D[:,:,:,6].reshape(self.sections,self.layers)
-        return (condensed_histogram>0).astype(int)
+        return np.array([(condensed_histogram>0).astype(int)])
 
     def input_points(
             self, 

@@ -78,10 +78,15 @@ def train(cfg: DictConfig,filedir):
         policy_kwargs = dict(net_arch=dict(pi=cfg["alg"]["pi"], qf=cfg["alg"]["vf"]))
         alg_kwargs = {}
 
+    if 'Image' in cfg['env']['scenario']:
+        policy = 'MultiInputPolicy'
+    else:
+        policy = 'MlpPolicy'
+
     logger.info("Initializing model ...")
     # define model
     model = alg(
-            "MlpPolicy", 
+            policy, 
             env, 
             verbose=1,
             tensorboard_log=logdir,
@@ -95,11 +100,11 @@ def train(cfg: DictConfig,filedir):
             )
 
     checkpoint_callback = CheckpointCallback(
-            save_freq=50000,
+            save_freq=100000,
             save_path=logdir,
             name_prefix="midtrain_model",
-            save_replay_buffer=True,
-            save_vecnormalize=True,
+            save_replay_buffer=False,
+            save_vecnormalize=False,
             )
 
 

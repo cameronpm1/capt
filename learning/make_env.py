@@ -18,15 +18,16 @@ from envs.gui import Renderer
 from space_sim.sim import Sim
 from envs.sat_gym_env import satGymEnv
 from envs.evade_train_env import evadeTrainEnv
-from envs.evade_pursuit_env import evadePursuitEnv
 from dynamics.twod_dynamics import twodDynamics
 from dynamics.static_object import staticObject
 from dynamics.dynamic_object import dynamicObject
+from envs.evade_pursuit_env import evadePursuitEnv
 from dynamics.sat_dynamics import satelliteDynamics
 from dynamics.quad_dynamics import quadcopterDynamics
 from envs.controler_train_env import controlerTrainEnv
 from envs.adversary_train_env import adversaryTrainEnv
 from trajectory_planning.path_planner import pathPlanner
+from envs.controler_train_env_image import controlerTrainEnvImage
 
 
 
@@ -495,6 +496,44 @@ def make_env(filedir: str, cfg: DictConfig):
 
         env = FilterObservation(env,filter_keys=filter_keys)
         env = FlattenObservation(env)
+
+    if 'controlImage' in cfg['env']['scenario']:
+        '''
+        set up control env
+        '''
+
+        sim = Sim(
+            main_object = satellite,
+            path_planner = path_planner,
+            point_cloud_size = cfg['sim']['point_cloud_size'],
+            path_point_tolerance = cfg['sim']['path_point_tolerance'],
+            point_cloud_radius = cfg['sim']['point_cloud_radius'],
+            control_method = cfg['sim']['control_method'],
+            goal_tolerance = cfg['sim']['goal_tolerance'],
+            collision_tolerance = cfg['sim']['collision_tolerance'],
+            kwargs = kwargs,
+        )
+
+        initialize_obstacles(sim)
+
+        logger.info('Initializing control environment')
+        env = controlerTrainEnvImage(
+            sim=sim,
+            step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
+            max_episode_length=cfg['env']['max_timestep'],
+            max_ctrl=cfg['env']['max_control'],
+            total_train_steps=cfg['alg']['total_timesteps']/cfg['alg']['nenv'],
+            action_scaling_type=cfg['env']['action_scaling'],
+            randomize_initial_state=cfg['env']['random_initial_state'],
+        )
+
+        filter_keys=[
+            'rel_goal_state',
+            'obstacles_matrix'
+        ]
+
+        env = FilterObservation(env,filter_keys=filter_keys)
+        #env = FlattenObservation(env)
 
 
     return env

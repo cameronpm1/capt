@@ -1,4 +1,6 @@
+import gymnasium
 import numpy as np
+from gymnasium import spaces
 from collections import OrderedDict
 from typing import Any, Dict, Type, Optional, Union
 
@@ -10,7 +12,7 @@ from sim_prompters.control_prompter import controlPrompter
 from sim_prompters.twod_control_prompter import twodControlPrompter
 
 
-class controlerTrainEnv(satGymEnv):
+class controlerTrainEnvImage(satGymEnv):
 
     def __init__(
             self,
@@ -96,15 +98,18 @@ class controlerTrainEnv(satGymEnv):
            only returns evader_state and goal
         """
 
-        obs = super()._get_obs()
+        obs = OrderedDict()
 
-        # Satellite
-        obs['rel_goal_state'] = obs['goal_state'] - obs['evader_state']
+        # Satellite goal
+        evader_state = self.sim.get_sat_state().copy()[0:self.dim*2]
+        obs['rel_goal_state'] = np.array(self.sim.get_sat_goal().copy())[0:self.dim*2] - evader_state
 
-        for i in range(self.n_obs):
-            label = 'rel_obstacle'+str(i)+'_state'
-            obs[label] = obs['obstacle'+str(i)+'_state'] - obs['evader_state']
-
+        #evade binary point cloud
+        obstacle_matrix = self.sim.get_voxelized_point_cloud()
+        #print(obstacle_matrix)
+        #obstacle_matrix = np.expand_dims(obstacle_matrix,axis=obstacle_matrix.ndim)
+        #print(obstacle_matrix)
+        obs['obstacles_matrix'] = obstacle_matrix[0]
         return obs
     
     def _reward(self) -> float:
@@ -123,5 +128,26 @@ class controlerTrainEnv(satGymEnv):
 
         return collision or too_far, goal_reached, self._step >= self.max_episode_length
 
+    @property
+    def action_space(
+            self,
+    ) -> gymnasium.Space:
+        return spaces.Box(low=-1, high=1, shape=(self.action_dim,), dtype=np.float32)
+
+    @property
+    def observation_space(
+            self,
+    ) -> gymnasium.Space:
+        
+        obs = self._get_obs()
+        space = {}
+        for key, val in obs.items():
+            if 'matrix' not in key:
+                space[key] = spaces.Box(low=-np.inf, high=np.inf, shape=val.shape)
+            else:
+                image_shape = val.shape
+                space[key] = spaces.Box(low=0, high=1, shape=image_shape, dtype=np.uint8) #shape=(image_shape[1],image_shape[2],image_shape[0]),
+
+        return spaces.Dict(space)
         
 

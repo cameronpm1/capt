@@ -21,6 +21,7 @@ def runSpaceSim(
 
     filedir = filedir
     env = make_env(filedir,cfg)
+    env.unwrapped.seed(seed=cfg['seed'])
 
     for i in range(1):
 

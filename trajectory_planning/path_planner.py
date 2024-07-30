@@ -55,6 +55,8 @@ class pathPlanner(basePathPlanner):
     ) -> float:
         return np.linalg.norm(state[0:self.dim] - self.goal[0:self.dim])
 
+    def get_voxelized_point_cloud(self):
+        return self.algorithm.get_voxelized_point_cloud()
 
     def update_point_cloud(
             self,
