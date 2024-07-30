@@ -124,8 +124,11 @@ class polarHistogram3D():
         self.histogram3D[:] = 0
 
     def get_binary_histogram(self):
+        #return a histogram w layer as first index
         condensed_histogram = self.histogram3D[:,:,:,6].reshape(self.sections,self.sections,self.layers)
-        return (condensed_histogram>0).astype(int)
+        flattened_histogram = condensed_histogram.reshape(condensed_histogram.size,order='F')
+        inverted_histogram = flattened_histogram.reshape(self.layers,self.sections,self.sections)
+        return (inverted_histogram>0).astype(int)
 
     def input_points(
             self, 

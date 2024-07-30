@@ -17,15 +17,15 @@ alg:
   lr: 0.0001
   batch_size: 256
   gamma: 0.99
-  pi: [128, 128]
-  vf: [128, 128]
+  pi: [512, 512]
+  vf: [512, 512]
   device: cpu # cpu, cuda
   total_timesteps: 20e6 #20e6
   
 
 
 env:
-  scenario: adversary #control, adversary, evade
+  scenario: controlImage #controlImage, control, adversary, evade
   dim: 3
   max_timestep: 512
   max_control: [0.3,0.3,0.3]
@@ -78,7 +78,7 @@ sim:
   point_cloud_size: 50
   path_point_tolerance: 0.1
   point_cloud_radius: 30
-  goal_tolerance: 0.1
+  goal_tolerance: 1
   kwargs:
     upper_state_bounds: [1e10,  1e10,  1e10, 1e10, 1e10, 1e10, 0.2, 0.2, 0.2, .25, .25, .25, 1000, 1000, 1000]
     lower_state_bounds: [-1e10,  -1e10,  -1e10, -1e10, -1e10, -1e10, -0.2, -0.2, -0.2, -.25, -.25, -.25, -1000, -1000, -1000]
@@ -101,8 +101,8 @@ obstacles:
 
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
 random:
-  on: False
-  n: 10
+  on: True
+  n: 3
   vel: 0.0005
   x_range: [-7,7] #[-7,7]
   y_range: [4,18] #[5,15]
