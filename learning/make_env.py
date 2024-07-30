@@ -74,9 +74,6 @@ def make_env(filedir: str, cfg: DictConfig):
                         pos = pos)
                     
                 else:
-                    stl = pv.read(cfg['random']['stl'])
-                    stl.points *= cfg['random']['stl_scale']
-
                     obs_dynamics = satelliteDynamics(
                         timestep = cfg['satellite']['dynamics']['timestep'],
                         horizon = cfg['satellite']['dynamics']['horizon'],
@@ -87,10 +84,15 @@ def make_env(filedir: str, cfg: DictConfig):
                         spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data']
                     )
 
+                    if cfg['random']['point']:
+                        mesh = {'points':np.array([pos]),'lines':np.array([])}
+                    else:
+                        mesh = pv.read(cfg['random']['stl'])
+                        mesh.points *= cfg['random']['stl_scale']
                     temp_obstacle = dynamicObject(
                         dynamics = obs_dynamics, 
-                        mesh = stl,
-                        name = 'rand'+str(n), 
+                        mesh = mesh,
+                        name = 'obstacle'+str(n), 
                         pos = pos)
 
                 sim.add_obstacle(obstacle=temp_obstacle)
@@ -185,7 +187,6 @@ def make_env(filedir: str, cfg: DictConfig):
     for kwarg in cfg['sim']['kwargs'].keys():
         kwargs[kwarg] = cfg['sim']['kwargs'][kwarg]
 
-
     if 'adversary' in cfg['env']['scenario']:
         '''
         only add obstacles and adversaries if the word adversary is in the env scenario name
@@ -200,6 +201,7 @@ def make_env(filedir: str, cfg: DictConfig):
             control_method = cfg['sim']['control_method'],
             goal_tolerance = cfg['sim']['goal_tolerance'],
             collision_tolerance = cfg['sim']['collision_tolerance'],
+            track_point_cloud = cfg['sim']['track_point_cloud'],
             kwargs = kwargs,
         )
 
@@ -290,8 +292,8 @@ def make_env(filedir: str, cfg: DictConfig):
             control_method = cfg['sim']['control_method'],
             goal_tolerance = cfg['sim']['goal_tolerance'],
             collision_tolerance = cfg['sim']['collision_tolerance'],
+            track_point_cloud = cfg['sim']['track_point_cloud'],
             kwargs = kwargs,
-            track_point_cloud = False,
         )
 
         logger.info('Setting up evasion environment')
@@ -454,8 +456,46 @@ def make_env(filedir: str, cfg: DictConfig):
             'evader_state',
             'adversary0_state',
         ]
+    elif 'controlImage' in cfg['env']['scenario']:
+        '''
+        set up controlImage env
+        '''
 
-    if 'control' in cfg['env']['scenario']:
+        sim = Sim(
+            main_object = satellite,
+            path_planner = path_planner,
+            point_cloud_size = cfg['sim']['point_cloud_size'],
+            path_point_tolerance = cfg['sim']['path_point_tolerance'],
+            point_cloud_radius = cfg['sim']['point_cloud_radius'],
+            control_method = cfg['sim']['control_method'],
+            goal_tolerance = cfg['sim']['goal_tolerance'],
+            collision_tolerance = cfg['sim']['collision_tolerance'],
+            track_point_cloud = cfg['sim']['track_point_cloud'],
+            kwargs = kwargs,
+        )
+
+        initialize_obstacles(sim)
+
+        logger.info('Initializing control environment')
+        env = controlerTrainEnvImage(
+            sim=sim,
+            step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
+            max_episode_length=cfg['env']['max_timestep'],
+            max_ctrl=cfg['env']['max_control'],
+            total_train_steps=cfg['alg']['total_timesteps']/cfg['alg']['nenv'],
+            action_scaling_type=cfg['env']['action_scaling'],
+            randomize_initial_state=cfg['env']['random_initial_state'],
+        )
+
+
+        filter_keys=[
+            'rel_goal_state',
+            'obstacles_matrix'
+        ]
+
+        env = FilterObservation(env,filter_keys=filter_keys)
+        #env = FlattenObservation(env)
+    else:
         '''
         set up control env
         '''
@@ -469,6 +509,7 @@ def make_env(filedir: str, cfg: DictConfig):
             control_method = cfg['sim']['control_method'],
             goal_tolerance = cfg['sim']['goal_tolerance'],
             collision_tolerance = cfg['sim']['collision_tolerance'],
+            track_point_cloud = cfg['sim']['track_point_cloud'],
             kwargs = kwargs,
         )
 
@@ -496,45 +537,6 @@ def make_env(filedir: str, cfg: DictConfig):
 
         env = FilterObservation(env,filter_keys=filter_keys)
         env = FlattenObservation(env)
-
-    if 'controlImage' in cfg['env']['scenario']:
-        '''
-        set up control env
-        '''
-
-        sim = Sim(
-            main_object = satellite,
-            path_planner = path_planner,
-            point_cloud_size = cfg['sim']['point_cloud_size'],
-            path_point_tolerance = cfg['sim']['path_point_tolerance'],
-            point_cloud_radius = cfg['sim']['point_cloud_radius'],
-            control_method = cfg['sim']['control_method'],
-            goal_tolerance = cfg['sim']['goal_tolerance'],
-            collision_tolerance = cfg['sim']['collision_tolerance'],
-            kwargs = kwargs,
-        )
-
-        initialize_obstacles(sim)
-
-        logger.info('Initializing control environment')
-        env = controlerTrainEnvImage(
-            sim=sim,
-            step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
-            max_episode_length=cfg['env']['max_timestep'],
-            max_ctrl=cfg['env']['max_control'],
-            total_train_steps=cfg['alg']['total_timesteps']/cfg['alg']['nenv'],
-            action_scaling_type=cfg['env']['action_scaling'],
-            randomize_initial_state=cfg['env']['random_initial_state'],
-        )
-
-        filter_keys=[
-            'rel_goal_state',
-            'obstacles_matrix'
-        ]
-
-        env = FilterObservation(env,filter_keys=filter_keys)
-        #env = FlattenObservation(env)
-
 
     return env
 

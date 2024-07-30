@@ -3,6 +3,7 @@ import ray
 import hydra
 import torch
 from omegaconf import DictConfig
+from hydra.utils import get_original_cwd
 
 from logger import getlogger
 from learning.train_ray import train_ray
@@ -18,6 +19,7 @@ def train_rl_model(cfg: DictConfig):
                               'env_vars': {'PYTHONWARNINGS': 'ignore::DeprecationWarning'}})
         train_ray(cfg,DIRECTORY)
     else:
+        os.chdir('../../../')
         train(cfg,DIRECTORY)
 
 @hydra.main(config_path="learning/conf", config_name="config1", version_base='1.1')
@@ -27,6 +29,7 @@ def retrain_rl_model(cfg: DictConfig):
 
 @hydra.main(config_path="learning/conf", config_name="config1", version_base='1.1')
 def run_rl_model(cfg: DictConfig):
+    os.chdir('../../../')
     #modeldir = '/home/cameron/magpie_rl/logs/adversary_rew2/2024-05-28/midtrain_model_17000000_steps.zip' #adversary model
     #modeldir = '/home/cameron/magpie_rl/logs/evade_1m/2024-06-01/retrained_model.zip' # evade model
     modeldir = None
@@ -34,7 +37,7 @@ def run_rl_model(cfg: DictConfig):
     runSpaceSim(cfg,DIRECTORY,modeldir=modeldir,render=True)
 
 if __name__ == "__main__":
-    torch.set_num_threads(9)
+    torch.set_num_threads(10)
     DIRECTORY = os.getcwd()
     train_rl_model()
     

@@ -72,6 +72,7 @@ sim:
   point_cloud_radius: 30
   goal_tolerance: 1
   collision_tolerance: 1
+  track_point_cloud: False #propogate point cloud or not
   kwargs:
     upper_state_bounds: [1e10,  1e10,  1e10, 1e10, 1e10, 1e10]
     lower_state_bounds: [-1e10,  -1e10,  -1e10, -1e10, -1e10, -1e10]

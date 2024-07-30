@@ -1,3 +1,4 @@
+import time
 import gymnasium
 import numpy as np
 from gymnasium import spaces
@@ -86,9 +87,9 @@ class controlerTrainEnvImage(satGymEnv):
         terminated_bad, terminated_good, truncated = self._end_episode() #end by collision, end by max episode
 
         if terminated_bad:
-            rew -= 600
+            rew -= 400
         if terminated_good:
-            rew += 600
+            rew += 400
 
         return obs, rew, terminated_bad or terminated_good, truncated, {'done': (terminated_bad or terminated_good, truncated), 'reward': rew}
 
@@ -106,10 +107,8 @@ class controlerTrainEnvImage(satGymEnv):
 
         #evade binary point cloud
         obstacle_matrix = self.sim.get_voxelized_point_cloud()
-        #print(obstacle_matrix)
-        #obstacle_matrix = np.expand_dims(obstacle_matrix,axis=obstacle_matrix.ndim)
-        #print(obstacle_matrix)
-        obs['obstacles_matrix'] = obstacle_matrix[0]
+        obs['obstacles_matrix'] = obstacle_matrix
+
         return obs
     
     def _reward(self) -> float:
@@ -147,7 +146,6 @@ class controlerTrainEnvImage(satGymEnv):
             else:
                 image_shape = val.shape
                 space[key] = spaces.Box(low=0, high=1, shape=image_shape, dtype=np.uint8) #shape=(image_shape[1],image_shape[2],image_shape[0]),
-
         return spaces.Dict(space)
         
 

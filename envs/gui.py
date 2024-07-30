@@ -65,6 +65,7 @@ class gui(object):
     def __call__(self, pipe):
         print('starting plotter...')
         self._fig = plt.figure(figsize=(10, 10))
+
         if self.dim == 3:
             self._ax1 = self._fig.add_subplot(1, 1, 1, projection='3d')
         if self.dim == 2:
@@ -112,7 +113,6 @@ class gui(object):
         path_skip = 1 #dont plot the first point in goal path (may have to be tuned)
         self._ax1.clear()
         self._ax1.grid(False)
-        print(object1)
         points = object1['points']
         lines = object1['lines']
         
