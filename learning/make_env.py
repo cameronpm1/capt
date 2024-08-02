@@ -54,6 +54,7 @@ def make_env(filedir: str, cfg: DictConfig):
                 ylim = cfg['random']['y_range']
                 zlim = cfg['random']['z_range']
                 pos = [np.random.random()*(xlim[1]-xlim[0])+xlim[0], np.random.random()*(ylim[1]-ylim[0])+ylim[0], np.random.random()*(zlim[1]-zlim[0])+zlim[0]]
+                pos = [1000,1000,1000] #initialize obstacles off of the board
                 vel = np.random.random(3,)
                 vel = vel/np.linalg.norm(vel)*(cfg['random']['vel']*np.random.random())
 
