@@ -55,7 +55,7 @@ def runSpaceSim(
             else:
                 action, _states = model.predict(obs)
             obs,rewards,terminated,truncated,_ = env.step(action)
-            if i%15 == 0:
+            if i%10 == 0:
                 if verbose:
                     print('at timestep',i,'distance to goal:', env.unwrapped.sim.distance_to_goal())
             if terminated or truncated:

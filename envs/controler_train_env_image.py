@@ -52,9 +52,9 @@ class controlerTrainEnvImage(satGymEnv):
 
     def reset(self, **kwargs):
         if self._train_step < 5e6:
-            max_obs = 5
+            max_obs = 0
         elif self._train_step < 15e6:
-            max_obs = int((self._train_step-5e6)/10e6*(self.n_obs-5)) + 5
+            max_obs = int((self._train_step-5e6)/10e6*(self.n_obs-5)) + 0
         else:
             max_obs = self.n_obs
         if self.randomize_initial_state:
@@ -120,7 +120,7 @@ class controlerTrainEnvImage(satGymEnv):
         return obs
     
     def _reward(self) -> float:
-        dist = np.linalg.norm(self.sim.main_object.get_state()-np.array(self.sim.get_sat_goal()))/self.distance_max #inverse of dif between state and goal
+        dist = self.sim.distance_to_goal()/self.distance_max #inverse of dif between state and goal
         return -1*dist
     
     def _end_episode(self) -> bool:

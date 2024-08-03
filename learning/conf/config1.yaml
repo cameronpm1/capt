@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: img3d_test1_1024 # set job name
+    name: img3d_test_1024_15obs # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -21,7 +21,7 @@ alg:
   pi: [1024, 1024]
   vf: [1024, 1024]
   device: cuda # cpu, cuda
-  total_timesteps: 40e6 #20e6
+  total_timesteps: 20e6 #20e6
   
 
 
@@ -105,7 +105,7 @@ obstacles:
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
 random:
   on: True
-  n: 15
+  n: 1
   vel: 0.0005
   x_range: [-7,7] #[-7,7]
   y_range: [4,18] #[5,15]

@@ -12,7 +12,7 @@ logging:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
-  lib: sb3
+  lib: ray
   type: sac
   nenv:  20
   lr: 0.0003
@@ -26,7 +26,7 @@ alg:
 
 
 env:
-  scenario: controlImage #control, controlImage, adversary, evade, multi
+  scenario: control #control, controlImage, adversary, evade, multi
   max_timestep: 512
   max_control: [0.3,0.3]
   ctrl_type: thrust

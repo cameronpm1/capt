@@ -12,6 +12,7 @@ from ray.rllib.utils.test_utils import (
     add_rllib_example_script_args,
     run_rllib_example_script_experiment,
 )
+from ray.tune.logger import UnifiedLogger
 from ray.tune.registry import register_env
 from ray.rllib.algorithms.sac import SACConfig
 from ray.rllib.algorithms.ppo import PPOConfig
@@ -22,6 +23,7 @@ from envs.evade_pursuit_env import evadePursuitEnv
 
 
 logger = getlogger(__name__)
+
 
 def mkdir(folder):
     if os.path.exists(folder):
@@ -62,6 +64,9 @@ def train_ray(cfg: DictConfig,filedir):
             return 'adversary'
         print('Error: unknown agent id')
         exit()
+
+    def logger_creator(config):
+        return UnifiedLogger(config, logdir, loggers=None)
 
     if 'sac' in cfg['alg']['type']:
         algo = SACConfig()
@@ -124,12 +129,12 @@ def train_ray(cfg: DictConfig,filedir):
     
     del test_env
 
-    algo_build = algo_config.build()
+    algo_build = algo_config.build(logger_creator=logger_creator)
     result = algo_build.train()
-    print(pretty_print(result))
-    model = algo_build.get_policy().model
-    model_out = model({"obs": np.array([[0.1, 0.2, 0.3, 0.4]])})
-    model.base_model.summary()
+    #print(pretty_print(result))
+    #model = algo_build.get_policy().model
+    #model_out = model({"obs": np.array([[0.1, 0.2, 0.3, 0.4]])})
+    #model.base_model.summary()
 
     '''
     for i in range(15000):
