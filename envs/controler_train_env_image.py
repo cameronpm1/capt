@@ -51,9 +51,9 @@ class controlerTrainEnvImage(satGymEnv):
 
 
     def reset(self, **kwargs):
-        if self._train_step < 5e6:
+        if self._train_step < 10e6:
             max_obs = 0
-        elif self._train_step < 15e6:
+        elif self._train_step < 20e6:
             max_obs = int((self._train_step-5e6)/10e6*(self.n_obs-5)) + 0
         else:
             max_obs = self.n_obs

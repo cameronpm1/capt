@@ -51,7 +51,7 @@ class staticObject():
 
         if not self.vista:
             if not self.vista_flag:
-                print('Warning: cannot generate point cloud data from simplified mesh, for point cloud augmentation use pyvista. Using corner points')
+                #print('Warning: cannot generate point cloud data from simplified mesh, for point cloud augmentation use pyvista. Using corner points')
                 self.vista_flag = True
             return self.temp_mesh['points']
 

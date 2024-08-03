@@ -7,12 +7,12 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: img_vec_test512 # set job name
+    name: img2d_test_512_0-5obs # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
-  lib: ray
+  lib: sb3
   type: sac
   nenv:  20
   lr: 0.0003
@@ -26,8 +26,8 @@ alg:
 
 
 env:
-  scenario: control #control, controlImage, adversary, evade, multi
-  max_timestep: 512
+  scenario: controlImage #control, controlImage, adversary, evade, multi
+  max_timestep: 1024
   max_control: [0.3,0.3]
   ctrl_type: thrust
   action_scaling: clip
@@ -55,7 +55,7 @@ path_planner:
   goal_state: [1,20,0,0,0,0] 
   path_planning_algorithm: VFH
   kwargs:
-    radius: 17
+    radius: 10
     min_obstacle_distance: 4
     iterations: 1
     distance_tolerance: 0.5
@@ -101,7 +101,7 @@ obstacles:
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
 random:
   on: True
-  n: 3
+  n: 5
   vel: 0.0005
   x_range: [-7,7] #[-7,7]
   y_range: [4,18] #[5,15]

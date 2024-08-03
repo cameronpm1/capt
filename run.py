@@ -30,11 +30,11 @@ def retrain_rl_model(cfg: DictConfig):
 @hydra.main(config_path="learning/conf", config_name="config1", version_base='1.1')
 def run_rl_model(cfg: DictConfig):
     os.chdir('../../../')
-    modeldir = '/home/cameron/magpie_rl/logs/img3d_test_1024_5obs/2024-08-02/model.zip'
+    modeldir = None #'/home/cameron/magpie_rl/logs/img3d_test_1024_5obs/2024-08-02/model.zip'
     runSpaceSim(cfg,DIRECTORY,modeldir=modeldir,render=False)
 
 if __name__ == "__main__":
     torch.set_num_threads(9)
     DIRECTORY = os.getcwd()
-    run_rl_model()
+    train_rl_model()
     
