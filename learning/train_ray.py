@@ -131,12 +131,12 @@ def train_ray(cfg: DictConfig,filedir):
     
     del test_env
 
-    algo_build = algo_config.build()
+    algo_build = algo_config.build(logger_creator=logger_creator)
     result = algo_build.train()
-    print(pretty_print(result))
-    model = algo_build.get_policy().model
-    model_out = model({"obs": np.array([[0.1, 0.2, 0.3, 0.4]])})
-    model.base_model.summary()
+    #print(pretty_print(result))
+    #model = algo_build.get_policy().model
+    #model_out = model({"obs": np.array([[0.1, 0.2, 0.3, 0.4]])})
+    #model.base_model.summary()
 
     '''
     for i in range(15000):
