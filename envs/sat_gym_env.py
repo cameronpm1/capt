@@ -78,7 +78,7 @@ class satGymEnv(gymnasium.Env):
     def observation_space(
             self,
     ) -> gymnasium.Space:
-        
+
         obs = self._get_obs()
         space = {}
         for key, val in obs.items():

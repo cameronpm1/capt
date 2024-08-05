@@ -368,11 +368,8 @@ def make_env(filedir: str, cfg: DictConfig):
             'adversary0_state',
         ]
 
+        '''
     elif 'multi' in cfg['env']['scenario']:
-
-        '''
-        only add obstacles and adversaries if the word adversary is in the env scenario name
-        '''
 
         sim = Sim(
             main_object = satellite,
@@ -457,6 +454,8 @@ def make_env(filedir: str, cfg: DictConfig):
             'evader_state',
             'adversary0_state',
         ]
+    '''
+
     elif 'controlImage' in cfg['env']['scenario']:
         '''
         set up controlImage env

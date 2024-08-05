@@ -34,7 +34,7 @@ def run_rl_model(cfg: DictConfig):
     runSpaceSim(cfg,DIRECTORY,modeldir=modeldir,render=False)
 
 if __name__ == "__main__":
-    torch.set_num_threads(9)
+    torch.set_num_threads(8)
     DIRECTORY = os.getcwd()
     train_rl_model()
     
