@@ -20,6 +20,8 @@ from logger import getlogger
 from learning.make_env import make_env
 from envs.evade_pursuit_env import evadePursuitEnv
 
+from torchsummary import summary
+
 
 logger = getlogger(__name__)
 
@@ -109,14 +111,14 @@ def train_ray(cfg: DictConfig,filedir):
         algo_config = (algo
                 .environment(env=env_name)
                 .framework('torch')
-                .env_runners(num_env_runners=1,
+                .env_runners(num_env_runners=cfg['alg']['nenv'],
                             num_envs_per_worker=1,
                             num_cpus_per_env_runner=1
                             )
-                .resources(num_gpus=1)
-                .training(gamma=0.99, 
-                            lr=0.0001,
-                            train_batch_size=256,
+                .resources(num_gpus=cfg['alg']['device'] == 'cuda')
+                .training(gamma=cfg['alg']['gamma'], 
+                            lr=cfg['alg']['lr'],
+                            train_batch_size=cfg['alg']['batch_size'],
                             replay_buffer_config={
                                 'capacity': 1000000, 
                                 })
@@ -125,11 +127,28 @@ def train_ray(cfg: DictConfig,filedir):
     del test_env
 
     algo_build = algo_config.build()
+
+    total_timesteps = int(cfg['alg']['total_timesteps'])
+    timesteps_per_iteration = cfg['env']['max_timestep']  # Adjust based on your configuration
+    num_iterations = total_timesteps // timesteps_per_iteration
+
+    for i in range(num_iterations):
+        result = algo_build.train()
+        print(pretty_print(result))
+
+        if i % 100 == 0 and i != 0:
+            checkpoint_dir = algo_build.save(checkpoint_dir=logdir).checkpoint.path
+            print(f"Checkpoint saved in directory {checkpoint_dir}")
+
+    '''
+    algo_build = algo_config.build()
     result = algo_build.train()
     print(pretty_print(result))
     model = algo_build.get_policy().model
     model_out = model({"obs": np.array([[0.1, 0.2, 0.3, 0.4]])})
-    model.base_model.summary()
+    #summary(model, input_size=(1, 4))
+    #model.base_model.summary()
+    '''
 
     '''
     for i in range(15000):

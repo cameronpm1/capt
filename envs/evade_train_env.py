@@ -1,6 +1,7 @@
 import time
 import numpy as np
 from stable_baselines3 import PPO
+from stable_baselines3 import SAC
 from typing import Any, Dict, Type, Optional, Union
 
 from space_sim.sim import Sim
@@ -46,12 +47,13 @@ class evadeTrainEnv(satGymEnv):
         if 'pos' in self.ctrl_type:
             self.sim.create_adversary_controller()
 
-        self.adversary_model = PPO.load(adversary_model_path)
+        self.adversary_model = SAC.load(adversary_model_path)
 
         self._obs = None
         self._rew = None
         self.initial_goal_distance = 0
         self.min_distance = 0
+        self.action_dim = len(max_ctrl)
 
     def reset(self, **kwargs):
         if self.randomize_initial_state:
