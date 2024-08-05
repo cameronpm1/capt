@@ -12,6 +12,7 @@ from ray.rllib.utils.test_utils import (
     add_rllib_example_script_args,
     run_rllib_example_script_experiment,
 )
+from ray.tune.logger import UnifiedLogger
 from ray.tune.registry import register_env
 from ray.rllib.algorithms.sac import SACConfig
 from ray.rllib.algorithms.ppo import PPOConfig
@@ -24,6 +25,7 @@ from torchsummary import summary
 
 
 logger = getlogger(__name__)
+
 
 def mkdir(folder):
     if os.path.exists(folder):
@@ -64,6 +66,9 @@ def train_ray(cfg: DictConfig,filedir):
             return 'adversary'
         print('Error: unknown agent id')
         exit()
+
+    def logger_creator(config):
+        return UnifiedLogger(config, logdir, loggers=None)
 
     if 'sac' in cfg['alg']['type']:
         algo = SACConfig()
@@ -127,28 +132,11 @@ def train_ray(cfg: DictConfig,filedir):
     del test_env
 
     algo_build = algo_config.build()
-
-    total_timesteps = int(cfg['alg']['total_timesteps'])
-    timesteps_per_iteration = cfg['env']['max_timestep']  # Adjust based on your configuration
-    num_iterations = total_timesteps // timesteps_per_iteration
-
-    for i in range(num_iterations):
-        result = algo_build.train()
-        print(pretty_print(result))
-
-        if i % 100 == 0 and i != 0:
-            checkpoint_dir = algo_build.save(checkpoint_dir=logdir).checkpoint.path
-            print(f"Checkpoint saved in directory {checkpoint_dir}")
-
-    '''
-    algo_build = algo_config.build()
     result = algo_build.train()
     print(pretty_print(result))
     model = algo_build.get_policy().model
     model_out = model({"obs": np.array([[0.1, 0.2, 0.3, 0.4]])})
-    #summary(model, input_size=(1, 4))
-    #model.base_model.summary()
-    '''
+    model.base_model.summary()
 
     '''
     for i in range(15000):

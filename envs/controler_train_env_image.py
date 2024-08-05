@@ -49,17 +49,25 @@ class controlerTrainEnvImage(satGymEnv):
         self.distance_max = 60
 
 
+
     def reset(self, **kwargs):
+        if self._train_step < 10e6:
+            max_obs = 0
+        elif self._train_step < 20e6:
+            max_obs = int((self._train_step-5e6)/10e6*(self.n_obs-5)) + 0
+        else:
+            max_obs = self.n_obs
         if self.randomize_initial_state:
             prompt = self.prompter.prompt()
             self.sim.set_sat_initial_pos(pos=prompt['sat_pos']) #set initial sat position
             #self.sim.set_sat_initial_vel(vel=prompt['sat_vel']) #set initial sat velocity
             self.sim.set_sat_goal(goal=prompt['sat_goal']) #set new sat goal
-            for i in range(self.n_obs):
+            for i in range(max_obs):
                 label = 'obs' + str(i) + '_pos'
                 self.sim.set_obs_initial_pos(pos=prompt[label],idx=self.obs_idx[i])
         self._episode += 1
         self._step = 0
+        self._train_step += 1
         self.sim.reset()
         return self._get_obs(), {'episode': self._episode}
 
@@ -112,7 +120,7 @@ class controlerTrainEnvImage(satGymEnv):
         return obs
     
     def _reward(self) -> float:
-        dist = np.linalg.norm(self.sim.main_object.get_state()-np.array(self.sim.get_sat_goal()))/self.distance_max #inverse of dif between state and goal
+        dist = self.sim.distance_to_goal()/self.distance_max #inverse of dif between state and goal
         return -1*dist
     
     def _end_episode(self) -> bool:

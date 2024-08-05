@@ -4,15 +4,23 @@ import hydra
 import torch
 import shutil
 import logging
+import gymnasium
 import numpy as np
+import torch as th
+from torch import nn
+from typing import Dict
+from gymnasium import spaces
 from omegaconf import DictConfig
 from stable_baselines3 import PPO
 from stable_baselines3 import SAC
 from hydra.core.hydra_config import HydraConfig
 from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.type_aliases import TensorDict
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_image_space
 
 
 from logger import getlogger
@@ -26,6 +34,103 @@ def mkdir(folder):
         shutil.rmtree(folder)
     os.makedirs(folder)
 
+class CustomCNN(BaseFeaturesExtractor):
+    """
+    same as NatureCNN from torch_layers with custom kernel
+    """
+
+    def __init__(
+        self,
+        observation_space: gymnasium.Space,
+        features_dim: int = 512,
+        normalized_image: bool = False,
+    ) -> None:
+        assert isinstance(observation_space, spaces.Box), (
+            "NatureCNN must be used with a gym.spaces.Box ",
+            f"observation space, not {observation_space}",
+        )
+        super().__init__(observation_space, features_dim)
+        # We assume CxHxW images (channels first)
+        # Re-ordering will be done by pre-preprocessing or wrapper
+        assert is_image_space(observation_space, check_channels=False, normalized_image=normalized_image), (
+            "You should use NatureCNN "
+            f"only with images not with {observation_space}\n"
+            "(you are probably using `CnnPolicy` instead of `MlpPolicy` or `MultiInputPolicy`)\n"
+            "If you are using a custom environment,\n"
+            "please check it using our env checker:\n"
+            "https://stable-baselines3.readthedocs.io/en/master/common/env_checker.html.\n"
+            "If you are using `VecNormalize` or already normalized channel-first images "
+            "you should pass `normalize_images=False`: \n"
+            "https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html"
+        )
+        n_input_channels = observation_space.shape[0]
+        self.cnn = nn.Sequential(
+            nn.Conv2d(n_input_channels, 32, kernel_size=3, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=2, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=1, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        )
+
+        # Compute shape by doing one forward pass
+        with th.no_grad():
+            n_flatten = self.cnn(th.as_tensor(observation_space.sample()[None]).float()).shape[1]
+
+        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
+
+    def forward(self, observations: th.Tensor) -> th.Tensor:
+        return self.linear(self.cnn(observations))
+
+class CustomCombinedExtractor(BaseFeaturesExtractor):
+    """
+    Combined features extractor for Dict observation spaces.
+    Builds a features extractor for each key of the space. Input from each space
+    is fed through a separate submodule (CNN or MLP, depending on input shape),
+    the output features are concatenated and fed through additional MLP network ("combined").
+
+    :param observation_space:
+    :param cnn_output_dim: Number of features to output from each CNN submodule(s). Defaults to
+        256 to avoid exploding network sizes.
+    :param normalized_image: Whether to assume that the image is already normalized
+        or not (this disables dtype and bounds checks): when True, it only checks that
+        the space is a Box and has 3 dimensions.
+        Otherwise, it checks that it has expected dtype (uint8) and bounds (values in [0, 255]).
+    """
+
+    def __init__(
+        self,
+        observation_space: spaces.Dict,
+        cnn_output_dim: int = 256,
+        normalized_image: bool = False,
+    ) -> None:
+        # TODO we do not know features-dim here before going over all the items, so put something there. This is dirty!
+        super().__init__(observation_space, features_dim=1)
+
+        extractors: Dict[str, nn.Module] = {}
+
+        total_concat_size = 0
+        for key, subspace in observation_space.spaces.items():
+            if is_image_space(subspace, normalized_image=normalized_image):
+                extractors[key] = CustomCNN(subspace, features_dim=cnn_output_dim, normalized_image=normalized_image)
+                total_concat_size += cnn_output_dim
+            else:
+                # The observation key is a vector, flatten it if needed
+                extractors[key] = nn.Flatten()
+                total_concat_size += get_flattened_obs_dim(subspace)
+
+        self.extractors = nn.ModuleDict(extractors)
+
+        # Update the features dim manually
+        self._features_dim = total_concat_size
+
+    def forward(self, observations: TensorDict) -> th.Tensor:
+        encoded_tensor_list = []
+
+        for key, extractor in self.extractors.items():
+            encoded_tensor_list.append(extractor(observations[key]))
+        return th.cat(encoded_tensor_list, dim=1)
 
 def train(cfg: DictConfig,filedir):
     filedir = filedir
@@ -75,7 +180,14 @@ def train(cfg: DictConfig,filedir):
 
     if cfg["alg"]["type"] == "sac":
         alg = SAC
-        policy_kwargs = dict(net_arch=dict(pi=cfg["alg"]["pi"], qf=cfg["alg"]["vf"]))
+        if 'Image' in cfg['env']['scenario']:
+            policy_kwargs = dict(
+                net_arch=dict(pi=cfg["alg"]["pi"], qf=cfg["alg"]["vf"]), 
+                features_extractor_class=CustomCombinedExtractor,
+                features_extractor_kwargs=dict(normalized_image=True))
+        else:
+            policy_kwargs = dict(
+                net_arch=dict(pi=cfg["alg"]["pi"], qf=cfg["alg"]["vf"]))
         alg_kwargs = {}
 
     if 'Image' in cfg['env']['scenario']:
