@@ -24,6 +24,8 @@ from learning.make_env import make_env
 from envs.evade_pursuit_env import evadePursuitEnv
 from envs.multi_env_wrapper import multiEnvWrapper
 
+from torchsummary import summary
+
 
 logger = getlogger(__name__)
 
