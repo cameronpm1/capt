@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: test3 # set job name
+    name: test14 # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -21,6 +21,7 @@ alg:
   pi: [512, 512]
   vf: [512, 512]
   target_ent: 0.1
+  train_intensity: 1.0
   device: cpu # cpu, cuda
   total_timesteps: 20e6 #20e6
   

@@ -114,17 +114,15 @@ def train_ray(cfg: DictConfig,filedir):
                             policies=policy_info)
                 .training(gamma=0.99, 
                             train_batch_size=256,
-                            optimization_config={
-                                'actor_learning_rate': cfg['alg']['lr'],
-                                'critic_learning_rate': cfg['alg']['lr'],
-                                'entropy_learning_rate': 0
-                                },
+                            training_intensity=cfg['alg']['train_intensity'],
                             target_entropy=cfg['alg']['target_ent'],
                             replay_buffer_config={
                                 'type': 'MultiAgentReplayBuffer', 
                                 'capacity': 1000000, 
                                 'replay_sequence_length': 1,
                                 })
+                #.rollout(batch_mode='truncated_episods',
+                #            rollout_fragment_length=256,)
         )
     
     del test_env
