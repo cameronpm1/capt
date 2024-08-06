@@ -116,7 +116,7 @@ class satGymEnv(gymnasium.Env):
         seeds.extend(self.sim.seed(seed))
         if self.randomize_initial_state:
             seeds.extend(self.prompter.seed(seed=seed))
-
+ 
         return seeds
     
     def _get_obs(self) -> OrderedDict:

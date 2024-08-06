@@ -18,22 +18,20 @@ class multiEnvWrapper(MultiAgentEnv):
 
     def __init__(
             self,
-            envs: list[Type[satGymEnv]],
+            env: Type[satGymEnv],
+            num_agents: Optional[int] = 1,
     ): 
-        self.envs = envs
-        self.nenvs = len(envs)
-        self.labels = ['agent'+str(i) for i in range(self.nenvs)]
-
+        self.env = env
+        self.num_agents = num_agents
+        self.label = 'agent0'
     @property
     def action_space(
             self,
     ) -> gymnasium.Space:
         
         space = spaces.Dict()
-
-        for i in range(self.nenvs):
-            action_space = self.envs[i].action_space
-            space[self.labels[i]] = action_space
+        action_space = self.env.action_space
+        space[self.label] = action_space
 
         return space
 
@@ -43,21 +41,19 @@ class multiEnvWrapper(MultiAgentEnv):
     ) -> gymnasium.Space:
 
         space = spaces.Dict()
-
-        for i in range(self.nenvs):
-            observation_space = self.envs[i].observation_space
-            space[self.labels[i]] = observation_space
+        observation_space = self.env.observation_space
+        space[self.label] = observation_space
 
         return space
     
     def step(self, action_dict):
+
         obs,rew,terminated,truncated  = {},{},{},{}
         terminated_all = True
         truncated_all = True
 
         for key, action in action_dict.items():
-            idx = self.labels.index(key)
-            obs[key],rew[key],terminated[key],truncated[key],_ = self.envs[idx].step(action)
+            obs[key],rew[key],terminated[key],truncated[key],_ = self.env.step(action)
             if not terminated[key]:
                 terminated_all = False
             if not truncated[key]:
@@ -70,10 +66,8 @@ class multiEnvWrapper(MultiAgentEnv):
     
     def reset(self, **kwargs):
         obs,ep = {},{}
-        for i in range(self.nenvs):
-            obs[self.labels[i]],ep[self.labels[i]] = self.envs[i].reset(**kwargs)
+        obs[self.label],ep[self.label] = self.env.reset(**kwargs)
         return obs,ep
     
     def close(self):
-        for i in range(self.nenvs):
-            self.envs[i].unwrapped.close()
+        self.env.unwrapped.close()
