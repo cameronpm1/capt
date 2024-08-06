@@ -20,6 +20,7 @@ alg:
   gamma: 0.99
   pi: [512, 512]
   vf: [512, 512]
+  target_ent: 0.1
   device: cpu # cpu, cuda
   total_timesteps: 20e6 #20e6
   

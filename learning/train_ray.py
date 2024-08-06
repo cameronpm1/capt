@@ -119,7 +119,7 @@ def train_ray(cfg: DictConfig,filedir):
                                 'critic_learning_rate': cfg['alg']['lr'],
                                 'entropy_learning_rate': 0
                                 },
-                            target_entropy=0.1,
+                            target_entropy=cfg['alg']['target_ent'],
                             replay_buffer_config={
                                 'type': 'MultiAgentReplayBuffer', 
                                 'capacity': 1000000, 
