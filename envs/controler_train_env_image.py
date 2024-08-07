@@ -147,7 +147,8 @@ class controlerTrainEnvImage(satGymEnv):
     ) -> gymnasium.Space:
         
         obs = self._get_obs()
-        space = {}
+        space = OrderedDict()
+        
         for key, val in obs.items():
             if 'matrix' not in key:
                 space[key] = spaces.Box(low=-np.inf, high=np.inf, shape=val.shape)

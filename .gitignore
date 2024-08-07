@@ -3,3 +3,4 @@ logs/
 magpie_rl/
 outputs/
 token.txt
+sac_torch_model.py

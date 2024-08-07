@@ -20,6 +20,8 @@ alg:
   gamma: 0.99
   pi: [1024, 1024]
   vf: [1024, 1024]
+  target_ent: 0.1
+  train_intensity: 3
   device: cuda # cpu, cuda
   total_timesteps: 20e6 #20e6
   

@@ -50,7 +50,7 @@ class controlerTrainEnv(satGymEnv):
         if self.randomize_initial_state:
             prompt = self.prompter.prompt()
             self.sim.set_sat_initial_pos(pos=prompt['sat_pos']) #set initial sat position
-            #self.sim.set_sat_initial_vel(vel=prompt['sat_vel']) #set initial sat velocity
+            self.sim.set_sat_initial_vel(vel=prompt['sat_vel']) #set initial sat velocity
             self.sim.set_sat_goal(goal=prompt['sat_goal']) #set new sat goal
             for i in range(self.n_obs):
                 label = 'obs' + str(i) + '_pos'
@@ -61,13 +61,6 @@ class controlerTrainEnv(satGymEnv):
         return self._get_obs(), {'episode': self._episode}
 
     def step(self, action):
-        '''
-        TO DO:
-            integrate self.sim.get_voxelized_point_cloud() so that RL observation 
-            is evade state representation
-
-            will have to use cnn as input for for rl model
-        '''
         #scale sat action and set action
         scalled_action = self.scaling_function(action)
         if self.dim == 3:
@@ -108,7 +101,7 @@ class controlerTrainEnv(satGymEnv):
         return obs
     
     def _reward(self) -> float:
-        dist = np.linalg.norm(self.sim.main_object.get_state()-np.array(self.sim.get_sat_goal()))/self.distance_max #inverse of dif between state and goal
+        dist = self.sim.distance_to_goal()/self.distance_max #inverse of dif between state and goal
         return -1*dist
     
     def _end_episode(self) -> bool:

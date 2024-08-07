@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: image1 # set job name
+    name: adversary_test # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -16,19 +16,20 @@ alg:
   type: sac
   nenv:  20
   lr: 0.0003
+  batch: 256
   batch_size: 256
   gamma: 0.99
   pi: [512, 512]
   vf: [512, 512]
   target_ent: 0.1
-  train_intensity: 1.5
+  train_intensity: 3
   device: cpu # cpu, cuda
   total_timesteps: 20e6 #20e6
   
 
 
 env:
-  scenario: multicontrolImage #control, controlImage, adversary, evade, multi
+  scenario: multicontrol #control, controlImage, adversary, evade, multi
   n_policies: 1
   max_timestep: 1024
   max_control: [0.3,0.3]
@@ -73,7 +74,7 @@ sim:
   point_cloud_size: 50
   path_point_tolerance: 0.1
   point_cloud_radius: 30
-  goal_tolerance: 1
+  goal_tolerance: 0.5
   collision_tolerance: 1
   track_point_cloud: False #propogate point cloud or not
   kwargs:
@@ -103,7 +104,7 @@ obstacles:
 
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
 random:
-  on: True
+  on: False
   n: 20
   vel: 0.0005
   x_range: [-7,7] #[-7,7]
