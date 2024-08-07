@@ -24,6 +24,7 @@ class controlerTrainEnvImage(satGymEnv):
             total_train_steps: float,
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
+            parallel_envs: int = 20,
     ):
         super().__init__(
             sim=sim,
@@ -33,6 +34,7 @@ class controlerTrainEnvImage(satGymEnv):
             total_train_steps=total_train_steps,
             action_scaling_type=action_scaling_type,
             randomize_initial_state=randomize_initial_state,
+            parallel_envs=parallel_envs,
         )
 
         if self.randomize_initial_state and self.dim == 2:
@@ -42,6 +44,8 @@ class controlerTrainEnvImage(satGymEnv):
 
         self.obs_idx = self.sim.get_obstacles_idx()
         self.n_obs = len(self.obs_idx)
+        self.obs_start = 0.25 #when to start incoorperating obstacles
+        self.obs_finish = 0.85 #when to stop increasing num obstacles
 
         if self.n_obs > 0:
             self.prompter.set_num_obstacles(self.n_obs)
@@ -51,10 +55,10 @@ class controlerTrainEnvImage(satGymEnv):
 
 
     def reset(self, **kwargs):
-        if self._train_step < 6e6:
+        if self._train_step/self.total_train_steps < self.obs_start:
             max_obs = 0
-        elif self._train_step < 20e6:
-            max_obs = int((self._train_step-5e6)/10e6*(self.n_obs))
+        elif self._train_step/self.total_train_steps < self.obs_finish:
+            max_obs = int((self._train_step-(self.total_train_steps*self.obs_start))/((self.obs_finish-self.obs_start)*self.total_train_steps)*(self.n_obs))
         else:
             max_obs = self.n_obs
         if self.randomize_initial_state:
@@ -67,6 +71,7 @@ class controlerTrainEnvImage(satGymEnv):
                 self.sim.set_obs_initial_pos(pos=prompt[label],idx=self.obs_idx[i])
         self._episode += 1
         self._step = 0
+        self._train_step += self.parallel_envs
         self.sim.reset()
         return self._get_obs(), {'episode': self._episode}
 

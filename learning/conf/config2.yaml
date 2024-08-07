@@ -15,6 +15,7 @@ alg:
   lib: ray
   type: sac
   nenv:  20
+  cpu_envs: 60
   lr: 0.0003
   batch: 256
   batch_size: 256

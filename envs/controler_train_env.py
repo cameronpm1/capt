@@ -21,6 +21,7 @@ class controlerTrainEnv(satGymEnv):
             total_train_steps: float,
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
+            parallel_envs: int = 20,
     ):
         super().__init__(
             sim=sim,
@@ -30,6 +31,7 @@ class controlerTrainEnv(satGymEnv):
             total_train_steps=total_train_steps,
             action_scaling_type=action_scaling_type,
             randomize_initial_state=randomize_initial_state,
+            parallel_envs=parallel_envs,
         )
 
         if self.randomize_initial_state and self.dim == 2:
@@ -72,6 +74,7 @@ class controlerTrainEnv(satGymEnv):
         #take step
         self.sim.step()
         self._step += 1
+        self._train_step += self.parallel_envs
         obs = self._get_obs()
         rew = self._reward()
         terminated_bad, terminated_good, truncated = self._end_episode() #end by collision, end by max episode

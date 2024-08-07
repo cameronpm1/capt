@@ -31,6 +31,7 @@ class satGymEnv(gymnasium.Env):
             total_train_steps: float,
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
+            parallel_envs: int = 20,
     ):
         """
         Args:
@@ -52,6 +53,7 @@ class satGymEnv(gymnasium.Env):
         self.step_duration = step_duration
         self.max_episode_length = max_episode_length
         self.total_train_steps = total_train_steps
+        self.parallel_envs = parallel_envs
 
         #Initialize Simulation
         self.sim = sim
