@@ -52,7 +52,7 @@ class controlerTrainEnv(satGymEnv):
         if self.randomize_initial_state:
             prompt = self.prompter.prompt()
             self.sim.set_sat_initial_pos(pos=prompt['sat_pos']) #set initial sat position
-            self.sim.set_sat_initial_vel(vel=prompt['sat_vel']) #set initial sat velocity
+            #self.sim.set_sat_initial_vel(vel=prompt['sat_vel']) #set initial sat velocity
             self.sim.set_sat_goal(goal=prompt['sat_goal']) #set new sat goal
             for i in range(self.n_obs):
                 label = 'obs' + str(i) + '_pos'

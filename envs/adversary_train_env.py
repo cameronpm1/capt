@@ -43,7 +43,7 @@ class adversaryTrainEnv(satGymEnv):
             self.prompter = oneVOnePrompter()
 
         self.evader_policy = Policy.from_checkpoint(evader_policy_dir)
-        self.evader_model = lambda obs: self.policy.compute_single_action(obs)
+        self.evader_model = lambda obs: self.evader_policy.compute_single_action(obs)
 
         self.distance_max = 30
         self.initial_goal_distance = 0
@@ -59,11 +59,13 @@ class adversaryTrainEnv(satGymEnv):
         self._episode += 1
         self._step = 0
         self.sim.reset()
-        return self._get_obs(), {'episode': self._episode}
+        self._obs = self._get_obs()
+        self._rew = 0
+        return self._obs, {'episode': self._episode}
 
     def step(self, action):
         #compute evader control
-        evader_obs = self.get_evader_obs
+        evader_obs = self.get_evader_obs()
         evader_action = self.evader_model(evader_obs)
 
         #preprocess and set model action for adversary
@@ -106,6 +108,22 @@ class adversaryTrainEnv(satGymEnv):
         rew = self.sim.distance_to_goal()/self.distance_max
 
         return rew
+
+    def _get_obs(self) -> OrderedDict:
+        """Return observation
+
+           rel_evader_state: state of evader relative to advesary
+           rel_goal_state: state of the evaders goal relative to the adversary
+        """
+
+        obs = super()._get_obs()
+
+        #rel evader state
+        obs['rel_evader_state'] = obs['evader_state'] - obs['adversar0_state']
+        #rel goal state
+        obs['rel_goal_state'] = obs['goal_state'] - obs['adversary_state']
+
+        return obs
 
     def get_evader_obs(self) -> OrderedDict:
         """Return observation for evader

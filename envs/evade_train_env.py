@@ -25,6 +25,8 @@ class evadeTrainEnv(satGymEnv):
             ctrl_type: str = 'thrust',
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
+            adversary_policy_dir: Optional[str] = None,
+            parallel_envs: int = 20,
     ):
         super().__init__(
             sim=sim,
@@ -34,6 +36,7 @@ class evadeTrainEnv(satGymEnv):
             total_train_steps=total_train_steps,
             action_scaling_type=action_scaling_type,
             randomize_initial_state=randomize_initial_state,
+            parallel_envs=parallel_envs,
         )
 
         sim.set_collision_tolerance(tolerance=1) #IMPORTANT (to prevent evade model from learning to be close to adversary)
@@ -43,11 +46,13 @@ class evadeTrainEnv(satGymEnv):
         if self.randomize_initial_state and self.dim == 3:
             self.prompter = oneVOnePrompter()
 
-        self.ctrl_type = ctrl_type
-        if 'pos' in self.ctrl_type:
-            self.sim.create_adversary_controller()
-
-        self.adversary_model = SAC.load(adversary_model_path)
+        if adversary_policy_dir is None:
+            self.controller_policy = Policy.from_checkpoint(None)
+            self.adversary_controller = lambda pos: self.controller_policy.compute_single_action(pos)
+            self.adversary_model = lambda obs: self.adversary_controller(self.heuristic_adversary_policy(obs))
+        else:
+            self.adversary_policy = Policy.from_checkpoint(evader_policy_dir)
+            self.adversary_model = lambda obs: self.adversary_policy.compute_single_action(obs)
 
         self._obs = None
         self._rew = None
@@ -72,62 +77,85 @@ class evadeTrainEnv(satGymEnv):
 
     def step(self, action):
         #preprocesses control for sat
-        scalled_action = self.scaling_function(action)
-        if 'pos' in self.ctrl_type:
-            full_action = self.sim.compute_main_object_control(goal=np.concatenate((scalled_action+self.sim.get_sat_pos(),np.zeros((self.state_dim-3,)))))
-        else:
-            if self.dim == 3:
-                full_action = np.zeros((9,))
-                full_action[0:3] = scalled_action
-            if self.dim == 2:
-                full_action = np.zeros((3,))
-                full_action[0:2] = scalled_action
-        self.sim.set_sat_control(full_action)
-        #preprocess model action for adversary
-        adversary_action = self.compute_adversary_control()
-        self.sim.set_adversary_control([adversary_action])
-        #step
+        adversary_obs = self.get_adversary_obs()
+        adversary_action = self.adversary_model(adversary_obs)
+        
+        #preprocess and set model action for adversary
+        self.sim.set_sat_control(self.preprocess_action(action))
+        self.sim.set_adversary_control([self.preprocess_action(adversary_action)])
+
+        #take step
         self.sim.step()
-        #record new state
         self._step += 1
-        self._train_step += 1
-        self._obs = self._get_obs()
-        self._rew = self._reward()
-        terminated, truncated = self._end_episode() #end by collision, end by max episode
-        return self._obs, self._rew, terminated, truncated, {'done': (terminated, truncated), 'reward': self._rew}
+        self._train_step += self.parallel_envs
+        obs = self._get_obs()
+        rew = self._reward()
+
+        #check episode end and adjust reward
+        terminated_bad, terminated_good, truncated = self._end_episode() #end by collision, end by max episode
+
+        if terminated_bad:
+            rew -= 400
+        if terminated_good:
+            rew += 400
+
+        return obs, rew, terminated_bad or terminated_good, truncated, {'done': (terminated_bad or terminated_good, truncated), 'reward': rew}
     
     def _end_episode(self) -> bool:
-        dist = self.sim.distance_to_goal()
-        
-        terminated, truncated = super()._end_episode()
 
-        return dist >= 1.5*self.initial_goal_distance or terminated, truncated
+        collision = self.sim.collision_check()
+        goal_reached = self.sim.goal_check()
+
+        if self.sim.distance_to_goal() > self.distance_max:
+            too_far = True
+        else:
+            too_far = False
+
+        return collision or too_far, goal_reached, self._step >= self.max_episode_length
 
     
     def _reward(self) -> float:
-        dist = self.sim.distance_to_goal()
+        dist = self.sim.distance_to_goal()/self.distance_max #inverse of dif between state and goal
+        return -1*dist
 
-        if dist < self.min_distance:
-            self.min_distance = dist
-            rew = 1/dist
-        else:
-            rew = 0
+    def _get_obs(self) -> OrderedDict:
+        """Return observation
 
-        #rew = (1/dist) * (1 - self._step/1024) #/self.initial_goal_distance divide by timestep?
+           only returns evader_state and goal
+        """
 
-        return rew
+        obs = OrderedDict()
 
-    def compute_adversary_control(self):
-        obs = np.concatenate((self._obs['adversary0_state'],self._obs['evader_state']), axis=None) 
+        # Satellite goal
+        evader_state = self.sim.get_sat_state().copy()[0:self.dim*2]
+        obs['rel_goal_state'] = np.array(self.sim.get_sat_goal().copy())[0:self.dim*2] - evader_state
 
-        action, _states = self.adversary_model.predict(obs)
-        scalled_action = self.scaling_function(action)
+        #evade binary point cloud
+        obstacle_matrix = self.sim.get_voxelized_point_cloud()
+        obs['obstacles_matrix'] = obstacle_matrix
 
-        if 'pos' in self.ctrl_type:
-            full_action = self.sim.compute_adversary_control(goal=np.concatenate((scalled_action+self.get_adversary_pos(),np.zeros((self.state_dim-3,)))))
-        else:
-            full_action = np.zeros((9,))
-            full_action[0:3] = scalled_action 
+        return obs
 
-        return full_action
+    def get_adversary_obs(self) -> OrderedDict:
+        """Return observation
+
+           rel_evader_state: state of evader relative to advesary
+           rel_goal_state: state of the evaders goal relative to the adversary
+        """
+        obs = super()._get_obs()
+
+        adversary_obs = OrderedDict()
+        #rel evader state
+        adversary_obs['rel_evader_state'] = obs['evader_state'] - obs['adversar0_state']
+        #rel goal state
+        adversary_obs['rel_goal_state'] = obs['goal_state'] - obs['adversary_state']
+
+        return obs
+
+    def heuristic_adversary_policy(
+        self,
+        obs: dict
+    ) -> list[float]:
+
+        pass
         
