@@ -54,7 +54,7 @@ class controlerTrainEnvImage(satGymEnv):
         if self._train_step < 6e6:
             max_obs = 0
         elif self._train_step < 20e6:
-            max_obs = int((self._train_step-5e6)/10e6*(self.n_obs-5)) + 0
+            max_obs = int((self._train_step-5e6)/10e6*(self.n_obs))
         else:
             max_obs = self.n_obs
         if self.randomize_initial_state:
@@ -67,7 +67,6 @@ class controlerTrainEnvImage(satGymEnv):
                 self.sim.set_obs_initial_pos(pos=prompt[label],idx=self.obs_idx[i])
         self._episode += 1
         self._step = 0
-        self._train_step += 1
         self.sim.reset()
         return self._get_obs(), {'episode': self._episode}
 
@@ -90,6 +89,7 @@ class controlerTrainEnvImage(satGymEnv):
         #take step
         self.sim.step()
         self._step += 1
+        self._train_step += 1
         obs = self._get_obs()
         rew = self._reward()
         terminated_bad, terminated_good, truncated = self._end_episode() #end by collision, end by max episode
