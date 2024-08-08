@@ -48,7 +48,7 @@ class evadeTrainEnv(satGymEnv):
             self.prompter = oneVOnePrompter()
 
         if adversary_policy_dir is None:
-            self.controller_policy = Policy.from_checkpoint(None)
+            self.controller_policy = Policy.from_checkpoint('/home/cameron/magpie_rl/models/2Dcontrol.pkl')
             self.adversary_controller = lambda pos: self.controller_policy.compute_single_action(pos)
             self.adversary_model = lambda obs: self.adversary_controller(self.heuristic_adversary_policy(obs))
         else:
@@ -158,5 +158,6 @@ class evadeTrainEnv(satGymEnv):
         obs: dict
     ) -> list[float]:
 
-        pass
+        evader_pos = obs['rel_evader_state']
+        
         
