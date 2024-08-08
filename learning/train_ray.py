@@ -114,7 +114,6 @@ def train_ray(cfg: DictConfig,filedir):
         #test_env for getting obs/action space
         test_env = env_maker({})
         
-
     #ensure that evader and adversary agents always use the correct policy
     def policy_mapping_fn(agent_id, episode, worker, **kwargs):
         '''

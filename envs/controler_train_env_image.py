@@ -57,6 +57,7 @@ class controlerTrainEnvImage(satGymEnv):
 
 
     def reset(self, **kwargs):
+        
         if self._train_step/self.total_train_steps < self.obs_start and self.curriculum:
             max_obs = 0
         elif self._train_step/self.total_train_steps < self.obs_finish and self.curriculum:
@@ -73,7 +74,6 @@ class controlerTrainEnvImage(satGymEnv):
                 self.sim.set_obs_initial_pos(pos=prompt[label],idx=self.obs_idx[i])
         self._episode += 1
         self._step = 0
-        self._train_step += self.parallel_envs
         self.sim.reset()
         return self._get_obs(), {'episode': self._episode}
 

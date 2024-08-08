@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: 2dobs_ray # set job name
+    name: 2dobs_ray_t # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -77,7 +77,7 @@ sim:
   path_point_tolerance: 0.1
   point_cloud_radius: 30
   goal_tolerance: 0.5
-  collision_tolerance: 1
+  collision_tolerance: 3
   track_point_cloud: False #propogate point cloud or not
   kwargs:
     upper_state_bounds: [1e10,  1e10,  1e10, 1e10, 1e10, 1e10]

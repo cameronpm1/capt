@@ -159,5 +159,13 @@ class evadeTrainEnv(satGymEnv):
     ) -> list[float]:
 
         evader_pos = obs['rel_evader_state']
-        
+        evader_goal = obs['rel_goal_state']
+
+        evader_straight = evader_goal - evader_pos
+        block_point = (evader_straight/np.linalg.norm(evader_straight) * 5) + evader_pos
+        target_point = block_point/np.linalg.norm(block_point) * 1.5
+
+        return target_point
+
+
         
