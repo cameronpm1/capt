@@ -189,9 +189,9 @@ def make_env(filedir: str, cfg: DictConfig):
         kwargs[kwarg] = cfg['sim']['kwargs'][kwarg]
 
     if 'ray' in cfg['alg']['lib']:
-        parallel_envs = cfg['alg']['nenvs']*cfg['alg']['cpu_envs']
+        parallel_envs = cfg['alg']['nenv']*cfg['alg']['cpu_envs']
     else:
-        parallel_envs = cfg['alg']['nenvs']
+        parallel_envs = cfg['alg']['nenv']
 
     if 'adversary' in cfg['env']['scenario']:
         '''
@@ -491,7 +491,8 @@ def make_env(filedir: str, cfg: DictConfig):
             total_train_steps=cfg['alg']['total_timesteps']/cfg['alg']['nenv'],
             action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],
-            parallel_envs=parallel_envs
+            parallel_envs=parallel_envs,
+            curriculum=cfg['env']['curriculum']
         )
 
 
@@ -531,7 +532,8 @@ def make_env(filedir: str, cfg: DictConfig):
             total_train_steps=cfg['alg']['total_timesteps']/cfg['alg']['nenv'],
             action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],
-            parallel_envs=parallel_envs
+            parallel_envs=parallel_envs,
+            curriculum=cfg['env']['curriculum']
         )
 
         filter_keys=[

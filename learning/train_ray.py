@@ -151,7 +151,7 @@ def train_ray(cfg: DictConfig,filedir):
                 .resources(num_gpus=1)
                 .multi_agent(policy_mapping_fn=policy_mapping_fn,
                             policies=policy_info)
-                .training(gamma=0.99, 
+                .training(gamma=cfg['alg']['gamma'], 
                             train_batch_size=cfg['alg']['batch'],
                             training_intensity=cfg['alg']['train_intensity'],
                             target_entropy=cfg['alg']['target_ent'],
@@ -160,10 +160,10 @@ def train_ray(cfg: DictConfig,filedir):
                                 'capacity': 1000000, 
                                 'replay_sequence_length': 1,
                                 },
-                            #model={
-                            #    'conv_filters': [[16, [3, 3], 2], [32, [2, 2], 2], [64, [1, 2], 1]],
+                            model={
+                                'conv_filters': [[16, [3, 3], 2], [32, [2, 2], 2], [64, [1, 2], 1]],
                                 #'_disable_preprocessor_api': True,
-                            #},
+                            },
                             )
                 #.rollout(batch_mode='truncated_episods',
                 #            rollout_fragment_length=256,)
@@ -180,7 +180,7 @@ def train_ray(cfg: DictConfig,filedir):
     #t0 = time.time()
 
 
-    for i in range(10000):
+    for i in range(12000):
         result = algo_build.train()
         if i % 400 == 0 and i != 0:
             save_dir = logdir+'/checkpoint'+str(result['timesteps_total'])

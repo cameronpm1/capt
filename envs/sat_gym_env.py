@@ -165,13 +165,12 @@ class satGymEnv(gymnasium.Env):
     ) -> list[float]:
 
         scalled_action = self.scaling_function(action)
-        else:
-            if self.dim == 3:
-                full_action = np.zeros((9,))
-                full_action[0:3] = scalled_action
-            if self.dim == 2:
-                full_action = np.zeros((3,))
-                full_action[0:2] = scalled_action
+        if self.dim == 3:
+            full_action = np.zeros((9,))
+            full_action[0:3] = scalled_action
+        if self.dim == 2:
+            full_action = np.zeros((3,))
+            full_action[0:2] = scalled_action
 
         return full_action
     

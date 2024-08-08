@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: adversary_test # set job name
+    name: 2dobs_ray # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -23,20 +23,21 @@ alg:
   pi: [512, 512]
   vf: [512, 512]
   target_ent: 0.1
-  train_intensity: 3
+  train_intensity: 2
   device: cpu # cpu, cuda
-  total_timesteps: 20e6 #20e6
+  total_timesteps: 30e6 #20e6
   
 
 
 env:
-  scenario: multicontrol #control, controlImage, adversary, evade, multi
+  scenario: multicontrolImage #control, controlImage, adversary, evade, multi
   n_policies: 1
   max_timestep: 1024
   max_control: [0.3,0.3]
   ctrl_type: thrust
   action_scaling: clip
   random_initial_state: True
+  curriculum: True
   dim: 2
   adversary_model_path: /home/cameron/magpie_rl/logs/adversary_rew3/2024-05-31/model.zip #/home/cameron/magpie_rl/logs/adversary_rew2/2024-05-28/midtrain_model_17000000_steps.zip
 
@@ -105,7 +106,7 @@ obstacles:
 
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
 random:
-  on: False
+  on: True
   n: 20
   vel: 0.0005
   x_range: [-7,7] #[-7,7]
