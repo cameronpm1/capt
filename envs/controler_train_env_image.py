@@ -45,7 +45,7 @@ class controlerTrainEnvImage(satGymEnv):
 
         self.obs_idx = self.sim.get_obstacles_idx()
         self.n_obs = len(self.obs_idx)
-        self.obs_start = 0.08 #when to start incoorperating obstacles (.25 for 3D)
+        self.obs_start = 0.1 #when to start incoorperating obstacles (.25 for 3D)
         self.obs_finish = 0.85 #when to stop increasing num obstacles
         self.curriculum = curriculum #whether to use curriculum learning
 
@@ -59,11 +59,11 @@ class controlerTrainEnvImage(satGymEnv):
     def reset(self, **kwargs):
         
         if self._train_step/self.total_train_steps < self.obs_start and self.curriculum:
-            max_obs = 0
+            max_obs = 1
         elif self._train_step/self.total_train_steps < self.obs_finish and self.curriculum:
-            max_obs = int((self._train_step-(self.total_train_steps*self.obs_start))/((self.obs_finish-self.obs_start)*self.total_train_steps)*(self.n_obs))
+            max_obs = int((self._train_step-(self.total_train_steps*self.obs_start))/((self.obs_finish-self.obs_start)*self.total_train_steps)*(self.n_obs)) + 1
         else:
-            max_obs = self.n_obs
+            max_obs = self.n_obs + 1
         if self.randomize_initial_state:
             prompt = self.prompter.prompt()
             self.sim.set_sat_initial_pos(pos=prompt['sat_pos']) #set initial sat position
@@ -102,9 +102,9 @@ class controlerTrainEnvImage(satGymEnv):
         terminated_bad, terminated_good, truncated = self._end_episode() #end by collision, end by max episode
 
         if terminated_bad:
-            rew -= 400
+            rew -= 800
         if terminated_good:
-            rew += 400
+            rew += 800
 
         return obs, rew, terminated_bad or terminated_good, truncated, {'done': (terminated_bad or terminated_good, truncated), 'reward': rew}
 

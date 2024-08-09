@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: 3dobs_2 #test #img3d_test_1024_0-5obs # set job name
+    name: 3d_flat #test #img3d_test_1024_0-5obs # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -112,7 +112,7 @@ obstacles:
 random:
   on: True
   n: 20
-  vel: 0.0005
+  vel: 0.0
   x_range: [-7,7] #[-7,7]
   y_range: [4,18] #[5,15]
   z_range: [-7,7] #[-7,7]
