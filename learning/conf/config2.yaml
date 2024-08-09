@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: testi2 #2bos_fixed_arch4 # set job name
+    name: 2d_flat_long #2bos_fixed_arch4 # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -37,7 +37,7 @@ env:
   ctrl_type: thrust
   action_scaling: clip
   random_initial_state: True
-  curriculum: True
+  curriculum: False
   dim: 2
   adversary_model_path: /home/cameron/magpie_rl/logs/adversary_rew3/2024-05-31/model.zip #/home/cameron/magpie_rl/logs/adversary_rew2/2024-05-28/midtrain_model_17000000_steps.zip
 

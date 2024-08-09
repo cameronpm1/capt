@@ -54,7 +54,7 @@ def make_env(filedir: str, cfg: DictConfig):
                 ylim = cfg['random']['y_range']
                 zlim = cfg['random']['z_range']
                 pos = [np.random.random()*(xlim[1]-xlim[0])+xlim[0], np.random.random()*(ylim[1]-ylim[0])+ylim[0], np.random.random()*(zlim[1]-zlim[0])+zlim[0]]
-                pos = [1000,1000,1000] #initialize obstacles off of the board
+                pos = [1000.0,1000.0,1000.0] #initialize obstacles off of the board
                 vel = np.random.random(3,)
                 vel = vel/np.linalg.norm(vel)*(cfg['random']['vel']*np.random.random())
 
@@ -72,7 +72,7 @@ def make_env(filedir: str, cfg: DictConfig):
                         dynamics = obs_dynamics, 
                         mesh = {'points':np.array([pos[0:2]]),'lines':np.array([])},
                         name = 'obstacle'+str(n), 
-                        pos = pos)
+                        pos = pos[0:2])
                     
                 else:
                     obs_dynamics = satelliteDynamics(
@@ -276,6 +276,7 @@ def make_env(filedir: str, cfg: DictConfig):
             total_train_steps=cfg['alg']['total_timesteps'],
             action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],
+            collision_tolerance = cfg['sim']['collision_tolerance'],
             parallel_envs=parallel_envs
         )
 
@@ -365,6 +366,7 @@ def make_env(filedir: str, cfg: DictConfig):
             total_train_steps=cfg['alg']['total_timesteps'],
             action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],
+            collision_tolerance = cfg['sim']['collision_tolerance'],
             adversary_model_path=cfg['env']['adversary_model_path']
         )
 
@@ -532,6 +534,7 @@ def make_env(filedir: str, cfg: DictConfig):
             total_train_steps=cfg['alg']['total_timesteps'],
             action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],
+            collision_tolerance = cfg['sim']['collision_tolerance'],
             parallel_envs=parallel_envs,
             curriculum=cfg['env']['curriculum']
         )

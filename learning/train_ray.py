@@ -192,7 +192,7 @@ def train_ray(cfg: DictConfig,filedir):
     #t0 = time.time()
 
 
-    for i in range(12000):
+    for i in range(25000):
         result = algo_build.train()
         if i % 400 == 0 and i != 0:
             save_dir = logdir+'/checkpoint'+str(result['timesteps_total'])

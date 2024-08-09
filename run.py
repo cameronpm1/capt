@@ -32,7 +32,7 @@ def retrain_rl_model(cfg: DictConfig):
 def run_rl_model(cfg: DictConfig):
     os.chdir('../../../')
     modeldir = '/home/cameron/magpie_rl/logs/test18/2024-08-07/checkpoint5353200'
-    modeldir = '/home/cameron/magpie_rl/logs/test18/2024-08-07/checkpoint5353200/policies/policy0'
+    modeldir = '/home/cameron/magpie_rl/logs/2d_flat/2024-08-08/checkpoint13442400/policies/policy0'
     if 'ray' in cfg['alg']['lib']:
         runSpaceSimRay(cfg,DIRECTORY,modeldir=modeldir,render=False)
     else:
@@ -41,5 +41,5 @@ def run_rl_model(cfg: DictConfig):
 if __name__ == "__main__":
     torch.set_num_threads(8)
     DIRECTORY = os.getcwd()
-    train_rl_model()
+    run_rl_model()
     

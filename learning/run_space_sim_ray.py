@@ -24,33 +24,6 @@ def runSpaceSimRay(
     env = make_env(filedir,cfg)
     env.unwrapped.seed(seed=cfg['seed'])
 
-    #make env function 
-    def env_maker(config):
-        str(config) #needed to call worker and vector _index (odd bug w rllib)
-        env = make_env(filedir,cfg)
-        #if config has parameters, ensure envs have different seeds
-        seed = cfg['seed']
-        if len(config.keys()) > 0:
-            seed += ((100*config.worker_index) + config.vector_index)
-        env.unwrapped.seed(seed)
-        return env
-
-    def multi_env_maker(config):
-        #[env_maker({},seed=(cfg['seed'] + (i*100))) for i in range(#cfg['env']['nenvs'])]
-        env = env_maker(config)  
-        vec_env = multiEnvWrapper(env)
-        return vec_env
-    
-    if 'multi' in cfg['env']['scenario']:
-        env_name = cfg['env']['scenario']
-        register_env(env_name, multi_env_maker) #register make env function 
-        #test_env for getting obs/action space
-        policy_list = ['policy'+str(i) for i in range(cfg['env']['n_policies'])]
-    else:
-        env_name = cfg['env']['scenario']
-        register_env(env_name, env_maker) #register make env function
-        #test_env for getting obs/action space
-
     for i in range(1):
 
         obs, _ = env.reset()
@@ -87,6 +60,11 @@ def runSpaceSimRay(
             if i%10 == 0:
                 if verbose:
                     print('at timestep',i,'distance to goal:', env.unwrapped.sim.distance_to_goal())
+                    dists = []
+                    for i in range(20):
+                        dist = env.unwrapped.sim.distance_to_obstacle(idx=i)
+                        dists.append(dist)
+                    print(min(dists))
             if terminated or truncated:
                 timestep = i
                 break

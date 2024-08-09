@@ -30,6 +30,10 @@ class staticObject():
         self.mesh = mesh
 
         self.temp_mesh = copy.deepcopy(mesh)
+        #mesh should be point cloud at origin, temp_mesh is rel location
+        if np.linalg.norm(pos) != 0:
+            self.mesh['points'] -= pos
+
         self.point_cloud = None
         self.radius = None
         self.dim = dim
@@ -42,6 +46,8 @@ class staticObject():
             self.temp_mesh.points += self.dynamics.get_pos()
         else:
             self.temp_mesh['points'] += self.dynamics.get_pos()
+            
+
     def point_cloud_from_mesh(self, n) -> list[float]:
         '''
         takes a vista mesh, and returns a point cloud of n points

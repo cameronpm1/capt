@@ -45,7 +45,7 @@ class controlerTrainEnvImage(satGymEnv):
 
         self.obs_idx = self.sim.get_obstacles_idx()
         self.n_obs = len(self.obs_idx)
-        self.obs_start = 0.15 #when to start incoorperating obstacles (.25 for 3D)
+        self.obs_start = 0.08 #when to start incoorperating obstacles (.25 for 3D)
         self.obs_finish = 0.85 #when to stop increasing num obstacles
         self.curriculum = curriculum #whether to use curriculum learning
 

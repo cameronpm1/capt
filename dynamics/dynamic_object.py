@@ -37,7 +37,6 @@ class dynamicObject(staticObject):
             for i,point in enumerate(self.mesh.points):
                 new_point = np.matmul(dcm,point) + current_pos
                 self.temp_mesh.points[i] = new_point
-
         else:
             if self.dim == 2:
                 dcm = dcm_xy(self.dynamics.get_euler())
@@ -47,7 +46,7 @@ class dynamicObject(staticObject):
             for i,point in enumerate(self.mesh['points']):
                 new_point = np.matmul(dcm,point) + current_pos
                 self.temp_mesh['points'][i] = new_point
-        
+
     
     def step(self) -> None:
         states = self.dynamics.forward_step()

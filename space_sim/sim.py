@@ -359,8 +359,9 @@ class Sim():
         else:
             location = self.main_object.dynamics.get_pos()
             for point in self.raw_point_cloud:
-                new_point = point-location
-                if np.linalg.norm(new_point) < self.collision_tolerance: 
+                rel_point = point-location
+                print(np.linalg.norm(rel_point),self.collision_tolerance)
+                if np.linalg.norm(rel_point) < self.collision_tolerance: 
                     return True
         return False               
     
@@ -542,8 +543,9 @@ class Sim():
             pos: list[float],
             idx: int,
     ) -> None:
-        
+
         self.obstacles[idx].dynamics.set_initial_pos(pos)
+        self.obstacles[idx].update_points()
 
     class PPOC():
 
