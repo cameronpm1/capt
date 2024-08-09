@@ -54,6 +54,7 @@ class multiEnvWrapper(MultiAgentEnv):
 
         for key, action in action_dict.items():
             obs[key],rew[key],terminated[key],truncated[key],_ = self.env.step(action)
+            print(obs[key])
             if not terminated[key]:
                 terminated_all = False
             if not truncated[key]:

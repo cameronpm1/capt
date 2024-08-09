@@ -28,6 +28,8 @@ from learning.make_env import make_env
 from envs.evade_pursuit_env import evadePursuitEnv
 from envs.multi_env_wrapper import multiEnvWrapper
 
+from complex_input_net import ComplexInputNetwork
+
 
 logger = getlogger(__name__)
 
@@ -122,6 +124,8 @@ def train_ray(cfg: DictConfig,filedir):
         idx = (worker.worker_index-1) % cfg['env']['n_policies']
         return 'policy'+str(idx)
 
+    ModelCatalog.register_custom_model("my_tf_model", ComplexInputNetwork)
+
     def logger_creator(config):
         return UnifiedLogger(config, logdir, loggers=None)
 
@@ -159,8 +163,17 @@ def train_ray(cfg: DictConfig,filedir):
                                 'capacity': 1000000, 
                                 'replay_sequence_length': 1,
                                 },
-                            model={
-                                'conv_filters': [[16, [3, 3], 2], [32, [2, 2], 2], [64, [1, 2], 1]],
+                            policy_model_config={
+                                #'custom_model': 'my_tf_model',
+                                'conv_filters': [[32, [3, 3], 4], [64, [2, 2], 2], [64, [1, 1], 1]],
+                                #'post_fcnet_hiddens': cfg['alg']['pi'],
+                                'post_fcnet_hiddens': cfg['alg']['pi'],
+                                #'_disable_preprocessor_api': True,
+                            },
+                            q_model_config={
+                                'conv_filters': [[32, [3, 3], 4], [64, [2, 2], 2], [64, [1, 1], 1]],
+                                #'post_fcnet_hiddens': cfg['alg']['vf'],
+                                'post_fcnet_hiddens': cfg['alg']['vf'],
                                 #'_disable_preprocessor_api': True,
                             },
                             )

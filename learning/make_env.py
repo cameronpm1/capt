@@ -502,7 +502,7 @@ def make_env(filedir: str, cfg: DictConfig):
         ]
 
         env = FilterObservation(env,filter_keys=filter_keys)
-        #env = FlattenObservation(env)
+        env = FlattenObservation(env)
     else:
         '''
         set up control env

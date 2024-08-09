@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: 2dobs_ray_t # set job name
+    name: testi2 #2bos_fixed_arch4 # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -23,7 +23,7 @@ alg:
   pi: [512, 512]
   vf: [512, 512]
   target_ent: 0.1
-  train_intensity: 2
+  train_intensity: 3
   device: cpu # cpu, cuda
   total_timesteps: 30e6 #20e6
   
