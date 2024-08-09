@@ -12,23 +12,26 @@ logging:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
-  lib: sb3
+  lib: ray
   type: sac
-  nenv:  30
+  nenv:  20
+  cpu_envs: 60
   lr: 0.0003
+  batch: 256
   batch_size: 256
   gamma: 0.99
   pi: [1024, 1024]
   vf: [1024, 1024]
   target_ent: 0.1
-  train_intensity: 2
+  train_intensity: 3
   device: cuda # cpu, cuda
   total_timesteps: 30e6 #20e6
   
 
 
 env:
-  scenario: controlImage #controlImage, control, adversary, evade
+  scenario: multicontrolImage #controlImage, control, adversary, evade
+  n_policies: 1
   dim: 3
   max_timestep: 1024
   max_control: [0.3,0.3,0.3]

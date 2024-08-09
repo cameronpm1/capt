@@ -13,7 +13,7 @@ from learning.run_space_sim_sb3 import runSpaceSimSb3
 
 DIRECTORY = None
 
-@hydra.main(config_path="learning/conf", config_name="config2", version_base='1.1')
+@hydra.main(config_path="learning/conf", config_name="config1", version_base='1.1')
 def train_rl_model(cfg: DictConfig):
     if 'ray' in cfg['alg']['lib']:
         ray.init(runtime_env={'working_dir': '/home/cameron/magpie_rl',
