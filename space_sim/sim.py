@@ -360,7 +360,6 @@ class Sim():
             location = self.main_object.dynamics.get_pos()
             for point in self.raw_point_cloud:
                 rel_point = point-location
-                print(np.linalg.norm(rel_point),self.collision_tolerance)
                 if np.linalg.norm(rel_point) < self.collision_tolerance: 
                     return True
         return False               
