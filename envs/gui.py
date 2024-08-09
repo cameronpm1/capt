@@ -107,6 +107,9 @@ class gui(object):
         
         if 'final goal' in object1.keys():
             self._ax1.scatter(object1['final goal'][0],object1['final goal'][1], color='g', s=40)
+
+        self._ax1.set_xlim(self.xlim[0], self.xlim[1])
+        self._ax1.set_xlim(self.ylim[0], self.ylim[1])
       
 
     def plot_object3d(self, object1) -> None:

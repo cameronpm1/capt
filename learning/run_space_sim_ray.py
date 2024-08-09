@@ -30,9 +30,9 @@ def runSpaceSimRay(
 
         if render:
             renderer = Renderer(
-                xlim = [-10,10],
-                ylim = [-5,30],
-                zlim = [-10,10],
+                xlim = [-40,40],
+                ylim = [-40,40],
+                zlim = [-40,40],
                 vista = False,
                 dim = env.unwrapped.dim,
             )
@@ -60,11 +60,6 @@ def runSpaceSimRay(
             if i%10 == 0:
                 if verbose:
                     print('at timestep',i,'distance to goal:', env.unwrapped.sim.distance_to_goal())
-                    dists = []
-                    for i in range(20):
-                        dist = env.unwrapped.sim.distance_to_obstacle(idx=i)
-                        dists.append(dist)
-                    print(min(dists))
             if terminated or truncated:
                 timestep = i
                 break
