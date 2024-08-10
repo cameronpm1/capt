@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: 3d_flat #test #img3d_test_1024_0-5obs # set job name
+    name: 3d_flat_5 #test #img3d_test_1024_0-5obs # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -74,7 +74,7 @@ path_planner:
     min_obstacle_distance: 4
     iterations: 1
     distance_tolerance: 0.5
-    layers: 7
+    layers: 3
     angle_sections: 12
   max_distance: 0.3
   interpolation_method: spline
@@ -111,7 +111,7 @@ obstacles:
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
 random:
   on: True
-  n: 20
+  n: 5
   vel: 0.0
   x_range: [-7,7] #[-7,7]
   y_range: [4,18] #[5,15]

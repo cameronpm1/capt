@@ -1,5 +1,6 @@
 import time
 import numpy as np
+from gymnasium import spaces
 from collections import OrderedDict
 from ray.rllib.policy.policy import Policy
 from typing import Any, Dict, Type, Optional, Union
@@ -48,6 +49,7 @@ class adversaryTrainEnv(satGymEnv):
 
         self.distance_max = 30
         self.initial_goal_distance = 0
+        self.observation_space_flat = None
 
 
     def reset(self, **kwargs):
@@ -70,7 +72,7 @@ class adversaryTrainEnv(satGymEnv):
         evader_action = self.evader_model(evader_obs)
 
         #preprocess and set model action for adversary
-        self.sim.set_sat_control(self.preprocess_action(evader_action))
+        self.sim.set_sat_control(self.preprocess_action(evader_action[0]))
         self.sim.set_adversary_control([self.preprocess_action(action)])
 
         #take step
@@ -120,9 +122,9 @@ class adversaryTrainEnv(satGymEnv):
         obs = super()._get_obs()
 
         #rel evader state
-        obs['rel_evader_state'] = obs['evader_state'] - obs['adversar0_state']
+        obs['rel_evader_state'] = obs['evader_state'] - obs['adversary0_state']
         #rel goal state
-        obs['rel_goal_state'] = obs['goal_state'] - obs['adversary_state']
+        obs['rel_goal_state'] = obs['goal_state'] - obs['adversary0_state']
 
         return obs
 
@@ -144,4 +146,4 @@ class adversaryTrainEnv(satGymEnv):
         obstacle_matrix = self.sim.get_voxelized_point_cloud()
         obs['obstacles_matrix'] = obstacle_matrix
 
-        return obs
+        return np.concatenate((obs['rel_goal_state'],obs['obstacles_matrix'].flatten()))

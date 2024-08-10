@@ -28,7 +28,7 @@ class satGymEnv(gymnasium.Env):
             step_duration: float,
             max_episode_length: int,
             max_ctrl: list[float],
-            total_train_steps: float,
+            total_train_steps: float = 20e6,
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
             parallel_envs: int = 20,
@@ -164,13 +164,13 @@ class satGymEnv(gymnasium.Env):
         action: list[float],
     ) -> list[float]:
 
-        scalled_action = self.scaling_function(action)
+        scalled_action = self.scaling_function(action[0:self.dim])
         if self.dim == 3:
             full_action = np.zeros((9,))
-            full_action[0:3] = scalled_action
+            full_action[0:self.dim] = scalled_action[0:self.dim]
         if self.dim == 2:
             full_action = np.zeros((3,))
-            full_action[0:2] = scalled_action
+            full_action[0:self.dim] = scalled_action[0:self.dim]
 
         return full_action
     
