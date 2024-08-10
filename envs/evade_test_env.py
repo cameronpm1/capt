@@ -46,7 +46,7 @@ class evadeTestEnv(satGymEnv):
             self.evader_policy = Policy.from_checkpoint(evader_policy_dir)
             self.evader_model = lambda obs: self.evader_policy.compute_single_action(obs)
 
-        self.controller_policy = Policy.from_checkpoint('/home/cameron/magpie_rl/models/2D control policy')
+        self.controller_policy = Policy.from_checkpoint('C:/Users/Cameron Mehlman/Documents/magpie_rl/models/2D control policy')
         self.adversary_controller = lambda pos: self.controller_policy.compute_single_action(pos)
 
         self.distance_max = 30
@@ -144,7 +144,7 @@ class evadeTestEnv(satGymEnv):
         obstacle_matrix = self.sim.get_voxelized_point_cloud()
         obs['obstacles_matrix'] = obstacle_matrix
 
-        return obs
+        return np.concatenate((obs['rel_goal_state'],obs['obstacles_matrix'].flatten()))
 
     def heuristic_adversary_policy(
         self,
@@ -154,8 +154,13 @@ class evadeTestEnv(satGymEnv):
         evader_pos = obs['rel_evader_state']
         evader_goal = obs['rel_goal_state']
 
+        blocking_distance = 3
+
         evader_straight = evader_goal - evader_pos
-        block_point = (evader_straight/np.linalg.norm(evader_straight) * 5) + evader_pos
-        target_point = block_point/np.linalg.norm(block_point) * 1.5
+        block_point = (evader_straight/np.linalg.norm(evader_straight) * blocking_distance) + evader_pos
+        block_point_dist = np.linalg.norm(block_point)
+        if block_point_dist > 1.5: block_point_dist = 1
+        target_point = block_point/np.linalg.norm(block_point) * block_point_dist
+        
 
         return self.adversary_controller(target_point)
