@@ -45,7 +45,7 @@ class adversaryTrainEnv(satGymEnv):
             self.prompter = oneVOnePrompter()
 
         self.evader_policy = Policy.from_checkpoint(evader_policy_dir)
-        self.evader_model = lambda obs: self.evader_policy.compute_single_action(obs)
+        self.evader_model = lambda obs: self.evader_policy.compute_single_action(obs)[0]
 
         self.distance_max = 30
         self.initial_goal_distance = 0
@@ -72,7 +72,7 @@ class adversaryTrainEnv(satGymEnv):
         evader_action = self.evader_model(evader_obs)
 
         #preprocess and set model action for adversary
-        self.sim.set_sat_control(self.preprocess_action(evader_action[0]))
+        self.sim.set_sat_control(self.preprocess_action(evader_action))
         self.sim.set_adversary_control([self.preprocess_action(action)])
 
         #take step

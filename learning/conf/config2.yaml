@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: adv_test #2bos_fixed_arch4 # set job name
+    name: adv_test1_nogoalobs #2bos_fixed_arch4 # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -30,7 +30,7 @@ alg:
 
 
 env:
-  scenario: test #control, controlImage, adversary, evade, multi, test
+  scenario: multiadversary #control, controlImage, adversary, evade, multi, test
   n_policies: 1
   max_timestep: 1024
   max_control: [0.3,0.3]
@@ -39,7 +39,7 @@ env:
   random_initial_state: True
   curriculum: True
   dim: 2
-  evader_policy_dir: 'C:\Users\Cameron Mehlman\Documents\magpie_rl\models\evader 10obs policy'
+  evader_policy_dir: '/home/cameron/magpie_rl/models/evader 10obs policy'
   adversary_model_path: /home/cameron/magpie_rl/logs/adversary_rew3/2024-05-31/model.zip #/home/cameron/magpie_rl/logs/adversary_rew2/2024-05-28/midtrain_model_17000000_steps.zip
 
 satellite:
@@ -106,6 +106,10 @@ adversary:
 obstacles:
 
 #IMPORTANT: when creating a randomly initiated env, make sure that point_cloud_size > n!
+#TO DO:
+#running obstacles with adversaries is buggy and has to be fixed
+#collision detection does not work with adversary if obstacles 
+#are loaded
 random:
   on: False
   n: 10

@@ -283,9 +283,12 @@ def make_env(filedir: str, cfg: DictConfig):
         )
 
         filter_keys=[
-            'evader_state',
-            'adversary0_state',
+            'rel_evader_state',
+            #'rel_goal_state',
         ]
+
+        env = FilterObservation(env,filter_keys=filter_keys)
+        env = FlattenObservation(env)
 
     elif 'evade' in cfg['env']['scenario']:
 
