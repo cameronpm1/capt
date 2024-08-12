@@ -71,7 +71,7 @@ def make_env(filedir: str, cfg: DictConfig):
 
                     temp_obstacle = dynamicObject(
                         dynamics = obs_dynamics, 
-                        mesh = {'points':np.array([pos[0:2]]),'lines':np.array([])},
+                        mesh = {'points':np.array([0.0,0.0]),'lines':np.array([])},
                         name = 'obstacle'+str(n), 
                         pos = pos[0:2])
                     
