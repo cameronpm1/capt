@@ -1,7 +1,6 @@
 import time
 import numpy as np
-from stable_baselines3 import PPO
-from stable_baselines3 import SAC
+from gymnasium.utils import seeding
 from collections import OrderedDict
 from ray.rllib.policy.policy import Policy
 from typing import Any, Dict, Type, Optional, Union
@@ -24,10 +23,10 @@ class evadeTrainEnv(satGymEnv):
             max_ctrl: list[float],
             total_train_steps: float,
             adversary_model_path: str,
+            adversary_policy_dirs: list[str],
             ctrl_type: str = 'thrust',
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
-            adversary_policy_dir: Optional[str] = None,
             parallel_envs: int = 20,
     ):
         super().__init__(
@@ -41,28 +40,32 @@ class evadeTrainEnv(satGymEnv):
             parallel_envs=parallel_envs,
         )
 
-        sim.set_collision_tolerance(tolerance=1) #IMPORTANT (to prevent evade model from learning to be close to adversary)
-
         if self.randomize_initial_state and self.dim == 2:
             self.prompter = twodOneVOnePrompter()
         if self.randomize_initial_state and self.dim == 3:
             self.prompter = oneVOnePrompter()
 
-        if adversary_policy_dir is None:
-            self.controller_policy = Policy.from_checkpoint('/home/cameron/magpie_rl/models/2Dcontrol.pkl')
-            self.adversary_controller = lambda pos: self.controller_policy.compute_single_action(pos)
-            self.adversary_model = lambda obs: self.adversary_controller(self.heuristic_adversary_policy(obs))
-        else:
-            self.adversary_policy = Policy.from_checkpoint(evader_policy_dir)
-            self.adversary_model = lambda obs: self.adversary_policy.compute_single_action(obs)
-
+        self.num_policies = 0
+        for i,policy in enumerate(adversary_policy_dirs):
+            self.num_policies += 1
+            policy_label = 'policy' + str(i)
+            model_label = 'model' + str(i)
+            setattr(self, policy_label, Policy.from_checkpoint(policy))
+            setattr(self, 'age', lambda obs: getattr(self, policy_label).compute_single_action(obs))
+        self.adversary_model = None
+            
         self._obs = None
         self._rew = None
         self.initial_goal_distance = 0
         self.min_distance = 0
         self.action_dim = len(max_ctrl)
+        self._np_random = None
 
     def reset(self, **kwargs):
+        #pick random adversary model
+        model_num = self._np_random.randint(self.num_policies)
+        self.adversary_model = getattr(self,'model'+str(model_num))
+        #randomize initial state
         if self.randomize_initial_state:
             prompt = self.prompter.prompt()
             self.sim.set_sat_initial_pos(pos=prompt['sat_pos'])
@@ -70,6 +73,7 @@ class evadeTrainEnv(satGymEnv):
             self.sim.set_sat_goal(goal=prompt['sat_goal'])
             self.initial_goal_distance = np.linalg.norm(prompt['sat_goal'][0:self.dim]-prompt['sat_pos'][0:self.dim])
             self.min_distance = self.initial_goal_distance
+        #reset sim, counters, and collect obs
         self._episode += 1
         self._step = 0
         self.sim.reset()
@@ -97,9 +101,9 @@ class evadeTrainEnv(satGymEnv):
         terminated_bad, terminated_good, truncated = self._end_episode() #end by collision, end by max episode
 
         if terminated_bad:
-            rew -= 400
+            rew -= 800
         if terminated_good:
-            rew += 400
+            rew += 800
 
         return obs, rew, terminated_bad or terminated_good, truncated, {'done': (terminated_bad or terminated_good, truncated), 'reward': rew}
     
@@ -153,20 +157,14 @@ class evadeTrainEnv(satGymEnv):
         adversary_obs['rel_goal_state'] = obs['goal_state'] - obs['adversary_state']
 
         return obs
+    
+    def seed(self, seed=None):  
+        seeds = super().seed(seed=seed)
+        #initialize random number generator
+        self._np_random, seed = seeding.np_random(seed)
 
-    def heuristic_adversary_policy(
-        self,
-        obs: dict
-    ) -> list[float]:
+        return seeds
 
-        evader_pos = obs['rel_evader_state']
-        evader_goal = obs['rel_goal_state']
-
-        evader_straight = evader_goal - evader_pos
-        block_point = (evader_straight/np.linalg.norm(evader_straight) * 5) + evader_pos
-        target_point = block_point/np.linalg.norm(block_point) * 1.5
-
-        return target_point
 
 
         

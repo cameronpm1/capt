@@ -27,8 +27,7 @@ from logger import getlogger
 from learning.make_env import make_env
 from envs.evade_pursuit_env import evadePursuitEnv
 from envs.multi_env_wrapper import multiEnvWrapper
-
-from complex_input_net import ComplexInputNetwork
+from custom_model_archs.sirenfcnet import SirenOutFullyConnectedNetwork
 
 
 logger = getlogger(__name__)
@@ -38,41 +37,7 @@ def mkdir(folder):
         shutil.rmtree(folder)
     os.makedirs(folder)
 
-class CustomTorchModel(TorchModelV2):
-    def __init__(
-        self, 
-        obs_space, 
-        action_space, 
-        num_outputs, 
-        model_config, 
-        name,
-    ) -> None:
-
-        n_input_channels = obs_space.shape[0]
-        self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 32, kernel_size=3, stride=4, padding=0),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=2, stride=2, padding=0),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=1, stride=1, padding=0),
-            nn.ReLU(),
-            nn.Flatten(),
-        )
-
-        # Compute shape by doing one forward pass
-        with th.no_grad():
-            n_flatten = self.cnn(th.as_tensor(observation_space.sample()[None]).float()).shape[1]
-
-        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
-
-
-
-
-    def forward(self, input_dict, state, seq_lens): ...
-    def value_function(self): ...
-
 #ModelCatalog.register_custom_model("my_torch_model", CustomTorchModel)
-
 
 def train_ray(cfg: DictConfig,filedir):
     filedir = filedir
@@ -124,7 +89,7 @@ def train_ray(cfg: DictConfig,filedir):
         idx = (worker.worker_index-1) % cfg['env']['n_policies']
         return 'policy'+str(idx)
 
-    ModelCatalog.register_custom_model("my_tf_model", ComplexInputNetwork)
+    ModelCatalog.register_custom_model("sirenfcnet", SirenOutFullyConnectedNetwork)
 
     def logger_creator(config):
         return UnifiedLogger(config, logdir, loggers=None)
@@ -147,8 +112,8 @@ def train_ray(cfg: DictConfig,filedir):
                 .environment(env=env_name,
                             env_config={'num_agents':1},)
                 .framework("torch")
-                .env_runners(num_env_runners=20, #20
-                            num_envs_per_worker=60, #60
+                .env_runners(num_env_runners=1, #20
+                            num_envs_per_worker=1, #60
                             num_cpus_per_env_runner=1
                             )
                 .resources(num_gpus=1)
@@ -164,17 +129,11 @@ def train_ray(cfg: DictConfig,filedir):
                                 'replay_sequence_length': 1,
                                 },
                             policy_model_config={
-                                #'custom_model': 'my_tf_model',
-                                'conv_filters': [[32, [3, 3], 4], [64, [2, 2], 2], [64, [1, 1], 1]],
-                                #'post_fcnet_hiddens': cfg['alg']['pi'],
+                                #'custom_model': 'sirenfcnet',
                                 'post_fcnet_hiddens': cfg['alg']['pi'],
-                                #'_disable_preprocessor_api': True,
                             },
                             q_model_config={
-                                'conv_filters': [[32, [3, 3], 4], [64, [2, 2], 2], [64, [1, 1], 1]],
-                                #'post_fcnet_hiddens': cfg['alg']['vf'],
                                 'post_fcnet_hiddens': cfg['alg']['vf'],
-                                #'_disable_preprocessor_api': True,
                             },
                             )
                 #.rollout(batch_mode='truncated_episods',
@@ -267,3 +226,6 @@ def train_ray(cfg: DictConfig,filedir):
 'lstm_use_prev_action_reward': -1, 
 '_use_default_native_models': -1}
 '''
+
+#'conv_filters': [[32, [3, 3], 4], [64, [2, 2], 2], [64, [1, 1], 1]],
+#'_disable_preprocessor_api': True,

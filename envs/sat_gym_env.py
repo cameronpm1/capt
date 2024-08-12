@@ -110,8 +110,7 @@ class satGymEnv(gymnasium.Env):
     def close(self):
         del self.sim
         
-    def seed(self, seed=None):
-        # Save the seed so we can re-seed during un-pickling
+    def seed(self, seed=None):    
         self._seed = seed
 
         seeds = [seed]
