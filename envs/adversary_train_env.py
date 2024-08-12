@@ -83,27 +83,24 @@ class adversaryTrainEnv(satGymEnv):
         rew = self._reward()
 
         #check episode end and adjust reward
-        terminated_bad, terminated_good, truncated = self._end_episode() #end by collision, end by max episode
+        terminated_bad, truncated = self._end_episode() #end by collision, end by max episode
 
         if terminated_bad:
-            rew -= 400
-        if terminated_good:
-            rew += 400
+            rew -= 600
 
-        return obs, rew, terminated_bad or terminated_good, truncated, {'done': (terminated_bad or terminated_good, truncated), 'reward': rew}
+        return obs, rew, terminated_bad, truncated, {'done': (terminated_bad or terminated_good, truncated), 'reward': rew}
 
     
     def _end_episode(self) -> bool:
 
         collision = self.sim.collision_check()
-        goal_reached = self.sim.goal_check()
 
         if self.sim.distance_to_adversary(idx=0) > self.distance_max:
             too_far = True
         else:
             too_far = False
 
-        return collision or too_far, goal_reached, self._step >= self.max_episode_length
+        return collision or too_far, self._step >= self.max_episode_length
     
     
     def _reward(self) -> float:

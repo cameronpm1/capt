@@ -73,7 +73,7 @@ path_planner:
   n: 25
 
 sim:
-  control_method: MPC #MPC #PPOC
+  control_method: none #MPC, PPOC, none
   point_cloud_size: 50
   path_point_tolerance: 0.1
   point_cloud_radius: 30
