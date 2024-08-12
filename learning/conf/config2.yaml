@@ -85,7 +85,7 @@ sim:
     lower_state_bounds: [-1e10,  -1e10,  -1e10, -1e10, -1e10, -1e10]
     horizon: 8
     valued_actions: 1
-    max_ctrl: [0.3,0.3,0.3]
+    max_ctrl: [0.3,0.3,0.3] #only for MPC or PPOC
 
 adversary:
   on: True

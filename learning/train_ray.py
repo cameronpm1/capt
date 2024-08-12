@@ -112,8 +112,8 @@ def train_ray(cfg: DictConfig,filedir):
                 .environment(env=env_name,
                             env_config={'num_agents':1},)
                 .framework("torch")
-                .env_runners(num_env_runners=1, #20
-                            num_envs_per_worker=1, #60
+                .env_runners(num_env_runners=cfg['alg']['nenv'], #20
+                            num_envs_per_worker=cfg['alg']['cpu_envs'], #60
                             num_cpus_per_env_runner=1
                             )
                 .resources(num_gpus=1)
