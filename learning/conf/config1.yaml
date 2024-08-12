@@ -34,7 +34,7 @@ env:
   n_policies: 1
   dim: 3
   max_timestep: 1024
-  max_control: [0.3,0.3,0.3]
+  max_control: [0.1,0.1,0.1]
   ctrl_type: thrust
   action_scaling: clip
   random_initial_state: True
@@ -64,7 +64,7 @@ satellite:
       J_sc: [1.7e4, 2.7e4, 2.7e4]
       alpha: [0.8, 0.8, 0.8]
       mass: 4000
-    control_lim: [0.5,0.5,0.5,0.1,0.1,0.1,1000,1000,1000]
+    control_lim: [0.1,0.1,0.1,0.1,0.1,0.1,1000,1000,1000]
 
 path_planner:
   goal_state: [1,20,-4,0,0,0,0,0,0,0,0,0,0,0,0] # [0.00535069,  0.16561701, -0.04535887,0,0,0,0,0,0,0,0,0,0,0,0] #
@@ -93,7 +93,7 @@ sim:
     lower_state_bounds: [-1e10,  -1e10,  -1e10, -1e10, -1e10, -1e10, -0.2, -0.2, -0.2, -.25, -.25, -.25, -1000, -1000, -1000]
     horizon: 8
     valued_actions: 1
-    max_ctrl: [0.5,0.5,0.5]
+    max_ctrl: [0.3,0.3,0.3]
 
 adversary:
   on: True

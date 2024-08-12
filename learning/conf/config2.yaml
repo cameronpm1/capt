@@ -7,7 +7,7 @@ seed: 1 # set experiment seed
 
 logging:
   job:
-    name: adv_test1_nogoalobs #2bos_fixed_arch4 # set job name
+    name: adv_test1_goalobs #2bos_fixed_arch4 # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -33,7 +33,7 @@ env:
   scenario: multiadversary #control, controlImage, adversary, evade, multi, test
   n_policies: 1
   max_timestep: 1024
-  max_control: [0.3,0.3]
+  max_control: [0.1,0.1]
   ctrl_type: thrust
   action_scaling: clip
   random_initial_state: True
@@ -85,7 +85,7 @@ sim:
     lower_state_bounds: [-1e10,  -1e10,  -1e10, -1e10, -1e10, -1e10]
     horizon: 8
     valued_actions: 1
-    max_ctrl: [0.5,0.5,0.5]
+    max_ctrl: [0.3,0.3,0.3]
 
 adversary:
   on: True
@@ -101,7 +101,7 @@ adversary:
       data:
         inertia: 1e4
         mass: 2000
-      control_lim: [0.5,0.5,0.5]
+      control_lim: [0.3,0.3,0.3]
 
 obstacles:
 

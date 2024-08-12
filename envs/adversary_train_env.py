@@ -94,13 +94,14 @@ class adversaryTrainEnv(satGymEnv):
     def _end_episode(self) -> bool:
 
         collision = self.sim.collision_check()
+        goal_reached = self.sim.goal_check()
 
         if self.sim.distance_to_adversary(idx=0) > self.distance_max:
             too_far = True
         else:
             too_far = False
 
-        return collision or too_far, self._step >= self.max_episode_length
+        return collision or too_far or goal_reached, self._step >= self.max_episode_length
     
     
     def _reward(self) -> float:

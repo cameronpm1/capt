@@ -284,7 +284,7 @@ def make_env(filedir: str, cfg: DictConfig):
 
         filter_keys=[
             'rel_evader_state',
-            #'rel_goal_state',
+            'rel_goal_state',
         ]
 
         env = FilterObservation(env,filter_keys=filter_keys)
