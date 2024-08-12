@@ -88,7 +88,7 @@ class adversaryTrainEnv(satGymEnv):
         if terminated_bad:
             rew -= 600
 
-        return obs, rew, terminated_bad, truncated, {'done': (terminated_bad or terminated_good, truncated), 'reward': rew}
+        return obs, rew, terminated_bad, truncated, {'done': (terminated_bad, truncated), 'reward': rew}
 
     
     def _end_episode(self) -> bool:
