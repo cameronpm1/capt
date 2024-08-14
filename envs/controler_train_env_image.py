@@ -102,9 +102,9 @@ class controlerTrainEnvImage(satGymEnv):
         terminated_bad, terminated_good, truncated = self._end_episode() #end by collision, end by max episode
 
         if terminated_bad:
-            rew -= 800
+            rew -= (1000-np.clip(self._step,0,1000))
         if terminated_good:
-            rew += 800
+            rew += 1000
 
         return obs, rew, terminated_bad or terminated_good, truncated, {'done': (terminated_bad or terminated_good, truncated), 'reward': rew}
 

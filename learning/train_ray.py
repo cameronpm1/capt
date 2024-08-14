@@ -20,13 +20,11 @@ from ray.rllib.models import ModelCatalog
 from ray.tune.logger import UnifiedLogger
 from ray.tune.registry import register_env
 from ray.rllib.algorithms.sac import SACConfig
-from ray.rllib.algorithms.ppo import PPOConfig
-from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 
 from logger import getlogger
 from learning.make_env import make_env
-from envs.evade_pursuit_env import evadePursuitEnv
 from envs.multi_env_wrapper import multiEnvWrapper
+from learning.custom_SAC.custom_SAC import custom_SACConfig
 from custom_model_archs.sirenfcnet import SirenOutFullyConnectedNetwork
 
 
@@ -95,7 +93,7 @@ def train_ray(cfg: DictConfig,filedir):
         return UnifiedLogger(config, logdir, loggers=None)
 
     if 'sac' in cfg['alg']['type']:
-        algo = SACConfig()
+        algo = custom_SACConfig() #custom_SACConfig()
 
     if 'multi' in cfg['env']['scenario']:
         #initialize MARL training algorithm
@@ -120,16 +118,18 @@ def train_ray(cfg: DictConfig,filedir):
                 .multi_agent(policy_mapping_fn=policy_mapping_fn,
                             policies=policy_info)
                 .training(gamma=cfg['alg']['gamma'], 
-                            train_batch_size=cfg['alg']['batch'],
+                            train_batch_size=cfg['alg']['batch']*cfg['env']['n_policies'],
                             training_intensity=cfg['alg']['train_intensity'],
                             target_entropy=cfg['alg']['target_ent'],
+                            grad_clip=20,
+                            grad_clip_by='norm',
                             replay_buffer_config={
                                 'type': 'MultiAgentReplayBuffer', 
                                 'capacity': 1000000, 
                                 'replay_sequence_length': 1,
                                 },
                             policy_model_config={
-                                #'custom_model': 'sirenfcnet',
+                                'custom_model': 'sirenfcnet',
                                 'post_fcnet_hiddens': cfg['alg']['pi'],
                             },
                             q_model_config={
@@ -151,9 +151,9 @@ def train_ray(cfg: DictConfig,filedir):
     #t0 = time.time()
 
 
-    for i in range(30000):
+    for i in range(200): #(25000): 
         result = algo_build.train()
-        if i % 400 == 0 and i != 0:
+        if i % 500 == 0 and i != 0:
             save_dir = logdir+'/checkpoint'+str(result['timesteps_total'])
             algo_build.save(checkpoint_dir=save_dir)
             print(pretty_print(result))

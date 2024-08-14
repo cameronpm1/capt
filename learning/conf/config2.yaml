@@ -3,7 +3,7 @@
 #  - override hydra/hydra_logging: disabled  
 #  - override hydra/job_logging: disabled
 
-seed: 1 # set experiment seed
+seed: 2 # set experiment seed
 
 logging:
   job:
@@ -14,8 +14,8 @@ logging:
 alg:
   lib: ray
   type: sac
-  nenv:  20
-  cpu_envs: 60
+  nenv: 3 #20
+  cpu_envs: 1 #60
   lr: 0.0003
   batch: 256
   batch_size: 256
@@ -31,7 +31,7 @@ alg:
 
 env:
   scenario: multiadversary #control, controlImage, adversary, evade, multi, test
-  n_policies: 1
+  n_policies: 3
   max_timestep: 1024
   max_control: [0.1,0.1]
   ctrl_type: thrust
