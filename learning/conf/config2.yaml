@@ -7,16 +7,16 @@ seed: 2 # set experiment seed
 
 logging:
   job:
-    name: test #2bos_fixed_arch4 # set job name
+    name: adversary_siren_test2 #2bos_fixed_arch4 # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
   lib: ray
   type: sac
-  nenv: 3 #20
-  cpu_envs: 1 #60
-  lr: 0.0003
+  nenv: 20
+  cpu_envs: 60
+  lr: 0.0001
   batch: 256
   batch_size: 256
   gamma: 0.99
@@ -31,7 +31,7 @@ alg:
 
 env:
   scenario: multiadversary #control, controlImage, adversary, evade, multi, test
-  n_policies: 3
+  n_policies: 1
   max_timestep: 1024
   max_control: [0.1,0.1]
   ctrl_type: thrust

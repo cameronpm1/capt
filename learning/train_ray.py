@@ -121,7 +121,7 @@ def train_ray(cfg: DictConfig,filedir):
                             train_batch_size=cfg['alg']['batch']*cfg['env']['n_policies'],
                             training_intensity=cfg['alg']['train_intensity'],
                             target_entropy=cfg['alg']['target_ent'],
-                            grad_clip=20,
+                            grad_clip=10,
                             grad_clip_by='norm',
                             replay_buffer_config={
                                 'type': 'MultiAgentReplayBuffer', 
@@ -151,7 +151,7 @@ def train_ray(cfg: DictConfig,filedir):
     #t0 = time.time()
 
 
-    for i in range(200): #(25000): 
+    for i in range(25000): 
         result = algo_build.train()
         if i % 500 == 0 and i != 0:
             save_dir = logdir+'/checkpoint'+str(result['timesteps_total'])

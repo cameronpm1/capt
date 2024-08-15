@@ -92,14 +92,14 @@ class TorchSquashedGaussianKL(TorchSquashedGaussian):
 
     def __init__(
         self,
-        loc: Union[float, torch.Tensor],
-        scale: Optional[Union[float, torch.Tensor]] = 1.0,
+        inputs: Union[float, torch.Tensor],
+        model: Optional[Union[float, torch.Tensor]] = 1.0,
         low: float = -1.0,
         high: float = 1.0,
     ):
         super().__init__(
-            loc,
-            scale,
+            inputs,
+            model,
             low=low,
             high=high
         )
@@ -312,9 +312,9 @@ def custom_actor_critic_loss(
             for divergent_policy,divergent_action_dist in divergent_actions.items():
                 kl = action_dist_t.kl(divergent_action_dist)
                 kl_loss = torch.mean(kl)
-                print(actor_loss)
+                #print(actor_loss)
                 actor_loss -= kl_loss_coef * kl_loss
-                print(actor_loss)
+                #print(actor_loss)
                 #delete divergent action policies
             delattr(policy, 'divergent_actions')
 

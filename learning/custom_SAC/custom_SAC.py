@@ -157,6 +157,7 @@ class custom_SAC(SAC):
                         if policy_id1 == policy_id2:
                             continue
                         else:
+                            print('SHITSHITSHITSHITSHIT')
                             policy = self.get_policy(policy_id2)
                             model = policy.model
                             with torch.no_grad():
