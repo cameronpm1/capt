@@ -93,7 +93,17 @@ def train_ray(cfg: DictConfig,filedir):
         return UnifiedLogger(config, logdir, loggers=None)
 
     if 'sac' in cfg['alg']['type']:
-        algo = custom_SACConfig() #custom_SACConfig()
+        if 'adversary' in cfg['env']['scenario']:
+            algo = custom_SACConfig()
+            policy_model_dict = {
+                'custom_model': 'sirenfcnet',
+                'post_fcnet_hiddens': cfg['alg']['pi'],
+            }
+        else:
+            algo = SACConfig() 
+            policy_model_dict = {
+                'post_fcnet_hiddens': cfg['alg']['pi'],
+            }
 
     if 'multi' in cfg['env']['scenario']:
         #initialize MARL training algorithm
@@ -128,10 +138,7 @@ def train_ray(cfg: DictConfig,filedir):
                                 'capacity': 1000000, 
                                 'replay_sequence_length': 1,
                                 },
-                            policy_model_config={
-                                'custom_model': 'sirenfcnet',
-                                'post_fcnet_hiddens': cfg['alg']['pi'],
-                            },
+                            policy_model_config=policy_model_dict,
                             q_model_config={
                                 'post_fcnet_hiddens': cfg['alg']['vf'],
                             },

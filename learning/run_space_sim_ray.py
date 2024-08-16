@@ -4,6 +4,7 @@ import os,sys
 import time
 import hydra
 import numpy as np
+from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
 from ray.rllib.policy.policy import Policy
 from omegaconf import DictConfig, OmegaConf
@@ -11,6 +12,9 @@ from ray.rllib.algorithms.algorithm import Algorithm
 
 from envs.gui import Renderer
 from learning.make_env import make_env
+from custom_model_archs.sirenfcnet import SirenOutFullyConnectedNetwork
+
+ModelCatalog.register_custom_model("sirenfcnet", SirenOutFullyConnectedNetwork)
 
 def runSpaceSimRay(
         cfg : DictConfig, 

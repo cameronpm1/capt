@@ -148,7 +148,6 @@ def custom_actor_critic_loss(
         Union[TensorType, List[TensorType]]: A single loss tensor or a list
             of loss tensors.
     """
-    kl_loss_coef = 0.1
 
     # Look up the target model (tower) using the model tower.
     target_model = policy.target_models[model]
@@ -308,6 +307,7 @@ def custom_actor_critic_loss(
 
         #set to None if no divergent_actions parameter
         divergent_actions = getattr(policy, 'divergent_actions',None)
+        kl_loss_coef = getattr(policy, 'kl_loss_coef',None)
         if divergent_actions is not None:
             for divergent_policy,divergent_action_dist in divergent_actions.items():
                 kl = action_dist_t.kl(divergent_action_dist)

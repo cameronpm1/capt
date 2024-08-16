@@ -53,7 +53,7 @@ class twodControlPrompter():
         if self.n_obs > 1:
             goal_dist = np.linalg.norm(goal_vec)
             center_to_goal = vec*goal_dist/2
-            obs_dist = goal_dist/2*0.9
+            obs_dist = goal_dist/2*1.5
             for i in range(self.n_obs):
                 not_safe = True
                 while not_safe:

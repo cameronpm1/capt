@@ -10,6 +10,8 @@ from learning.train_ray import train_ray
 from learning.train_sb3 import train, retrain
 from learning.run_space_sim_ray import runSpaceSimRay
 from learning.run_space_sim_sb3 import runSpaceSimSb3
+from plotting.density_plot import action_density_plot
+from plotting.density_plot import collect_action_dist_data
 
 DIRECTORY = None
 
@@ -40,8 +42,15 @@ def run_rl_model(cfg: DictConfig):
     else:
         runSpaceSimSb3(cfg,DIRECTORY,modeldir=modeldir,render=False)
 
+@hydra.main(config_path="learning/conf", config_name="config2", version_base='1.1')
+def collect_data(cfg: DictConfig):
+    os.chdir('../../../')
+    master_dir = '/home/cameron/magpie_rl/logs/test_div_policies'
+    collect_action_dist_data(cfg,DIRECTORY,master_dir)
+
 if __name__ == "__main__":
     torch.set_num_threads(8)
     DIRECTORY = os.getcwd()
-    train_rl_model()
-    
+    #train_rl_model()
+    #collect_data()
+    action_density_plot(load_dir='/home/cameron/magpie_rl/logs/test_div_policies')

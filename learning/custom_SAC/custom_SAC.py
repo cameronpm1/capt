@@ -92,6 +92,21 @@ class custom_SAC(SAC):
             policy_id: ID of the which policy model to return.
         """
         return self.workers.local_worker().get_policy(policy_id)
+    
+    def kl_loss_schedule(
+        self,
+        ts: int
+    ):
+        start_val = 0.1
+        stop_val = 0
+        ts_begin = 0
+        ts_end = 5e6
+        if ts > ts_begin and ts < ts_end:
+            return (1-(ts-ts_begin)/(ts_end-ts_begin)) * (start_val-stop_val) + stop_val
+        elif ts > ts_end:
+            return stop_val
+        else:
+            return start_val
 
     @override(SAC)
     def _training_step_old_and_hybrid_api_stack(self) -> ResultDict:
@@ -150,6 +165,8 @@ class custom_SAC(SAC):
                 post_fn = self.config.get("before_learn_on_batch") or (lambda b, *a: b)
                 train_batch = post_fn(train_batch, self.workers, self.config)
                 
+                #set kl_loss_val
+                kl_loss_coef = self.kl_loss_schedule(cur_ts)
                 #collect parallel policy actions
                 for policy_id1 in train_batch.policy_batches.keys():
                     divergent_actions = {}
@@ -157,7 +174,6 @@ class custom_SAC(SAC):
                         if policy_id1 == policy_id2:
                             continue
                         else:
-                            print('SHITSHITSHITSHITSHIT')
                             policy = self.get_policy(policy_id2)
                             model = policy.model
                             with torch.no_grad():
@@ -171,6 +187,7 @@ class custom_SAC(SAC):
                     #set divergent actions policy attribute directly to policy
                     policy = self.get_policy(policy_id1)
                     setattr(policy, 'divergent_actions', divergent_actions)
+                    setattr(policy, 'kl_loss_coef', kl_loss_coef)
 
                 # Learn on training batch.
                 # Use simple optimizer (only for multi-agent or tf-eager; all other
