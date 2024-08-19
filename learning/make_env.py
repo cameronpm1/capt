@@ -225,7 +225,7 @@ def make_env(filedir: str, cfg: DictConfig):
     path_planner = pathPlanner(
         goal_state = cfg['path_planner']['goal_state'],
         path_planning_algorithm = cfg['path_planner']['path_planning_algorithm'],
-        kwargs = OmegaConf.to_container(cfg['path_planner']['kwargs'], resolve=True),
+        kwargs = cfg['path_planner']['kwargs'],
         max_distance = cfg['path_planner']['max_distance'],
         interpolation_method = cfg['path_planner']['interpolation_method'],
         n = cfg['path_planner']['n'],
@@ -311,55 +311,7 @@ def make_env(filedir: str, cfg: DictConfig):
 
         logger.info('Setting up evasion environment')
 
-        if cfg['obstacles'] is None:
-            cfg['obstacles'] = []
-
-        if bool(cfg['adversary'][True]):
-            logger.info('Initializing adversarial agents')
-            for adversary in cfg['adversary']['adversaries']:
-
-                if cfg['env']['dim'] == 2:
-                    stl = {
-                        'points':np.array(cfg['adversary']['adversaries'][adversary]['mesh']['points']),
-                        'lines':np.array(cfg['adversary']['adversaries'][adversary]['mesh']['lines'])
-                        }
-
-                    adversary_dynamics = twodDynamics(
-                        timestep = cfg['satellite']['dynamics']['timestep'],
-                        horizon = cfg['satellite']['dynamics']['horizon'],
-                        pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
-                        vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
-                        euler = np.array(cfg['adversary']['adversaries'][adversary]['euler']),
-                        data = cfg['adversary']['adversaries'][adversary]['data'],
-                        max_control = cfg['adversary']['adversaries'][adversary]['control_lim']
-                    )
-                else:
-                    stl = pv.read(filedir+'/'+cfg['adversary']['adversaries'][adversary]['stl'])
-                    stl.points *= cfg['adversary']['adversaries'][adversary]['stl_scale']
-
-                    adversary_dynamics = satelliteDynamics(
-                        timestep = cfg['satellite']['dynamics']['timestep'],
-                        horizon = cfg['satellite']['dynamics']['horizon'],
-                        pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
-                        vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
-                        initial_orbit = orbit_params,
-                        initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
-                        spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
-                        max_control = cfg['adversary']['adversaries'][adversary]['control_lim'],
-                    )
-
-                adversary = dynamicObject(
-                    dynamics = adversary_dynamics, 
-                    mesh = stl,
-                    name = cfg['adversary']['adversaries'][adversary]['name'], 
-                    pos = cfg['adversary']['adversaries'][adversary]['pos'],
-                    dim = cfg['env']['dim'],
-                )
-                    
-                sim.create_adversary(
-                    adversary=adversary,
-                )
-
+        initialize_adversasries(sim)
         initialize_obstacles(sim)
 
         env = evadeTrainEnv(
@@ -371,14 +323,16 @@ def make_env(filedir: str, cfg: DictConfig):
             total_train_steps=cfg['alg']['total_timesteps'],
             action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],
-            adversary_model_path=cfg['env']['adversary_model_path']
+            adversary_policy_dir=cfg['env']['adversary_policy_dir']
         )
 
         filter_keys=[
-            'goal_state',
-            'evader_state',
-            'adversary0_state',
+            'rel_goal_state',
+            'obstacles_matrix'
         ]
+
+        env = FilterObservation(env,filter_keys=filter_keys)
+        env = FlattenObservation(env)
 
         '''
     elif 'multi' in cfg['env']['scenario']:

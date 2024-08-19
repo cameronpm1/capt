@@ -19,6 +19,7 @@ from ray.rllib.utils.test_utils import (
 from ray.rllib.models import ModelCatalog
 from ray.tune.logger import UnifiedLogger
 from ray.tune.registry import register_env
+from ray.rllib.policy.policy import Policy
 from ray.rllib.algorithms.sac import SACConfig
 
 from logger import getlogger
@@ -93,16 +94,22 @@ def train_ray(cfg: DictConfig,filedir):
         return UnifiedLogger(config, logdir, loggers=None)
 
     if 'sac' in cfg['alg']['type']:
-        if 'adversary' in cfg['env']['scenario']:
+        if 'div' in cfg['env']['scenario']:
             algo = custom_SACConfig()
             policy_model_dict = {
                 'custom_model': 'sirenfcnet',
-                'post_fcnet_hiddens': cfg['alg']['pi'],
+                'fcnet_hiddens': cfg['alg']['pi'],
+            }
+            q_model_dict = {
+                'fcnet_hiddens': cfg['alg']['vf'],
             }
         else:
             algo = SACConfig() 
             policy_model_dict = {
                 'post_fcnet_hiddens': cfg['alg']['pi'],
+            }
+            q_model_dict = {
+                'post_fcnet_hiddens': cfg['alg']['vf'],
             }
 
     if 'multi' in cfg['env']['scenario']:
@@ -139,9 +146,7 @@ def train_ray(cfg: DictConfig,filedir):
                                 'replay_sequence_length': 1,
                                 },
                             policy_model_config=policy_model_dict,
-                            q_model_config={
-                                'post_fcnet_hiddens': cfg['alg']['vf'],
-                            },
+                            q_model_config=q_model_dict,
                             )
                 #.rollout(batch_mode='truncated_episods',
                 #            rollout_fragment_length=256,)
@@ -149,7 +154,21 @@ def train_ray(cfg: DictConfig,filedir):
     
     del test_env
 
+    #new_trainer.set_weights({
+    #    pid: w for pid, w in untrained_weights.items()
+    #    if pid != "policy_0"
+    #})
+
+
     algo_build = algo_config.build(logger_creator=logger_creator)
+
+    if 'evade' in cfg['env']['scenario']:
+        pre_trained_policy = Policy.from_checkpoint(cfg['env']['evader_policy_dir'])
+        pre_trained_policy_weights = pre_trained_policy.get_weights()
+        pre_trained_policy_weights = {'policy0': pre_trained_policy_weights}
+        algo_build.set_weights(pre_trained_policy_weights)
+    #algo_config.policy.get_weights()
+
     #result = algo_build.train()
     #print(pretty_print(result))
     #model = algo_build.get_policy().model
@@ -157,8 +176,9 @@ def train_ray(cfg: DictConfig,filedir):
     #model.base_model.summary()
     #t0 = time.time()
 
+    
 
-    for i in range(25000): 
+    for i in range(15000): 
         result = algo_build.train()
         if i % 500 == 0 and i != 0:
             save_dir = logdir+'/checkpoint'+str(result['timesteps_total'])

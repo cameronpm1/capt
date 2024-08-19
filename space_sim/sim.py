@@ -22,6 +22,8 @@ from dynamics.sat_dynamics import satelliteDynamics
 from dynamics.quad_dynamics import quadcopterDynamics
 from trajectory_planning.path_planner import pathPlanner
 
+from ray.rllib.policy.policy import Policy
+
 logger = getlogger(__name__)
 
 class Sim():
@@ -558,17 +560,16 @@ class Sim():
             
             logger.info('initializing PPO controller')
         
-            self.model = PPO.load(modeldir)
+            self.controller_policy = Policy.from_checkpoint(modeldir)
+            self.controller = lambda pos: self.controller_policy.compute_single_action(pos)
             self.scaling_function = getattr(self,'_'+scale)
 
-            self.max_ctrl = max_ctrl
-            self.state = None
-
-            self.current_goal = None
-            self.rel_goal = None
-            self.rel_state = None
-            self.count = 0
             self.dim = dim
+            self.max_ctrl = max_ctrl[0:self.dim]
+
+            self.state = None
+            self.current_goal = None
+            
 
         def update_state(self):
             pass
@@ -578,29 +579,12 @@ class Sim():
                 goal: list[float],
                 state: list[float],
         ) -> list[list[float]]:
-            '''
-            CHANGE GOAL TO RELATIVE GOAL
-            '''
-            #print(goal[0:3],state[0:6])
 
-            if self.rel_goal is None or np.linalg.norm(self.current_goal-goal) > 0.01 or self.count > 20:
-                self.rel_state = state.copy()
-                self.current_goal = goal.copy()
-                self.rel_goal = np.zeros((goal.size,))
-                self.rel_goal = self.current_goal - state
-                self.count = 0
+            self.state = state.copy()[0:self.dim*2]
+            self.current_goal = goal.copy()[0:self.dim*2]
+            self.rel_goal = self.current_goal - self.state 
 
-            self.count += 1                   
-            
-            obs_state = state.copy()
-            obs_state -= self.rel_state
-            if self.dim == 2:
-                obs = np.zeros((30,))
-                obs[0:2] = self.rel_goal[0:2]
-                obs[15:17] = obs_state[0:2]
-            else:
-                obs = np.concatenate((self.rel_goal,obs_state), axis=None) 
-            action, _states = self.model.predict(obs)
+            action,_,_ = self.controller(self.rel_goal)
             scalled_action = self.scaling_function(action)
             if self.dim == 3:
                 full_action = np.zeros((9,))

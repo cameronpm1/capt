@@ -1,3 +1,4 @@
+import os
 import time
 import numpy as np
 from gymnasium.utils import seeding
@@ -22,8 +23,7 @@ class evadeTrainEnv(satGymEnv):
             max_episode_length: int,
             max_ctrl: list[float],
             total_train_steps: float,
-            adversary_model_path: str,
-            adversary_policy_dirs: list[str],
+            adversary_policy_dir: list[str],
             ctrl_type: str = 'thrust',
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
@@ -45,13 +45,16 @@ class evadeTrainEnv(satGymEnv):
         if self.randomize_initial_state and self.dim == 3:
             self.prompter = oneVOnePrompter()
 
+        adversary_policy_dirs = os.listdir(adversary_policy_dir)
+
         self.num_policies = 0
         for i,policy in enumerate(adversary_policy_dirs):
+            policy_dir = adversary_policy_dir + '/' + policy
             self.num_policies += 1
             policy_label = 'policy' + str(i)
             model_label = 'model' + str(i)
-            setattr(self, policy_label, Policy.from_checkpoint(policy))
-            setattr(self, 'age', lambda obs: getattr(self, policy_label).compute_single_action(obs))
+            setattr(self, policy_label, Policy.from_checkpoint(policy_dir))
+            setattr(self, model_label, lambda obs: getattr(self, policy_label).compute_single_action(obs))
         self.adversary_model = None
             
         self._obs = None
@@ -61,9 +64,11 @@ class evadeTrainEnv(satGymEnv):
         self.action_dim = len(max_ctrl)
         self._np_random = None
 
+        self.distance_max = 60
+
     def reset(self, **kwargs):
         #pick random adversary model
-        model_num = self._np_random.randint(self.num_policies)
+        model_num = int(self._np_random.integers(0,self.num_policies))
         self.adversary_model = getattr(self,'model'+str(model_num))
         #randomize initial state
         if self.randomize_initial_state:
@@ -84,8 +89,8 @@ class evadeTrainEnv(satGymEnv):
     def step(self, action):
         #preprocesses control for sat
         adversary_obs = self.get_adversary_obs()
-        adversary_action = self.adversary_model(adversary_obs)
-        
+        adversary_action,_,_ = self.adversary_model(np.array(adversary_obs))
+
         #preprocess and set model action for adversary
         self.sim.set_sat_control(self.preprocess_action(action))
         self.sim.set_adversary_control([self.preprocess_action(adversary_action)])
@@ -101,9 +106,9 @@ class evadeTrainEnv(satGymEnv):
         terminated_bad, terminated_good, truncated = self._end_episode() #end by collision, end by max episode
 
         if terminated_bad:
-            rew -= 800
+            rew -= (1000-np.clip(self._step,0,1000))
         if terminated_good:
-            rew += 800
+            rew += 1000
 
         return obs, rew, terminated_bad or terminated_good, truncated, {'done': (terminated_bad or terminated_good, truncated), 'reward': rew}
     
@@ -150,13 +155,13 @@ class evadeTrainEnv(satGymEnv):
         """
         obs = super()._get_obs()
 
-        adversary_obs = OrderedDict()
+        #adversary_obs = OrderedDict()
         #rel evader state
-        adversary_obs['rel_evader_state'] = obs['evader_state'] - obs['adversar0_state']
+        adversary_obs = obs['evader_state'] - obs['adversary0_state']
         #rel goal state
-        adversary_obs['rel_goal_state'] = obs['goal_state'] - obs['adversary_state']
+        #adversary_obs['rel_goal_state'] = obs['goal_state'] - obs['adversary0_state']
 
-        return obs
+        return adversary_obs
     
     def seed(self, seed=None):  
         seeds = super().seed(seed=seed)

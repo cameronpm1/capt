@@ -3,11 +3,11 @@
 #  - override hydra/hydra_logging: disabled  
 #  - override hydra/job_logging: disabled
 
-seed: 2 # set experiment seed
+seed: 23 # set experiment seed
 
 logging:
   job:
-    name: test #adversary_siren_test4 # set job name
+    name: evade_3adv_test1 #multi_adversary_nodiv #adversary_siren_test4 # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -16,7 +16,7 @@ alg:
   type: sac
   nenv: 20
   cpu_envs: 60
-  lr: 0.00005
+  lr: 0.0003
   batch: 256
   batch_size: 256
   gamma: 0.99
@@ -30,17 +30,17 @@ alg:
 
 
 env:
-  scenario: multiadversary #control, controlImage, adversary, evade, multi, test
+  scenario: multievade #control, controlImage, adversary, evade, multi, test
   n_policies: 1
   max_timestep: 1024
-  max_control: [0.3,0.3]
+  max_control: [0.15,0.15]
   ctrl_type: thrust
   action_scaling: clip
   random_initial_state: True
   curriculum: True
   dim: 2
-  evader_policy_dir: '/home/cameron/magpie_rl/models/evader 10obs policy'
-  adversary_model_path: /home/cameron/magpie_rl/logs/adversary_rew3/2024-05-31/model.zip #/home/cameron/magpie_rl/logs/adversary_rew2/2024-05-28/midtrain_model_17000000_steps.zip
+  evader_policy_dir: '/home/cameron/magpie_rl/models/evader 7obs policy'
+  adversary_policy_dir: /home/cameron/magpie_rl/logs/adv_siren_m3/2024-08-16/checkpoint9002400/policies #/home/cameron/magpie_rl/logs/adversary_rew2/2024-05-28/midtrain_model_17000000_steps.zip
 
 satellite:
   name: satellite
@@ -101,7 +101,7 @@ adversary:
       data:
         inertia: 1e4
         mass: 2000
-      control_lim: [0.3,0.3,0.3]
+      control_lim: [0.15,0.15,0.15]
 
 obstacles:
 

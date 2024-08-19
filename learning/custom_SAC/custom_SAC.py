@@ -5,6 +5,7 @@ import logging
 import numpy as np
 from typing import Any, Dict, Optional, Tuple, Type, Union
 
+from ray import __version__ as ray_version
 from ray.rllib.policy.policy import Policy
 from ray.rllib.algorithms.sac.sac import SAC
 from ray.rllib.algorithms.sac import SACConfig
@@ -73,6 +74,11 @@ class custom_SAC(SAC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        if '33' in ray_version:
+            self.worker_call_name = 'workers'
+        if '34' in ray_version:
+            self.worker_call_name = 'env_runner_group'
+
     @classmethod
     @override(SAC)
     def get_default_policy_class(
@@ -91,7 +97,7 @@ class custom_SAC(SAC):
         Args:
             policy_id: ID of the which policy model to return.
         """
-        return self.workers.local_worker().get_policy(policy_id)
+        return getattr(self,self.worker_call_name).local_worker().get_policy(policy_id)
     
     def kl_loss_schedule(
         self,
@@ -123,7 +129,7 @@ class custom_SAC(SAC):
             # Sample (MultiAgentBatch) from workers.
             with self._timers[SAMPLE_TIMER]:
                 new_sample_batch: SampleBatchType = synchronous_parallel_sample(
-                    worker_set=self.workers,
+                    worker_set=getattr(self,self.worker_call_name),
                     concat=True,
                     sample_timeout_s=self.config.sample_timeout_s,
                 )
@@ -163,7 +169,7 @@ class custom_SAC(SAC):
 
                 # Postprocess batch before we learn on it
                 post_fn = self.config.get("before_learn_on_batch") or (lambda b, *a: b)
-                train_batch = post_fn(train_batch, self.workers, self.config)
+                train_batch = post_fn(train_batch, getattr(self,self.worker_call_name), self.config)
                 
                 #set kl_loss_val
                 kl_loss_coef = self.kl_loss_schedule(cur_ts)
@@ -207,8 +213,8 @@ class custom_SAC(SAC):
 
                 last_update = self._counters[LAST_TARGET_UPDATE_TS]
                 if cur_ts - last_update >= self.config.target_network_update_freq:
-                    to_update = self.workers.local_worker().get_policies_to_train()
-                    self.workers.local_worker().foreach_policy_to_train(
+                    to_update = getattr(self,self.worker_call_name).local_worker().get_policies_to_train()
+                    getattr(self,self.worker_call_name).local_worker().foreach_policy_to_train(
                         lambda p, pid, to_update=to_update: (
                             pid in to_update and p.update_target()
                         )
@@ -219,7 +225,7 @@ class custom_SAC(SAC):
                 # Update weights and global_vars - after learning on the local worker -
                 # on all remote workers.
                 with self._timers[SYNCH_WORKER_WEIGHTS_TIMER]:
-                    self.workers.sync_weights(global_vars=global_vars)
+                    getattr(self,self.worker_call_name).sync_weights(global_vars=global_vars)
 
         # Return all collected metrics for the iteration.
         return train_results
