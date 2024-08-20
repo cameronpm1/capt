@@ -112,8 +112,10 @@ if __name__ == "__main__":
             CONFIG_FILE = 'divergent_adversary_config' + dim_end
         else:
             CONFIG_FILE = 'adversary_config' + dim_end
-    else:
+    elif 'control' in args.env:
         CONFIG_FILE = 'controller_config' + dim_end
+    else:
+        CONFIG_FILE = 'config2'
 
     parsed = Path('learning/conf/'+CONFIG_FILE)
     hydra.initialize(str(parsed.parent),version_base='1.1')

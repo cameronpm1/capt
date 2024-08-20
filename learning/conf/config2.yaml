@@ -7,15 +7,15 @@ seed: 23 # set experiment seed
 
 logging:
   job:
-    name: evade_3adv_test1 #multi_adversary_nodiv #adversary_siren_test4 # set job name
+    name: test #multi_adversary_nodiv #adversary_siren_test4 # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
   lib: ray
   type: sac
-  nenv: 20
-  cpu_envs: 60
+  nenv: 1
+  cpu_envs: 1
   lr: 0.0003
   batch: 256
   batch_size: 256

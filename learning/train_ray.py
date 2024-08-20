@@ -8,7 +8,7 @@ import shutil
 import logging
 import numpy as np
 from torch import nn
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from hydra.core.hydra_config import HydraConfig
 
 from ray.tune.logger import pretty_print
@@ -43,13 +43,13 @@ def train_ray(cfg: DictConfig,filedir):
     logdir = cfg['logging']['run']['dir']
     logdir = filedir+logdir
     if not os.path.exists(logdir):
-        logger.info("Safe directory not found, creating path ...")
+        logger.info("Save directory not found, creating path ...")
         mkdir(logdir)
     else:
         logger.info("Save directory found ...")
     print("current directory:", logdir)
-    #logging.basicConfig(filename=logdir+'\log.log') #set up logger file
-    seed_offset = 0
+    #save copy of config file
+    OmegaConf.save(config=cfg, f=logdir+'/config.yaml')
 
     #make env function 
     def env_maker(config):
