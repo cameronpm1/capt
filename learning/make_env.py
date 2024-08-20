@@ -529,7 +529,6 @@ def make_env(filedir: str, cfg: DictConfig):
             action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],
             parallel_envs=parallel_envs,
-            curriculum=cfg['env']['curriculum']
         )
 
         filter_keys=[
