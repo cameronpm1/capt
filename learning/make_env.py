@@ -280,7 +280,7 @@ def make_env(filedir: str, cfg: DictConfig):
             action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],
             parallel_envs=parallel_envs,
-            sat_max_ctrl=cfg['env']['sat_max_ctrl']
+            sat_max_ctrl=cfg['env']['sat_max_control']
         )
 
         filter_keys=[
@@ -496,7 +496,7 @@ def make_env(filedir: str, cfg: DictConfig):
             action_scaling_type=cfg['env']['action_scaling'],
             evader_policy_dir=cfg['env']['evader_policy_dir'],
             randomize_initial_state=cfg['env']['random_initial_state'],
-            adv_max_ctrl=cfg['env']['adv_max_ctrl']
+            adv_max_ctrl=cfg['env']['adv_max_control']
         )
 
     else:
