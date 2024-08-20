@@ -210,6 +210,20 @@ class Sim():
             return True
         return False
     
+    def adv_goal_proximity(
+            self,
+            idx: int = 0
+    ) -> bool:
+        '''
+        outputs:
+          True - adversary is within collision tollerance of goal
+          False - adversary is no within collision tollerance of goal
+        '''
+        if np.linalg.norm(self.path_planner.goal-self.adversary[idx].dynamics.state) < self.collision_tolerance:
+            return True
+        else:
+            return False
+    
     def set_sat_goal(
             self,
             goal: list[float],

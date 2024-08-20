@@ -125,7 +125,8 @@ def train_ray(cfg: DictConfig,filedir):
                                 )
         algo_config = (algo
                 .environment(env=env_name,
-                            env_config={'num_agents':1},)
+                            #env_config={'num_agents':1},
+                            )
                 .framework("torch")
                 .env_runners(num_env_runners=cfg['alg']['nenv'], #20
                             num_envs_per_worker=cfg['alg']['cpu_envs'], #60

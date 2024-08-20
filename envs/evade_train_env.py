@@ -125,7 +125,9 @@ class evadeTrainEnv(satGymEnv):
         else:
             too_far = False
 
-        return collision or too_far, goal_reached, self._step >= self.max_episode_length
+        adv_goal_proximity = self.sim.adv_goal_proximity(idx=0)
+
+        return collision or too_far or adv_goal_proximity, goal_reached, self._step >= self.max_episode_length
 
     
     def _reward(self) -> float:
