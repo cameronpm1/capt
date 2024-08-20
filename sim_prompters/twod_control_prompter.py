@@ -10,7 +10,7 @@ class twodControlPrompter():
 
         self.sat_range = [0,0]
         self.vel_range = [0,0.01]
-        self.goal_range = [30,40]
+        self.goal_range = [35,40]
 
     def seed(self, seed=None):
         seeds = []

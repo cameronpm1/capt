@@ -57,7 +57,10 @@ def get_args():
 def train_rl_model(cfg: DictConfig):
     if 'ray' in cfg['alg']['lib']:
         ray.init(runtime_env={'working_dir': '/home/cameron/magpie_rl',
-                              'env_vars': {'PYTHONWARNINGS': 'ignore::DeprecationWarning'}})
+                              'env_vars': {'PYTHONWARNINGS': 'ignore::DeprecationWarning'},
+                              'excludes': ['.git/',
+                                           'models/',],
+                              })
         train_ray(cfg,DIRECTORY)
     else:
         os.chdir('../../../')
@@ -97,7 +100,7 @@ if __name__ == "__main__":
     
     '''
 
-    torch.set_num_threads(8)
+    #torch.set_num_threads(8)
     DIRECTORY = os.getcwd()
     args = get_args()
     dim_end = str(args.dim) + 'd'

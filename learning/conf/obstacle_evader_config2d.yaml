@@ -25,10 +25,10 @@ alg:
   target_ent: 0.1
   train_intensity: 3
   device: cpu # cpu, cuda
-  total_timesteps: 20e6 #20e6
+  total_timesteps: 25e6 #20e6
 
 env:
-  scenario: controlImage #control, controlImage, adversary, evade, multi, test
+  scenario: multicontrolImage #control, controlImage, adversary, evade, multi, test
   n_policies: 1
   max_timestep: 1024
   sat_max_control: [0.1,0.1]

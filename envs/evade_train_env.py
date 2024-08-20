@@ -123,7 +123,7 @@ class evadeTrainEnv(satGymEnv):
         if self.sim.distance_to_goal() > self.distance_max:
             too_far = True
         else:
-            too_far = False
+            too_far = False 
 
         adv_goal_proximity = self.sim.adv_goal_proximity(idx=0)
 
