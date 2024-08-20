@@ -28,6 +28,7 @@ class evadeTrainEnv(satGymEnv):
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
             parallel_envs: int = 20,
+            adv_max_ctrl: Optional[list[float]] = None,
     ):
         super().__init__(
             sim=sim,
@@ -63,6 +64,8 @@ class evadeTrainEnv(satGymEnv):
         self.min_distance = 0
         self.action_dim = len(max_ctrl)
         self._np_random = None
+        if adv_max_ctrl is None: self.adv_max_ctrl = self.max_ctrl
+        else: self.adv_max_ctrl = adv_max_ctrl
 
         self.distance_max = 60
 
@@ -93,7 +96,7 @@ class evadeTrainEnv(satGymEnv):
 
         #preprocess and set model action for adversary
         self.sim.set_sat_control(self.preprocess_action(action))
-        self.sim.set_adversary_control([self.preprocess_action(adversary_action)])
+        self.sim.set_adversary_control([self.preprocess_action(adversary_action,self.adv_max_ctrl)])
 
         #take step
         self.sim.step()

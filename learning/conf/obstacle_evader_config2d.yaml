@@ -31,7 +31,8 @@ env:
   scenario: controlImage #control, controlImage, adversary, evade, multi, test
   n_policies: 1
   max_timestep: 1024
-  max_control: [0.1,0.1]
+  sat_max_control: [0.1,0.1]
+  adv_max_control: [0.15,0.15]
   ctrl_type: thrust
   action_scaling: clip
   random_initial_state: True

@@ -24,6 +24,7 @@ class evadeTestEnv(satGymEnv):
             evader_policy_dir: str,
             action_scaling_type: str = 'clip',
             randomize_initial_state: bool = False,
+            adv_max_ctrl: Optional[list[float]] = None,
     ):
         super().__init__(
             sim=sim,
@@ -52,6 +53,8 @@ class evadeTestEnv(satGymEnv):
         self.distance_max = 30
         self.initial_goal_distance = 0
         self.observation_space_flat = None
+        if adv_max_ctrl is None: self.adv_max_ctrl = self.max_ctrl
+        else: self.adv_max_ctrl = adv_max_ctrl
 
 
     def reset(self, **kwargs):
@@ -82,7 +85,7 @@ class evadeTestEnv(satGymEnv):
 
         #preprocess and set controls
         evader_action = self.preprocess_action(evader_action)
-        adversary_action = self.preprocess_action(adversary_action)
+        adversary_action = self.preprocess_action(adversary_action,max_ctrl=self.adv_max_ctrl)
         self.sim.set_sat_control(evader_action)
         self.sim.set_adversary_control([adversary_action])
 

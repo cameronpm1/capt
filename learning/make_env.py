@@ -273,13 +273,14 @@ def make_env(filedir: str, cfg: DictConfig):
             sim=sim,
             step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
             max_episode_length=cfg['env']['max_timestep'],
-            max_ctrl=cfg['env']['max_control'],
+            max_ctrl=cfg['env']['adv_max_control'],
             ctrl_type=cfg['env']['ctrl_type'],
             total_train_steps=cfg['alg']['total_timesteps'],
             evader_policy_dir=cfg['env']['evader_policy_dir'],
             action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],
-            parallel_envs=parallel_envs
+            parallel_envs=parallel_envs,
+            sat_max_ctrl=cfg['env']['sat_max_ctrl']
         )
 
         filter_keys=[
@@ -318,12 +319,13 @@ def make_env(filedir: str, cfg: DictConfig):
             sim=sim,
             step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
             max_episode_length=cfg['env']['max_timestep'],
-            max_ctrl=cfg['env']['max_control'],
+            max_ctrl=cfg['env']['sat_max_control'],
             ctrl_type=cfg['env']['ctrl_type'],
             total_train_steps=cfg['alg']['total_timesteps'],
             action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],
-            adversary_policy_dir=cfg['env']['adversary_policy_dir']
+            adversary_policy_dir=cfg['env']['adversary_policy_dir'],
+            adv_max_ctrl=cfg['env']['adv_max_control']
         )
 
         filter_keys=[
@@ -447,7 +449,7 @@ def make_env(filedir: str, cfg: DictConfig):
             sim=sim,
             step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
             max_episode_length=cfg['env']['max_timestep'],
-            max_ctrl=cfg['env']['max_control'],
+            max_ctrl=cfg['env']['sat_max_control'],
             total_train_steps=cfg['alg']['total_timesteps'],
             action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],
@@ -490,10 +492,11 @@ def make_env(filedir: str, cfg: DictConfig):
             sim=sim,
             step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
             max_episode_length=cfg['env']['max_timestep'],
-            max_ctrl=cfg['env']['max_control'],
+            max_ctrl=cfg['env']['sat_max_control'],
             action_scaling_type=cfg['env']['action_scaling'],
             evader_policy_dir=cfg['env']['evader_policy_dir'],
             randomize_initial_state=cfg['env']['random_initial_state'],
+            adv_max_ctrl=cfg['env']['adv_max_ctrl']
         )
 
     else:
@@ -521,7 +524,7 @@ def make_env(filedir: str, cfg: DictConfig):
             sim=sim,
             step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
             max_episode_length=cfg['env']['max_timestep'],
-            max_ctrl=cfg['env']['max_control'],
+            max_ctrl=cfg['env']['sat_max_control'],
             total_train_steps=cfg['alg']['total_timesteps'],
             action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],

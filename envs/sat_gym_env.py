@@ -161,9 +161,10 @@ class satGymEnv(gymnasium.Env):
     def preprocess_action(
         self,
         action: list[float],
+        max_ctrl: Optional[list[float]] = None
     ) -> list[float]:
         
-        scalled_action = self.scaling_function(action[0:self.dim])
+        scalled_action = self.scaling_function(action[0:self.dim],max_ctrl)
         if self.dim == 3:
             full_action = np.zeros((9,))
             full_action[0:self.dim] = scalled_action[0:self.dim]
@@ -180,8 +181,10 @@ class satGymEnv(gymnasium.Env):
     def _clip(
             self,
             action: list[float],
+            max_ctrl: Optional[list[float]] = None,
     ) -> list[float]:
-        return np.multiply(self.max_ctrl,np.clip(action,a_min=-1,a_max=1))
+        if max_ctrl is None: max_ctrl = self.max_ctrl
+        return np.multiply(max_ctrl,np.clip(action,a_min=-1,a_max=1))
     
     def _std(
             self,
