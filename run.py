@@ -117,6 +117,8 @@ if __name__ == "__main__":
             CONFIG_FILE = 'adversary_config' + dim_end
     elif 'control' in args.env:
         CONFIG_FILE = 'controller_config' + dim_end
+    elif 'marl' in args.env:
+        CONFIG_FILE = 'marl_config' + dim_end
     else:
         CONFIG_FILE = 'config2'
 

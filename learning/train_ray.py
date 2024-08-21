@@ -21,10 +21,15 @@ from ray.tune.logger import UnifiedLogger
 from ray.tune.registry import register_env
 from ray.rllib.policy.policy import Policy
 from ray.rllib.algorithms.sac import SACConfig
+from ray.rllib.algorithms.sac.sac_torch_policy import SACTorchPolicy
+from ray.rllib.utils.metrics import (
+    NUM_ENV_STEPS_SAMPLED,
+)
 
 from logger import getlogger
 from learning.make_env import make_env
 from envs.multi_env_wrapper import multiEnvWrapper
+from envs.multi_agent_wrapper import multiAgentWrapper
 from learning.custom_SAC.custom_SAC import custom_SACConfig
 from custom_model_archs.sirenfcnet import SirenOutFullyConnectedNetwork
 
@@ -62,11 +67,71 @@ def train_ray(cfg: DictConfig,filedir):
         env.unwrapped.seed(seed)
         return env
 
+    #wrap env for parallel single agent rl to be compatible w rllib marl
     def multi_env_maker(config):
-        #[env_maker({},seed=(cfg['seed'] + (i*100))) for i in range(#cfg['env']['nenvs'])]
         env = env_maker(config)  
         vec_env = multiEnvWrapper(env)
         return vec_env
+    
+    #wrap env for marl
+    def multi_agent_env_maker(config):
+        env = env_maker(config)  
+        vec_env = multiAgentWrapper(env)
+        return vec_env
+    
+    
+    def rl_policy_mapping_fn(agent_id, episode, worker, **kwargs):
+        '''
+        ensure that parallel envs always use the 
+        correct policy for single agent rl
+
+        policies are assigned alternating
+        i.e. policies: [policy0, policy1]
+             workers[0,2,4,...] = policy0 
+             workers[1,3,5,...] = policy1 
+        '''
+        idx = (worker.worker_index-1) % cfg['env']['n_policies']
+        return 'policy'+str(idx)
+    
+    #ensure that evader and adversary agents always use the correct policy
+    def marl_policy_mapping_fn(agent_id, episode, worker, **kwargs):
+        '''
+        ensure that evader and adversary agents always use the 
+        correct policy for marl
+
+        adversary policies assigned in alternating order same
+        as single agent rl
+        '''
+        if 'evader' in agent_id: 
+            return 'evader'
+        else:
+            idx = (worker.worker_index-1) % cfg['env']['n_adv_policies']
+            return 'adversary'+str(idx)
+        
+    class policyTrainingSchedule():
+        '''
+        records how many batches have been used 
+        '''
+        def __init__(self,workers=1):
+            self.workers=workers
+            self.max_samples = 0
+
+        def policy_training_schedule(self, pid, batch):
+            '''
+            determines when each policy should be trained
+            '''
+            #receives none when checking for target network update
+            if batch is not None:
+                self.max_samples = max(batch[pid]['unroll_id'])/len(batch.policy_batches)*self.workers
+            if 'evade' in pid:
+                return True
+            if 'adversary' in pid and self.max_samples > 20000:
+                return True
+            else:
+                return False
+            
+            
+    policy_tracker = policyTrainingSchedule(workers=cfg['alg']['nenv'])
     
     if 'multi' in cfg['env']['scenario']:
         env_name = cfg['env']['scenario']
@@ -74,123 +139,160 @@ def train_ray(cfg: DictConfig,filedir):
         #test_env for getting obs/action space
         test_env = multi_env_maker({})
         policy_list = ['policy'+str(i) for i in range(cfg['env']['n_policies'])]
-    elif 'control' in cfg['env']['scenario']:
+        policy_mapping_fn = rl_policy_mapping_fn
+        policy_training_fn = policy_list
+    elif 'marl' in cfg['env']['scenario']:
+        env_name = cfg['env']['scenario']
+        register_env(env_name, multi_agent_env_maker) #register make env function
+        #test_env for getting obs/action space
+        test_env = multi_agent_env_maker({})
+        policy_list = ['adversary'+str(i) for i in range(cfg['env']['n_adv_policies'])]
+        policy_list.append('evader')
+        policy_mapping_fn = marl_policy_mapping_fn
+        policy_training_fn = policy_tracker.policy_training_schedule
+    else:
+        '''
+        TO DO:
+        add train script for non multiagent rl
+        '''
+        print('ERROR: single agent training not supported in train_ray.py')
+        exit()
         env_name = cfg['env']['scenario']
         register_env(env_name, env_maker) #register make env function
         #test_env for getting obs/action space
         test_env = env_maker({})
         
-    #ensure that evader and adversary agents always use the correct policy
-    def policy_mapping_fn(agent_id, episode, worker, **kwargs):
-        '''
-        each agent is assigned to a single worker
-        '''
-        idx = (worker.worker_index-1) % cfg['env']['n_policies']
-        return 'policy'+str(idx)
 
     ModelCatalog.register_custom_model("sirenfcnet", SirenOutFullyConnectedNetwork)
 
     def logger_creator(config):
         return UnifiedLogger(config, logdir, loggers=None)
 
+    batch = None
+
     if 'sac' in cfg['alg']['type']:
-        if 'div' in cfg['env']['scenario']:
+        if 'marl' in cfg['env']['scenario']:
             algo = custom_SACConfig()
-            policy_model_dict = {
+            adv_policy_model_dict = {
                 'custom_model': 'sirenfcnet',
-                'fcnet_hiddens': cfg['alg']['pi'],
+                'fcnet_hiddens': cfg['alg']['pi_adv'],
             }
-            q_model_dict = {
-                'fcnet_hiddens': cfg['alg']['vf'],
+            adv_q_model_dict = {
+                'fcnet_hiddens': cfg['alg']['vf_adv'],
             }
-        else:
-            algo = SACConfig() 
-            policy_model_dict = {
-                'post_fcnet_hiddens': cfg['alg']['pi'],
+            evader_policy_model_dict = {
+                'post_fcnet_hiddens': cfg['alg']['pi_evader'],
             }
-            q_model_dict = {
-                'post_fcnet_hiddens': cfg['alg']['vf'],
+            evader_q_model_dict = {
+                'post_fcnet_hiddens': cfg['alg']['pi_evader'],
             }
+            batch = cfg['alg']['batch']*(cfg['env']['n_adv_policies']+1)
 
-    if 'multi' in cfg['env']['scenario']:
-        #initialize MARL training algorithm
-
-        policy_info = {}
-        for label in policy_list:
-            policy_info[label] = (
-                                    None, #policy_class
-                                    test_env.observation_space['agent0'], #observation_space
-                                    test_env.action_space['agent0'], #action_space
-                                    {} #config (gamma,lr,etc.)
+            policy_info = {}
+            for label in policy_list:
+                if 'evader' in label:
+                    policy_info[label] = (
+                                    SACTorchPolicy, #policy_class
+                                    test_env.get_observation_space()['evader'], #observation_space
+                                    test_env.get_action_space()['evader'], #action_space
+                                    {'lr':cfg['alg']['lr_evader'],
+                                     'policy_model_config':evader_policy_model_dict,
+                                     'q_model_config':evader_q_model_dict,
+                                    }
                                 )
-        algo_config = (algo
-                .environment(env=env_name,
-                            #env_config={'num_agents':1},
+                else:
+                    policy_info[label] = (
+                                    None, #policy_class
+                                    test_env.get_observation_space()['adversary'], #observation_space
+                                    test_env.get_action_space()['adversary'], #action_space
+                                    {'lr':cfg['alg']['lr_adv'],
+                                     'policy_model_config':adv_policy_model_dict,
+                                     'q_model_config':adv_q_model_dict,
+                                    }
+                                )
+        else:
+            if 'div' in cfg['env']['scenario']:
+                algo = custom_SACConfig()
+                policy_model_dict = {
+                    'custom_model': 'sirenfcnet',
+                    'fcnet_hiddens': cfg['alg']['pi'],
+                }
+                q_model_dict = {
+                    'fcnet_hiddens': cfg['alg']['vf'],
+                }
+            else:
+                algo = SACConfig() 
+                policy_model_dict = {
+                    'post_fcnet_hiddens': cfg['alg']['pi'],
+                }
+                q_model_dict = {
+                    'post_fcnet_hiddens': cfg['alg']['vf'],
+                }
+            batch = cfg['alg']['batch']*cfg['env']['n_policies']
+
+            policy_info = {}
+            for label in policy_list:
+                policy_info[label] = (
+                                None, #policy_class
+                                test_env.observation_space['agent0'], #observation_space
+                                test_env.action_space['agent0'], #action_space
+                                {'lr':cfg['alg']['lr'],
+                                 'policy_model_config':policy_model_dict,
+                                 'q_model_config':q_model_dict,
+                                } #config (gamma,lr,etc.)
                             )
-                .framework("torch")
-                .env_runners(num_env_runners=cfg['alg']['nenv'], #20
-                            num_envs_per_worker=cfg['alg']['cpu_envs'], #60
-                            num_cpus_per_env_runner=1
-                            )
-                .resources(num_gpus=1)
-                .multi_agent(policy_mapping_fn=policy_mapping_fn,
+
+    #initialize RL training algorithm using rllib's multi_agent settings
+    algo_config = (algo
+            .environment(env=env_name,
+                        #env_config={'num_agents':1},
+                        )
+            .framework("torch")
+            .env_runners(num_env_runners=cfg['alg']['nenv'], #20
+                        num_envs_per_worker=cfg['alg']['cpu_envs'], #60
+                        num_cpus_per_env_runner=1
+                        )
+            .resources(num_gpus=1)
+            .multi_agent(policy_mapping_fn=policy_mapping_fn,
+                            policies_to_train=policy_training_fn,
                             policies=policy_info)
-                .training(gamma=cfg['alg']['gamma'], 
-                            train_batch_size=cfg['alg']['batch']*cfg['env']['n_policies'],
-                            training_intensity=cfg['alg']['train_intensity'],
-                            target_entropy=cfg['alg']['target_ent'],
-                            grad_clip=10,
-                            grad_clip_by='norm',
-                            replay_buffer_config={
-                                'type': 'MultiAgentReplayBuffer', 
-                                'capacity': 1000000, 
-                                'replay_sequence_length': 1,
-                                },
-                            policy_model_config=policy_model_dict,
-                            q_model_config=q_model_dict,
-                            )
-                #.rollout(batch_mode='truncated_episods',
-                #            rollout_fragment_length=256,)
-        )
+            .training(gamma=cfg['alg']['gamma'], 
+                        train_batch_size=batch,
+                        training_intensity=cfg['alg']['train_intensity'],
+                        target_entropy=cfg['alg']['target_ent'],
+                        grad_clip=10,
+                        grad_clip_by='norm',
+                        replay_buffer_config={
+                            'type': 'MultiAgentReplayBuffer', 
+                            'capacity': 1000000, 
+                            'replay_sequence_length': 1,
+                            },
+                        )
+    )
     
     del test_env
-
-    #new_trainer.set_weights({
-    #    pid: w for pid, w in untrained_weights.items()
-    #    if pid != "policy_0"
-    #})
 
 
     algo_build = algo_config.build(logger_creator=logger_creator)
 
-    if 'evade' in cfg['env']['scenario']:
+    #set pre trained weights if training final evade or marl
+    if 'evade' or 'marl' in cfg['env']['scenario']:
         pre_trained_policy = Policy.from_checkpoint(cfg['env']['evader_policy_dir'])
         pre_trained_policy_weights = pre_trained_policy.get_weights()
-        pre_trained_policy_weights = {'policy0': pre_trained_policy_weights}
-        algo_build.set_weights(pre_trained_policy_weights)
-    #algo_config.policy.get_weights()
+        if 'marl' in cfg['env']['scenario']:
+            lablel = 'evader'
+        else:
+            lablel = 'evader'
+        pre_trained_policy_weights = {label: pre_trained_policy_weights}
+        algo_build.set_weights(pre_trained_policy_weights)    
 
-    #result = algo_build.train()
-    #print(pretty_print(result))
-    #model = algo_build.get_policy().model
-    #model_out = model({"obs": np.array([[0.1, 0.2, 0.3, 0.4]])})
-    #model.base_model.summary()
-    #t0 = time.time()
-
-    
-
+    #train 15,000 iterations
     for i in range(15000): 
         result = algo_build.train()
         if i % 500 == 0 and i != 0:
             save_dir = logdir+'/checkpoint'+str(result['timesteps_total'])
             algo_build.save(checkpoint_dir=save_dir)
             print(pretty_print(result))
-
-    #td = time.time()-t0
-    #print(td)
-
-    #checkpoint_dir = algo_build.save(checkpoint_dir=logdir).checkpoint.path
-
 
 '''
 {'_disable_preprocessor_api': False, 

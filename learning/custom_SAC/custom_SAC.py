@@ -53,6 +53,7 @@ from ray.rllib.utils.metrics import (
 )
 
 from learning.custom_SAC.custom_sac_torch_policy import _get_dist_class
+from learning.custom_SAC.custom_sac_torch_policy import CustomSACTorchPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -175,25 +176,28 @@ class custom_SAC(SAC):
                 kl_loss_coef = self.kl_loss_schedule(cur_ts)
                 #collect parallel policy actions
                 for policy_id1 in train_batch.policy_batches.keys():
-                    divergent_actions = {}
-                    for policy_id2 in train_batch.policy_batches.keys():
-                        if policy_id1 == policy_id2:
-                            continue
-                        else:
-                            policy = self.get_policy(policy_id2)
-                            model = policy.model
-                            with torch.no_grad():
-                                #for each policy state, collect parallel policy action dists.
-                                model_out, _ = model(
-                                    SampleBatch(obs=torch.from_numpy(train_batch[policy_id1][SampleBatch.CUR_OBS]), _is_training=True), [], None
-                                )
-                                divergent_actions_input, _ = model.get_action_model_outputs(model_out.cuda())
-                                action_dist_class = _get_dist_class(policy, policy.config, policy.action_space)
-                                divergent_actions[policy_id2] = action_dist_class(divergent_actions_input, model)
-                    #set divergent actions policy attribute directly to policy
                     policy = self.get_policy(policy_id1)
-                    setattr(policy, 'divergent_actions', divergent_actions)
-                    setattr(policy, 'kl_loss_coef', kl_loss_coef)
+                    if type(policy) is CustomSACTorchPolicy:
+                        divergent_actions = {}
+                        for policy_id2 in train_batch.policy_batches.keys():
+                            if policy_id1 == policy_id2:
+                                continue
+                            else:
+                                policy = self.get_policy(policy_id2)
+                                if type(policy) is CustomSACTorchPolicy:
+                                    model = policy.model
+                                    with torch.no_grad():
+                                        #for each policy state, collect parallel policy action dists.
+                                        model_out, _ = model(
+                                            SampleBatch(obs=torch.from_numpy(train_batch[policy_id1][SampleBatch.CUR_OBS]), _is_training=True), [], None
+                                        )
+                                        divergent_actions_input, _ = model.get_action_model_outputs(model_out.cuda())
+                                        action_dist_class = _get_dist_class(policy, policy.config, policy.action_space)
+                                        divergent_actions[policy_id2] = action_dist_class(divergent_actions_input, model)
+                        #set divergent actions policy attribute directly to policy
+                        policy = self.get_policy(policy_id1)
+                        setattr(policy, 'divergent_actions', divergent_actions)
+                        setattr(policy, 'kl_loss_coef', kl_loss_coef)
 
                 # Learn on training batch.
                 # Use simple optimizer (only for multi-agent or tf-eager; all other

@@ -16,6 +16,7 @@ import logging
 from logger import getlogger
 from envs.gui import Renderer
 from space_sim.sim import Sim
+from envs.marl_env import MARLEnv
 from envs.sat_gym_env import satGymEnv
 from envs.evade_test_env import evadeTestEnv
 from envs.evade_train_env import evadeTrainEnv
@@ -335,6 +336,41 @@ def make_env(filedir: str, cfg: DictConfig):
 
         env = FilterObservation(env,filter_keys=filter_keys)
         env = FlattenObservation(env)
+
+    elif 'marl' in cfg['env']['scenario']:
+
+        '''
+        only add obstacles and adversaries if the word adversary is in the env scenario name
+        '''
+
+        sim = Sim(
+            main_object = satellite,
+            path_planner = path_planner,
+            point_cloud_size = cfg['sim']['point_cloud_size'],
+            path_point_tolerance = cfg['sim']['path_point_tolerance'],
+            point_cloud_radius = cfg['sim']['point_cloud_radius'],
+            control_method = cfg['sim']['control_method'],
+            goal_tolerance = cfg['sim']['goal_tolerance'],
+            collision_tolerance = cfg['sim']['collision_tolerance'],
+            track_point_cloud = cfg['sim']['track_point_cloud'],
+            kwargs = kwargs,
+        )
+
+        logger.info('Setting up evasion environment')
+
+        initialize_adversasries(sim)
+        initialize_obstacles(sim)
+
+        env = MARLEnv(
+            sim=sim,
+            step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
+            max_episode_length=cfg['env']['max_timestep'],
+            sat_max_ctrl=cfg['env']['sat_max_control'],
+            adv_max_ctrl=cfg['env']['adv_max_control'],
+            total_train_steps=cfg['alg']['total_timesteps'],
+            action_scaling_type=cfg['env']['action_scaling'],
+            randomize_initial_state=cfg['env']['random_initial_state'],
+        )
 
         '''
     elif 'multi' in cfg['env']['scenario']:
