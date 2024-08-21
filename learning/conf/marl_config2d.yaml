@@ -14,8 +14,8 @@ logging:
 alg:
   lib: ray
   type: sac
-  nenv: 4
-  cpu_envs: 2
+  nenv: 20
+  cpu_envs: 60
   batch: 256
   batch_size: 256
   gamma: 0.99
