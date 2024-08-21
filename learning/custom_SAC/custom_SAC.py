@@ -191,7 +191,7 @@ class custom_SAC(SAC):
                                         model_out, _ = model(
                                             SampleBatch(obs=torch.from_numpy(train_batch[policy_id1][SampleBatch.CUR_OBS]), _is_training=True), [], None
                                         )
-                                        divergent_actions_input, _ = model.get_action_model_outputs(model_out.cuda())
+                                        divergent_actions_input, _ = model.get_action_model_outputs(model_out.cpu())
                                         action_dist_class = _get_dist_class(policy, policy.config, policy.action_space)
                                         divergent_actions[policy_id2] = action_dist_class(divergent_actions_input, model)
                         #set divergent actions policy attribute directly to policy

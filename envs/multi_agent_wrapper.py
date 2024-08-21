@@ -25,16 +25,18 @@ class multiAgentWrapper(MultiAgentEnv):
             self,
             env: Type[satGymEnv],
     ): 
-        super().__init__()
+
         self.env = env
         self.label = 'evader'
 
-    def get_action_space(
+    @property
+    def action_space(
             self,
     ) -> gymnasium.Space:
         return self.env.action_space
 
-    def get_observation_space(
+    @property
+    def observation_space(
             self,
     ) -> gymnasium.Space:
         return self.env.observation_space

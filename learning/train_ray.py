@@ -105,7 +105,7 @@ def train_ray(cfg: DictConfig,filedir):
         if 'evader' in agent_id: 
             return 'evader'
         else:
-            idx = (worker.worker_index-1) % cfg['env']['n_adv_policies']
+            idx = (worker.worker_index-1) % cfg['env']['n_policies']
             return 'adversary'+str(idx)
         
     class policyTrainingSchedule():
@@ -146,7 +146,7 @@ def train_ray(cfg: DictConfig,filedir):
         register_env(env_name, multi_agent_env_maker) #register make env function
         #test_env for getting obs/action space
         test_env = multi_agent_env_maker({})
-        policy_list = ['adversary'+str(i) for i in range(cfg['env']['n_adv_policies'])]
+        policy_list = ['adversary'+str(i) for i in range(cfg['env']['n_policies'])]
         policy_list.append('evader')
         policy_mapping_fn = marl_policy_mapping_fn
         policy_training_fn = policy_tracker.policy_training_schedule
@@ -186,7 +186,7 @@ def train_ray(cfg: DictConfig,filedir):
             evader_q_model_dict = {
                 'post_fcnet_hiddens': cfg['alg']['pi_evader'],
             }
-            batch = cfg['alg']['batch']*(cfg['env']['n_adv_policies']+1)
+            batch = cfg['alg']['batch']*(cfg['env']['n_policies']+1)
 
             policy_info = {}
             for label in policy_list:
@@ -232,10 +232,16 @@ def train_ray(cfg: DictConfig,filedir):
 
             policy_info = {}
             for label in policy_list:
+                agent_label = test_env.label
+                if 'base' in cfg['env']['scenario']:
+                    if 'evade' in label:
+                        agent_label = 'evader'
+                    else:
+                        agent_label = 'adversary'
                 policy_info[label] = (
                                 None, #policy_class
-                                test_env.observation_space[test_env.label], #observation_space
-                                test_env.action_space[test_env.label], #action_space
+                                test_env.observation_space[agent_label], #observation_space
+                                test_env.action_space[agent_label], #action_space
                                 {'lr':cfg['alg']['lr'],
                                  'policy_model_config':policy_model_dict,
                                  'q_model_config':q_model_dict,
@@ -252,7 +258,7 @@ def train_ray(cfg: DictConfig,filedir):
                         num_envs_per_worker=cfg['alg']['cpu_envs'], #60
                         num_cpus_per_env_runner=1
                         )
-            .resources(num_gpus=1)
+            .resources(num_gpus=0)
             .multi_agent(policy_mapping_fn=policy_mapping_fn,
                             policies_to_train=policy_training_fn,
                             policies=policy_info)

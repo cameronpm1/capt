@@ -26,14 +26,14 @@ alg:
   #model dependant training variables:
   pi_adv: []
   vf_adv: []
-  pi_evader: [512, 512]
-  vf_evader: [512, 512]
+  pi: [512, 512]
+  vf: [512, 512]
   lr_adv: 0.0003
-  lr_evader: 0.0003
+  lr: 0.0003
   
 env:
   scenario: marl_base #control, controlImage, adversary, evade, multi, test
-  n_adv_policies: 2
+  n_policies: 2 #number of adversary policies
   max_timestep: 1024
   sat_max_control: [0.1,0.1]
   adv_max_control: [0.15,0.15]

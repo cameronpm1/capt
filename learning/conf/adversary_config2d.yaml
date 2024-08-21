@@ -3,37 +3,35 @@
 #  - override hydra/hydra_logging: disabled  
 #  - override hydra/job_logging: disabled
 
-seed: 2 # set experiment seed
+seed: 23 # set experiment seed
 
 logging:
   job:
-    name: adversary_evader_marl # set job name
+    name: adversary #multi_adversary_nodiv #adversary_siren_test4 # set job name
   run:
-    dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
+    dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
   lib: ray
   type: sac
-  nenv: 10
-  cpu_envs: 40
+  nenv: 20
+  cpu_envs: 60
+  lr: 0.0003
   batch: 256
   batch_size: 256
   gamma: 0.99
+  pi: [512, 512]
+  vf: [512, 512]
   target_ent: 0.1
   train_intensity: 3
   device: cpu # cpu, cuda
   total_timesteps: 30e6 #20e6
-  #model dependant training variables:
-  pi_adv: []
-  vf_adv: []
-  pi_evader: [512, 512]
-  vf_evader: [512, 512]
-  lr_adv: 0.0003
-  lr_evader: 0.0003
   
+
+
 env:
-  scenario: marl #control, controlImage, adversary, evade, multi, test
-  n_policies: 2 #number of adversary policies
+  scenario: multiadversary #control, controlImage, adversary, evade, multi, test
+  n_policies: 1
   max_timestep: 1024
   sat_max_control: [0.1,0.1]
   adv_max_control: [0.15,0.15]
