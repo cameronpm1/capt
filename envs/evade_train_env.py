@@ -64,8 +64,7 @@ class evadeTrainEnv(satGymEnv):
         self.min_distance = 0
         self.action_dim = len(max_ctrl)
         self._np_random = None
-        if adv_max_ctrl is None: self.adv_max_ctrl = self.max_ctrl
-        else: self.adv_max_ctrl = adv_max_ctrl
+        self.adv_max_ctrl = adv_max_ctrl
 
         self.distance_max = 60
 

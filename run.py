@@ -58,8 +58,7 @@ def train_rl_model(cfg: DictConfig):
     if 'ray' in cfg['alg']['lib']:
         ray.init(runtime_env={'working_dir': '/home/cameron/magpie_rl',
                               'env_vars': {'PYTHONWARNINGS': 'ignore::DeprecationWarning'},
-                              'excludes': ['.git/',
-                                           'models/',],
+                              'excludes': ['.git/',]
                               })
         train_ray(cfg,DIRECTORY)
     else:

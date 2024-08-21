@@ -14,8 +14,8 @@ logging:
 alg:
   lib: ray
   type: sac
-  nenv: 20
-  cpu_envs: 60
+  nenv: 10
+  cpu_envs: 30
   batch: 256
   batch_size: 256
   gamma: 0.99
@@ -29,14 +29,14 @@ alg:
   pi_evader: [512, 512]
   vf_evader: [512, 512]
   lr_adv: 0.0003
-  lr_evader: 0.0003
+  lr_evader: 0.0001
   
 env:
   scenario: marl #control, controlImage, adversary, evade, multi, test
   n_adv_policies: 1
   max_timestep: 1024
   sat_max_control: [0.1,0.1]
-  adv_max_control: [0.15,0.15]
+  adv_max_control: [0.1,0.1]
   ctrl_type: thrust
   action_scaling: clip
   random_initial_state: True

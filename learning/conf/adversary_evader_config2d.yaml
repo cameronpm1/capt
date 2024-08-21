@@ -14,8 +14,8 @@ logging:
 alg:
   lib: ray
   type: sac
-  nenv: 20
-  cpu_envs: 60
+  nenv: 10
+  cpu_envs: 40
   lr: 0.0003
   batch: 256
   batch_size: 256
@@ -34,7 +34,7 @@ env:
   n_policies: 1
   max_timestep: 1024
   sat_max_control: [0.1,0.1]
-  adv_max_control: [0.15,0.15]
+  adv_max_control: [0.1,0.1]
   ctrl_type: thrust
   action_scaling: clip
   random_initial_state: True

@@ -123,9 +123,9 @@ def train_ray(cfg: DictConfig,filedir):
             #receives none when checking for target network update
             if batch is not None:
                 self.max_samples = max(batch[pid]['unroll_id'])/len(batch.policy_batches)*self.workers
-            if 'evade' in pid:
+            if 'evade' in pid and self.max_samples > 9e6:
                 return True
-            if 'adversary' in pid and self.max_samples > 20000:
+            elif 'adversary' in pid and self.max_samples < 9e6:
                 return True
             else:
                 return False
@@ -282,7 +282,7 @@ def train_ray(cfg: DictConfig,filedir):
         if 'marl' in cfg['env']['scenario']:
             lablel = 'evader'
         else:
-            lablel = 'evader'
+            lablel = 'agent0'
         pre_trained_policy_weights = {label: pre_trained_policy_weights}
         algo_build.set_weights(pre_trained_policy_weights)    
 
