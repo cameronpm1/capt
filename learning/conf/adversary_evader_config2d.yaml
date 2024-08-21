@@ -9,7 +9,7 @@ logging:
   job:
     name: adversary_evader #multi_adversary_nodiv #adversary_siren_test4 # set job name
   run:
-    dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
+    dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
   lib: ray

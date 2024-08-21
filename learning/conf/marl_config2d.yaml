@@ -9,7 +9,7 @@ logging:
   job:
     name: adversary_evader_marl # set job name
   run:
-    dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
+    dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
   lib: ray
@@ -29,11 +29,11 @@ alg:
   pi_evader: [512, 512]
   vf_evader: [512, 512]
   lr_adv: 0.0003
-  lr_evader: 0.0001
+  lr_evader: 0.00005
   
 env:
   scenario: marl #control, controlImage, adversary, evade, multi, test
-  n_adv_policies: 1
+  n_adv_policies: 2
   max_timestep: 1024
   sat_max_control: [0.1,0.1]
   adv_max_control: [0.1,0.1]

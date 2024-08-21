@@ -276,7 +276,7 @@ def train_ray(cfg: DictConfig,filedir):
     algo_build = algo_config.build(logger_creator=logger_creator)
 
     #set pre trained weights if training final evade or marl
-    if 'evade' or 'marl' in cfg['env']['scenario']:
+    if 'evade' in cfg['env']['scenario'] or 'marl' in cfg['env']['scenario']:
         pre_trained_policy = Policy.from_checkpoint(cfg['env']['evader_policy_dir'])
         pre_trained_policy_weights = pre_trained_policy.get_weights()
         if 'marl' in cfg['env']['scenario']:
