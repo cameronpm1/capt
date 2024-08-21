@@ -27,6 +27,7 @@ class multiAgentWrapper(MultiAgentEnv):
     ): 
         super().__init__()
         self.env = env
+        self.label = 'evader'
 
     def get_action_space(
             self,

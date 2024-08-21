@@ -171,7 +171,7 @@ def train_ray(cfg: DictConfig,filedir):
     batch = None
 
     if 'sac' in cfg['alg']['type']:
-        if 'marl' in cfg['env']['scenario']:
+        if 'marl' in cfg['env']['scenario'] and 'base' not in cfg['env']['scenario']:
             algo = custom_SACConfig()
             adv_policy_model_dict = {
                 'custom_model': 'sirenfcnet',
@@ -234,8 +234,8 @@ def train_ray(cfg: DictConfig,filedir):
             for label in policy_list:
                 policy_info[label] = (
                                 None, #policy_class
-                                test_env.observation_space['agent0'], #observation_space
-                                test_env.action_space['agent0'], #action_space
+                                test_env.observation_space[test_env.label], #observation_space
+                                test_env.action_space[test_env.label], #action_space
                                 {'lr':cfg['alg']['lr'],
                                  'policy_model_config':policy_model_dict,
                                  'q_model_config':q_model_dict,

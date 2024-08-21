@@ -117,7 +117,10 @@ if __name__ == "__main__":
     elif 'control' in args.env:
         CONFIG_FILE = 'controller_config' + dim_end
     elif 'marl' in args.env:
-        CONFIG_FILE = 'marl_config' + dim_end
+        if 'base' in args.env:
+            CONFIG_FILE = 'marl_base_config' + dim_end
+        else:
+            CONFIG_FILE = 'marl_config' + dim_end
     else:
         CONFIG_FILE = 'config2'
 

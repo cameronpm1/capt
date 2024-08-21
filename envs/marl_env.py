@@ -63,7 +63,7 @@ class MARLEnv(satGymEnv):
         self.adv_max_ctrl = sat_max_ctrl
         self.adv_max_ctrl = adv_max_ctrl
 
-        self.distance_max = 60
+        self.distance_max = 30
 
         self.agents = {'evader', 'adversary'}
 
@@ -135,13 +135,19 @@ class MARLEnv(satGymEnv):
         evader_end, adversary_end = self._end_episode() #end by collision, end by max episode
 
         if evader_end[0]:
+            #collision punishment
             rew[key_map['evader']] -= (1000-np.clip(self._step,0,1000))
         if evader_end[1]:
+            #reward for reaching goal
             rew[key_map['evader']] += 1000
         if adversary_end[0]:
+            #collision and wandering punishment
             rew[key_map['adversary']] -= 600
         if adversary_end[1]:
+            #reward for finding goal before evader
             rew[key_map['adversary']] += 600
+            #if evader finds goal, end episode and punish adversary
+            rew[key_map['evader']] -= (1000-np.clip(self._step,0,1000))
 
         terminated[key_map['evader']] = evader_end[0] or evader_end[1]
         terminated[key_map['adversary']] = adversary_end[0] or adversary_end[1]
@@ -226,12 +232,7 @@ class MARLEnv(satGymEnv):
         
         goal_reached = self.sim.goal_check()
 
-        if self.sim.distance_to_goal() > self.distance_max:
-            too_far = True
-        else:
-            too_far = False 
-
-        return collision or too_far, goal_reached, self._step >= self.max_episode_length
+        return collision, goal_reached, self._step >= self.max_episode_length
     
     def get_adversary_end(
             self,
@@ -240,7 +241,7 @@ class MARLEnv(satGymEnv):
 
         goal_reached = self.sim.goal_check()
 
-        if self.sim.distance_to_adversary(idx=0) > self.distance_max/2:
+        if self.sim.distance_to_adversary(idx=0) > self.distance_max:
             too_far = True
         else:
             too_far = False 
