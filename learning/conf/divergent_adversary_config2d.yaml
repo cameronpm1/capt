@@ -9,19 +9,19 @@ logging:
   job:
     name: divergent_adversaries # set job name
   run:
-    dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
+    dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
   lib: ray
   type: sac
   nenv: 20
   cpu_envs: 60
-  lr: 0.00001
+  lr: 0.0003
   batch: 256
   batch_size: 256
   gamma: 0.99
-  pi: [] #[512, 512]
-  vf: [] #[512, 512]
+  pi: [512,512]
+  vf: [512,512] 
   target_ent: 0.1
   train_intensity: 3
   device: cpu # cpu, cuda
@@ -31,7 +31,7 @@ alg:
 
 env:
   scenario: multidivadversary #control, controlImage, adversary, evade, multi, test
-  n_policies: 3
+  n_policies: 2
   max_timestep: 1024
   sat_max_control: [0.1,0.1]
   adv_max_control: [0.15,0.15]

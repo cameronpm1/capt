@@ -3,13 +3,15 @@
 #  - override hydra/hydra_logging: disabled  
 #  - override hydra/job_logging: disabled
 
-seed: 2 # set experiment seed
+seed: 4 # set experiment seed
 
 logging:
   job:
-    name: adversary_evader_marl # set job name
+    name: adversary_evader_marl # set job name #kl_loss:.5 decay:10m
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
+
+notes: evader 10, no collision penalty for evader
 
 alg:
   lib: ray
@@ -24,8 +26,8 @@ alg:
   device: cpu # cpu, cuda
   total_timesteps: 30e6 #20e6
   #model dependant training variables:
-  pi_adv: []
-  vf_adv: []
+  pi_adv: [512, 512]
+  vf_adv: [512, 512]
   pi_evader: [512, 512]
   vf_evader: [512, 512]
   lr_adv: 0.0003
@@ -33,15 +35,15 @@ alg:
   
 env:
   scenario: marl #control, controlImage, adversary, evade, multi, test
-  n_policies: 2 #number of adversary policies
+  n_policies: 3 #number of adversary policies
   max_timestep: 1024
-  sat_max_control: [0.1,0.1]
+  sat_max_control: [0.15,0.15]
   adv_max_control: [0.15,0.15]
   ctrl_type: thrust
   action_scaling: clip
   random_initial_state: True
   dim: 2
-  evader_policy_dir: '/home/cameron/magpie_rl/models/evader 7obs policy'
+  evader_policy_dir: '/home/cameron/magpie_rl/models/evader 10 obs'
 
 satellite:
   name: satellite
@@ -67,7 +69,7 @@ path_planner:
     min_obstacle_distance: 6
     iterations: 1
     distance_tolerance: 0.5
-    layers: 7
+    layers: 3 #7
     angle_sections: 12
   max_distance: 0.3
   interpolation_method: spline

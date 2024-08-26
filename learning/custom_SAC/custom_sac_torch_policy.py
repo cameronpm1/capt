@@ -312,10 +312,10 @@ def custom_actor_critic_loss(
             for divergent_policy,divergent_action_dist in divergent_actions.items():
                 kl = action_dist_t.kl(divergent_action_dist)
                 kl_loss = torch.mean(kl)
-                #print(actor_loss)
+                #print('actor loss', actor_loss)
+                #print('kl loss', kl_loss_coef * kl_loss)
                 actor_loss -= kl_loss_coef * kl_loss
-                #print(actor_loss)
-                #delete divergent action policies
+            #delete divergent action policies
             delattr(policy, 'divergent_actions')
 
     # Store values for stats function in model (tower), such that for

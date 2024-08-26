@@ -60,7 +60,6 @@ class MARLEnv(satGymEnv):
         self.min_distance = 0
         self.action_dim = len(self.max_ctrl)
         self._np_random = None
-        self.adv_max_ctrl = sat_max_ctrl
         self.adv_max_ctrl = adv_max_ctrl
 
         self.distance_max = 30
@@ -137,17 +136,20 @@ class MARLEnv(satGymEnv):
         if evader_end[0]:
             #collision punishment
             rew[key_map['evader']] -= (1000-np.clip(self._step,0,1000))
+            #rew[key_map['adversary']] -= 600
         if evader_end[1]:
             #reward for reaching goal
             rew[key_map['evader']] += 1000
-        if adversary_end[0]:
-            #collision and wandering punishment
+            #penalty for reaching goal
             rew[key_map['adversary']] -= 600
-        if adversary_end[1]:
+        if adversary_end[0] and not evader_end[0]:
+            #wandering punishment none for collision
+            rew[key_map['adversary']] -= 600
+        #if adversary_end[1]:
             #reward for finding goal before evader
-            rew[key_map['adversary']] += 600
+            #rew[key_map['adversary']] += 600
             #if evader finds goal, end episode and punish adversary
-            rew[key_map['evader']] -= (1000-np.clip(self._step,0,1000))
+            #rew[key_map['evader']] -= (1000-np.clip(self._step,0,1000))
 
         terminated[key_map['evader']] = evader_end[0] or evader_end[1]
         terminated[key_map['adversary']] = adversary_end[0] or adversary_end[1]
@@ -169,7 +171,7 @@ class MARLEnv(satGymEnv):
         return evader_end, adversary_end
     
     def _reward(self) -> float:
-        norm_dist = self.sim.distance_to_goal()/self.distance_max #normalized distance to goal
+        norm_dist = self.sim.distance_to_goal()/60 #normalized distance to goal
         return self.get_evader_reward(dist=norm_dist), self.get_adversary_reward(dist=norm_dist)
     
     def _get_obs(self) -> OrderedDict:
@@ -191,7 +193,7 @@ class MARLEnv(satGymEnv):
     ) -> float:
         #normalized distance to goal
         rew = dist
-        return dist
+        return rew
 
     def get_evader_obs(
             self,
@@ -231,6 +233,7 @@ class MARLEnv(satGymEnv):
     ) -> bool:
         
         goal_reached = self.sim.goal_check()
+        adv_goal_proximity = self.sim.adv_goal_proximity(idx=0)
 
         return collision, goal_reached, self._step >= self.max_episode_length
     
@@ -246,6 +249,5 @@ class MARLEnv(satGymEnv):
         else:
             too_far = False 
 
-        adv_goal_proximity = self.sim.adv_goal_proximity(idx=0)
 
-        return collision or too_far, adv_goal_proximity, self._step >= self.max_episode_length
+        return collision or too_far, False, self._step >= self.max_episode_length

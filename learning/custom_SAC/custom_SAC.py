@@ -104,10 +104,10 @@ class custom_SAC(SAC):
         self,
         ts: int
     ):
-        start_val = 0.1
+        start_val = 0.9
         stop_val = 0
         ts_begin = 0
-        ts_end = 5e6
+        ts_end = 10e6
         if ts > ts_begin and ts < ts_end:
             return (1-(ts-ts_begin)/(ts_end-ts_begin)) * (start_val-stop_val) + stop_val
         elif ts > ts_end:
@@ -191,7 +191,7 @@ class custom_SAC(SAC):
                                         model_out, _ = model(
                                             SampleBatch(obs=torch.from_numpy(train_batch[policy_id1][SampleBatch.CUR_OBS]), _is_training=True), [], None
                                         )
-                                        divergent_actions_input, _ = model.get_action_model_outputs(model_out.cpu())
+                                        divergent_actions_input, _ = model.get_action_model_outputs(model_out.cuda())
                                         action_dist_class = _get_dist_class(policy, policy.config, policy.action_space)
                                         divergent_actions[policy_id2] = action_dist_class(divergent_actions_input, model)
                         #set divergent actions policy attribute directly to policy

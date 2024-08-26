@@ -43,7 +43,6 @@ class multiAgentWrapper(MultiAgentEnv):
     
     def step(self, action_dict):
 
-        obs,rew,terminated,truncated  = {},{},{},{}
         terminated_all = False
         truncated_all = False
 

@@ -32,6 +32,7 @@ from envs.multi_env_wrapper import multiEnvWrapper
 from envs.multi_agent_wrapper import multiAgentWrapper
 from learning.custom_SAC.custom_SAC import custom_SACConfig
 from custom_model_archs.sirenfcnet import SirenOutFullyConnectedNetwork
+from learning.custom_SAC.custom_sac_torch_policy import CustomSACTorchPolicy
 
 
 logger = getlogger(__name__)
@@ -193,8 +194,8 @@ def train_ray(cfg: DictConfig,filedir):
                 if 'evader' in label:
                     policy_info[label] = (
                                     SACTorchPolicy, #policy_class
-                                    test_env.get_observation_space()['evader'], #observation_space
-                                    test_env.get_action_space()['evader'], #action_space
+                                    test_env.observation_space['evader'], #observation_space
+                                    test_env.action_space['evader'], #action_space
                                     {'lr':cfg['alg']['lr_evader'],
                                      'policy_model_config':evader_policy_model_dict,
                                      'q_model_config':evader_q_model_dict,
@@ -202,9 +203,9 @@ def train_ray(cfg: DictConfig,filedir):
                                 )
                 else:
                     policy_info[label] = (
-                                    None, #policy_class
-                                    test_env.get_observation_space()['adversary'], #observation_space
-                                    test_env.get_action_space()['adversary'], #action_space
+                                    CustomSACTorchPolicy, #policy_class
+                                    test_env.observation_space['adversary'], #observation_space
+                                    test_env.action_space['adversary'], #action_space
                                     {'lr':cfg['alg']['lr_adv'],
                                      'policy_model_config':adv_policy_model_dict,
                                      'q_model_config':adv_q_model_dict,
@@ -236,8 +237,20 @@ def train_ray(cfg: DictConfig,filedir):
                 if 'base' in cfg['env']['scenario']:
                     if 'evade' in label:
                         agent_label = 'evader'
+                        policy_model_dict = {
+                            'post_fcnet_hiddens': cfg['alg']['pi'],
+                        }
+                        q_model_dict = {
+                            'post_fcnet_hiddens': cfg['alg']['pi'],
+                        }
                     else:
                         agent_label = 'adversary'
+                        policy_model_dict = {
+                            'fcnet_hiddens': cfg['alg']['pi_adv'],
+                        }
+                        q_model_dict = {
+                            'fcnet_hiddens': cfg['alg']['vf_adv'],
+                        }
                 policy_info[label] = (
                                 None, #policy_class
                                 test_env.observation_space[agent_label], #observation_space
@@ -258,13 +271,13 @@ def train_ray(cfg: DictConfig,filedir):
                         num_envs_per_worker=cfg['alg']['cpu_envs'], #60
                         num_cpus_per_env_runner=1
                         )
-            .resources(num_gpus=0)
+            .resources(num_gpus=1)
             .multi_agent(policy_mapping_fn=policy_mapping_fn,
                             policies_to_train=policy_training_fn,
                             policies=policy_info)
             .training(gamma=cfg['alg']['gamma'], 
                         train_batch_size=batch,
-                        training_intensity=cfg['alg']['train_intensity'],
+                        training_intensity= None, #cfg['alg']['train_intensity'],
                         target_entropy=cfg['alg']['target_ent'],
                         grad_clip=10,
                         grad_clip_by='norm',
@@ -293,9 +306,9 @@ def train_ray(cfg: DictConfig,filedir):
         algo_build.set_weights(pre_trained_policy_weights)    
 
     #train 15,000 iterations
-    for i in range(15000): 
+    for i in range(40000): 
         result = algo_build.train()
-        if i % 500 == 0 and i != 0:
+        if i % 1000 == 0 and i != 0:
             save_dir = logdir+'/checkpoint'+str(result['timesteps_total'])
             algo_build.save(checkpoint_dir=save_dir)
             print(pretty_print(result))
