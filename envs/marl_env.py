@@ -235,7 +235,7 @@ class MARLEnv(satGymEnv):
         goal_reached = self.sim.goal_check()
         adv_goal_proximity = self.sim.adv_goal_proximity(idx=0)
 
-        return collision, goal_reached, self._step >= self.max_episode_length
+        return collision or adv_goal_proximity, goal_reached, self._step >= self.max_episode_length
     
     def get_adversary_end(
             self,
