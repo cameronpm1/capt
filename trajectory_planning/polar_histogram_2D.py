@@ -17,15 +17,14 @@ class polarHistogram2D():
     ):
         self.points = None
         self.radius = radius
-        self.layers = layers + 1 #always check 1 layer ahead
-        #self.max_bin_arc = 2*np.pi*radius/angle_sections
-        self.layer_depth = self.radius/self.layers
+        self.layers = 1 #always 1 layer for histogram
+        self.layer_depth = self.radius
         self.probability_tol = probability_tolerance
         self.distance_tol = distance_tolerance
 
         self.sections = angle_sections
         self.range = 2*np.pi/self.sections
-        self.histogram3D = np.zeros((self.sections,1,self.layers,7)) #initialize the histogram
+        self.histogram3D = np.zeros((self.sections,1,1,1)) #initialize the histogram
         self.reference_histogram3D = np.zeros((self.sections,1,3)) #center points of each bin on unit ball
         self.initialize_reference_histogram3D()
         self.histogram_calc_storage = None
@@ -117,54 +116,40 @@ class polarHistogram2D():
         self.histogram3D[:] = 0
 
     def get_binary_histogram(self):
-        condensed_histogram = self.histogram3D[:,:,:,6].reshape(self.sections,self.layers)
-        return np.array([(condensed_histogram>0).astype(int)])
+        '''
+        Does not return binary histogram!!!
+        '''        
+        condensed_histogram = self.histogram3D[:,:,:,0].reshape(self.sections,self.layers)
+        return condensed_histogram
 
     def input_points(
             self, 
             points: List[List[float]],
             points_min: int = 1,
     ) -> None:
-        #t0 = time.time()
+        '''
+        inputs points into histogram
+
+        only stores closest point to origin in each bin
+        '''
         self.points = points
         self.histogram3D[:] = 0
-        self.histogram_calc_storage = np.zeros((self.sections,1,self.layers,3))
         a = 0
 
         for point in points:
             theta1,theta2,dist = self.convert_cartesian_to_polar(point)
+
 
             if dist > self.radius:
                 next
             else:
                 layer = int(dist//self.layer_depth)
 
-                #bin_state = self.histogram3D[int(theta1//self.range)][int(theta2//self.range)][layer]
-                bin_center = self.get_reference_point_from_bin(bin=[int(theta1//self.range),0],layer=layer)
-                self.histogram3D[int(theta1//self.range)][0][layer][0:2] += point
-                self.histogram3D[int(theta1//self.range)][0][layer][3:5] += np.square(point) 
-                self.histogram3D[int(theta1//self.range)][0][layer][6] += 1
-                self.histogram_calc_storage[int(theta1//self.range)][0][layer][0:2] += point
+                if self.histogram3D[int(theta1//self.range)][0][layer][0] == 0:
+                    self.histogram3D[int(theta1//self.range)][0][layer][0] = dist
+                elif self.histogram3D[int(theta1//self.range)][0][layer][0] > dist:
+                        self.histogram3D[int(theta1//self.range)][0][layer][0] = dist
 
-            
-        '''
-        Calculate the center of point cloud within each bin (average of x,y,z)
-        and the standard dev. of the cloud within each bin (in x,y,z) to calculate
-        a gaussian probability field of the chance there is an obstacle 
-        '''
-        for i,section1 in enumerate(self.histogram3D):
-            for j,section2 in enumerate(section1):
-                for k,layer in enumerate(section2):
-                    if layer[6] == 0:
-                        continue
-                    elif layer[6] < points_min:
-                        layer[:] = 0
-                    else:
-                        layer[0:3] /= layer[6]
-                        layer[3:6] += np.multiply(-self.histogram_calc_storage[i][j][k]*2,layer[0:3]) + np.multiply(layer[6],np.square(layer[0:3]))
-                        layer[3:6] /= layer[6]
-                        layer[3:6] = np.sqrt(layer[3:6])
-        #print(time.time() - t0)
 
     def initialize_reference_histogram3D(self) -> None:
         '''
@@ -461,19 +446,14 @@ class polarHistogram2D():
 
 
 if __name__ == '__main__':
-    histogram = polarHistogram2D(radius=13,layers=5,angle_sections=5)
 
-    points = []
-    for i in range(40):
-        vec = (np.random.random((2,)) - 0.5) * 2
-        vec = vec/np.linalg.norm(vec)
-        point = vec * np.random.random()*13
-        points.append(point)
+    histogram = polarHistogram2D(radius=13,angle_sections=4)
+
+    points = [[1,-1,0]]
 
     histogram.input_points(points)
     a = histogram.get_histogram()
     print(a)
-    print((histogram.get_histogram()>0).astype(int))
     '''
     test = histogram.refrerence_histogram3D
 

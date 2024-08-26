@@ -2,7 +2,8 @@ import time
 import numpy as np
 from typing import Dict, Any, Type
 
-from trajectory_planning.polar_histogram_3D import polarHistogram3D
+from trajectory_planning.polar_grid_3D import polarGrid3D
+from trajectory_planning.polar_grid_2D import polarGrid2D
 from trajectory_planning.polar_histogram_2D import polarHistogram2D
 
 class basePathPlanner():
@@ -34,19 +35,24 @@ class basePathPlanner():
                 min_obstacle_distance: float = 1,
                 probability_tolerance: float = 0.05,
                 distance_tolerance: float = 0.2,
+                data_format: str = 'polarGrid',
                 dim: int = 3
         ):
             self.dim = dim
 
             if self.dim == 3:
-                self.histogram = polarHistogram3D(radius=radius, 
+                self.histogram = polarGrid3D(radius=radius, 
                                                 layers=layers, 
                                                 angle_sections=angle_sections,
                                                 probability_tolerance=probability_tolerance,
                                                 distance_tolerance=distance_tolerance,
                                                 )
             if self.dim == 2:
-                self.histogram = polarHistogram2D(radius=radius, 
+                if 'histogram' in data_format:
+                    data_struct = polarHistogram2D
+                else:
+                    data_struct = polarGrid
+                self.histogram = data_struct(radius=radius, 
                                                 layers=layers, 
                                                 angle_sections=angle_sections,
                                                 probability_tolerance=probability_tolerance,

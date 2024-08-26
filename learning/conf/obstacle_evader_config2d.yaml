@@ -7,15 +7,15 @@ seed: 23 # set experiment seed
 
 logging:
   job:
-    name: obstacle_evader #multi_adversary_nodiv #adversary_siren_test4 # set job name
+    name: obstacle_evadert #multi_adversary_nodiv #adversary_siren_test4 # set job name
   run:
-    dir: /logs/${logging.job.name}/${now:%Y-%m-%d} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
+    dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
 alg:
   lib: ray
   type: sac
-  nenv: 20
-  cpu_envs: 60
+  nenv: 1
+  cpu_envs: 1
   lr: 0.0003
   batch: 256
   batch_size: 256
@@ -64,7 +64,8 @@ path_planner:
     iterations: 1
     distance_tolerance: 0.5
     layers: 3
-    angle_sections: 12
+    angle_sections: 72
+    data_format: histogram
   max_distance: 0.3
   interpolation_method: spline
   n: 25
