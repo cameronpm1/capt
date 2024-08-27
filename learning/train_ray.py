@@ -5,6 +5,7 @@ import sys
 import hydra
 import torch
 import shutil
+import random
 import logging
 import numpy as np
 from torch import nn
@@ -103,10 +104,12 @@ def train_ray(cfg: DictConfig,filedir):
         adversary policies assigned in alternating order same
         as single agent rl
         '''
+
         if 'evader' in agent_id: 
             return 'evader'
         else:
-            idx = (worker.worker_index-1) % cfg['env']['n_policies']
+            #idx = (worker.worker_index-1) % cfg['env']['n_policies']
+            idx = random.choice(list(range(cfg['env']['n_policies'])))
             return 'adversary'+str(idx)
         
     class policyTrainingSchedule():
@@ -116,6 +119,7 @@ def train_ray(cfg: DictConfig,filedir):
         def __init__(self,workers=1):
             self.workers=workers
             self.max_samples = 0
+            #self.turn_on_adv
 
         def policy_training_schedule(self, pid, batch):
             '''
@@ -124,9 +128,9 @@ def train_ray(cfg: DictConfig,filedir):
             #receives none when checking for target network update
             if batch is not None:
                 self.max_samples = max(batch[pid]['unroll_id'])/len(batch.policy_batches)*self.workers
-            if 'evade' in pid and self.max_samples > 9e6:
+            if 'evade' in pid:
                 return True
-            elif 'adversary' in pid and self.max_samples < 9e6:
+            elif 'adversary' in pid and self.max_samples > 4.5e6:
                 return True
             else:
                 return False
@@ -182,10 +186,10 @@ def train_ray(cfg: DictConfig,filedir):
                 'fcnet_hiddens': cfg['alg']['vf_adv'],
             }
             evader_policy_model_dict = {
-                'post_fcnet_hiddens': cfg['alg']['pi_evader'],
+                'fcnet_hiddens': cfg['alg']['pi_evader'],
             }
             evader_q_model_dict = {
-                'post_fcnet_hiddens': cfg['alg']['pi_evader'],
+                'fcnet_hiddens': cfg['alg']['pi_evader'],
             }
             batch = cfg['alg']['batch']*(cfg['env']['n_policies']+1)
 
@@ -204,31 +208,21 @@ def train_ray(cfg: DictConfig,filedir):
                 else:
                     policy_info[label] = (
                                     CustomSACTorchPolicy, #policy_class
-                                    test_env.observation_space['adversary'], #observation_space
-                                    test_env.action_space['adversary'], #action_space
+                                    test_env.observation_space['adversary0'], #observation_space
+                                    test_env.action_space['adversary0'], #action_space
                                     {'lr':cfg['alg']['lr_adv'],
                                      'policy_model_config':adv_policy_model_dict,
                                      'q_model_config':adv_q_model_dict,
                                     }
                                 )
         else:
-            if 'div' in cfg['env']['scenario']:
-                algo = custom_SACConfig()
-                policy_model_dict = {
-                    'custom_model': 'sirenfcnet',
-                    'fcnet_hiddens': cfg['alg']['pi'],
-                }
-                q_model_dict = {
-                    'fcnet_hiddens': cfg['alg']['vf'],
-                }
-            else:
-                algo = SACConfig() 
-                policy_model_dict = {
-                    'post_fcnet_hiddens': cfg['alg']['pi'],
-                }
-                q_model_dict = {
-                    'post_fcnet_hiddens': cfg['alg']['vf'],
-                }
+            algo = SACConfig() 
+            policy_model_dict = {
+                'post_fcnet_hiddens': cfg['alg']['pi'],
+            }
+            q_model_dict = {
+                'post_fcnet_hiddens': cfg['alg']['vf'],
+            }
             batch = cfg['alg']['batch']*cfg['env']['n_policies']
 
             policy_info = {}
@@ -271,7 +265,7 @@ def train_ray(cfg: DictConfig,filedir):
                         num_envs_per_worker=cfg['alg']['cpu_envs'], #60
                         num_cpus_per_env_runner=1
                         )
-            .resources(num_gpus=1)
+            .resources(num_gpus=0)
             .multi_agent(policy_mapping_fn=policy_mapping_fn,
                             policies_to_train=policy_training_fn,
                             policies=policy_info)
@@ -295,13 +289,13 @@ def train_ray(cfg: DictConfig,filedir):
     algo_build = algo_config.build(logger_creator=logger_creator)
 
     #set pre trained weights if training final evade or marl
-    if 'evade' in cfg['env']['scenario'] or 'marl' in cfg['env']['scenario']:
+    if 'evade' in cfg['env']['scenario']: # or 'marl' in cfg['env']['scenario']:
         pre_trained_policy = Policy.from_checkpoint(cfg['env']['evader_policy_dir'])
         pre_trained_policy_weights = pre_trained_policy.get_weights()
         if 'marl' in cfg['env']['scenario']:
-            lablel = 'evader'
+            label = 'evader'
         else:
-            lablel = 'agent0'
+            label = 'agent0'
         pre_trained_policy_weights = {label: pre_trained_policy_weights}
         algo_build.set_weights(pre_trained_policy_weights)    
 

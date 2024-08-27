@@ -109,7 +109,7 @@ def collect_action_dist_data(
         for j,env in enumerate(envs):
             #compute action dist outputs
             model_out, _ = models[j]({'obs':np.array([observations]).squeeze()})
-            actions_input, _ = models[j].get_action_model_outputs(torch.from_numpy(model_out).cuda())
+            actions_input, _ = models[j].get_action_model_outputs(torch.from_numpy(model_out).cpu())
             action_dist_class = _get_dist_class(policies[j], policies[j].config, policies[j].action_space)
             action_dist = action_dist_class(actions_input, models[j])
             #divergent_action_input = [mean1,mean2,log_std1,log_std2]

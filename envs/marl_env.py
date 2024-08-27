@@ -62,15 +62,15 @@ class MARLEnv(satGymEnv):
         self._np_random = None
         self.adv_max_ctrl = adv_max_ctrl
 
-        self.distance_max = 30
+        self.distance_max = 50
 
         #handle multiple adversary in prompter and label list
         self.n_adv = 2
         self.agents = ['evader']
-        for i in range(n_adv):
+        for i in range(self.n_adv):
             self.agents.append('adversary'+str(i))
         self.prompter.set_num_adv(self.n_adv)
-
+        
         #track if first goal has been met
         self.goal_count = None
 
@@ -90,14 +90,14 @@ class MARLEnv(satGymEnv):
             self,
     ) -> gymnasium.Space:
         
-        evader_obs, adversary_obs = self._get_obs()
+        obs = self._get_obs()
 
         space = {}
         for label in self.agents:
             if 'evader' in label:
-                space[label] = spaces.Box(low=-np.inf, high=np.inf, shape=(len(evader_obs),), dtype=np.float32)
+                space[label] = spaces.Box(low=-np.inf, high=np.inf, shape=(len(obs[label]),), dtype=np.float32)
             if 'adversary' in label:
-                space[label] = spaces.Box(low=-np.inf, high=np.inf, shape=(len(adversary_obs),), dtype=np.float32)
+                space[label] = spaces.Box(low=-np.inf, high=np.inf, shape=(len(obs[label]),), dtype=np.float32)
 
         return spaces.Dict(space)
 
@@ -126,7 +126,7 @@ class MARLEnv(satGymEnv):
 
     def step(self, action_dict):
         key_map = {}
-        
+
         #preprocess and set model action for adversary
         i = 0
         adversary_control = []
@@ -135,7 +135,7 @@ class MARLEnv(satGymEnv):
                 self.sim.set_sat_control(self.preprocess_action(action,self.max_ctrl))
                 key_map['evader'] = key
             if 'adversary' in key:
-                adversary_control.append(self.preprocess_action(action,self.adv_max_ctrl))
+                adversary_control.append(self.preprocess_action(action,self.adv_max_ctrl)*0)
                 key_map['adversary'+str(i)] = key
                 i += 1 
         self.sim.set_adversary_control(adversary_control)
@@ -151,7 +151,8 @@ class MARLEnv(satGymEnv):
         temp_rew = self._get_rew()
 
         for label in self.agents:
-            obs[key_map[label]] = temp_rew[label]
+            
+            obs[key_map[label]] = temp_obs[label]
             rew[key_map[label]] = temp_rew[label]
 
         #check episode end and adjust reward
@@ -169,7 +170,7 @@ class MARLEnv(satGymEnv):
                 good_term = False
                 self.sim.set_sat_goal(goal=np.zeros((len(self.sim.get_sat_goal()),)))
             for label in self.agents:
-                terminated[key_map[label]] = True
+                terminated[key_map[label]] = good_term
                 if 'evader' in label:
                     rew[key_map[label]] += 500
                 if 'adversary' in label:
@@ -177,7 +178,7 @@ class MARLEnv(satGymEnv):
         if bad_term:
             #collision punishment
             for label in self.agents:
-                terminated[key_map[label]] = True
+                terminated[key_map[label]] = bad_term
                 if 'evader' in label:
                     rew[key_map[label]] -= 1000
                 if 'adversary' in label:
@@ -196,8 +197,8 @@ class MARLEnv(satGymEnv):
 
         return self.get_evader_end(collision=collision)
     
-    def _reward(self) -> float:
-        norm_dist = self.sim.distance_to_goal() #/60 #normalized distance to goal
+    def _get_rew(self) -> float:
+        norm_dist = self.sim.distance_to_goal()/self.distance_max #normalized distance to goal
         evader_rew, adv_rew = self.get_evader_reward(dist=norm_dist), self.get_adversary_reward(dist=norm_dist)
 
         rew = {}
@@ -212,14 +213,14 @@ class MARLEnv(satGymEnv):
     def _get_obs(self) -> OrderedDict:
         obs = super()._get_obs()
 
-        obs = {}
+        new_obs = {}
         for label in self.agents:
             if 'evader' in label:
-                obs[label] = self.get_evader_obs(obs=obs)
+                new_obs[label] = self.get_evader_obs(obs=obs)
             if 'adversary' in label:
-                obs[label] = self.get_adversary_obs(obs=obs,idx=label[-1])
+                new_obs[label] = self.get_adversary_obs(obs=obs,idx=label[-1])
 
-        return obs
+        return new_obs
     
     def get_evader_reward(
             self,
@@ -227,7 +228,7 @@ class MARLEnv(satGymEnv):
     ) -> float:
         #opposite of normalized distance to goal
         rew = dist 
-        return -1*rew
+        return 1/dist/60 #-1*rew
     
     def get_adversary_reward(
             self,
@@ -267,6 +268,8 @@ class MARLEnv(satGymEnv):
            rel_goal_state: state of the evaders goal relative to the adversary
         """
         adversary_obs = obs['evader_state'] - obs['adversary'+str(idx)+'_state']
+        rel_goal_state = obs['goal_state'] - obs['adversary'+str(idx)+'_state']
+        adversary_obs = np.concatenate((adversary_obs,rel_goal_state))
 
         for i in range(self.n_adv):
             if i != idx:
@@ -282,7 +285,12 @@ class MARLEnv(satGymEnv):
         
         goal_reached = self.sim.goal_check()
 
-        return collision, goal_reached, self._step >= self.max_episode_length
+        if self.sim.distance_to_goal() > self.distance_max:
+            too_far = True
+        else:
+            too_far = False
+
+        return collision or too_far, goal_reached, self._step >= self.max_episode_length
     
     def get_adversary_end(
             self,

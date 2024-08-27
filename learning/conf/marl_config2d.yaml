@@ -7,11 +7,11 @@ seed: 4 # set experiment seed
 
 logging:
   job:
-    name: adversary_evader_marl # set job name #kl_loss:.5 decay:10m
+    name: marl # set job name #kl_loss:.5 decay:10m
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
-notes: evader 10, no collision penalty for evader
+notes: pos rew
 
 alg:
   lib: ray
@@ -65,12 +65,13 @@ path_planner:
   goal_state: [1,20,0,0,0,0] 
   path_planning_algorithm: VFH
   kwargs:
-    radius: 10
+    radius: 15
     iterations: 1
     distance_tolerance: 0.5
+    data_format: histogram
     min_distance: 6
     layers: 3 #7
-    angle_sections: 12
+    angle_sections: 72
   max_distance: 0.3
   interpolation_method: spline
   n: 25
@@ -98,6 +99,18 @@ adversary:
         points: [[0.0,0.0]]
         lines: []
       name: adversary1
+      pos: [0, 5]
+      vel: [0, 0] 
+      euler: [0]
+      data:
+        inertia: 1e4
+        mass: 2000
+      control_lim: [0.15,0.15,0.15]
+    adversary2:
+      mesh:
+        points: [[0.0,0.0]]
+        lines: []
+      name: adversary2
       pos: [0, 5]
       vel: [0, 0] 
       euler: [0]
