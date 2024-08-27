@@ -70,9 +70,14 @@ def make_env(filedir: str, cfg: DictConfig):
                         data = cfg['satellite']['dynamics']['data'],
                     )
 
+                    points = []
+                    for i in range(int(cfg['sim']['point_cloud_size']/cfg['random']['n'])):
+                        vec = np.random.random((2,))
+                        points.append((vec/np.linalg.norm(vec)))
+
                     temp_obstacle = dynamicObject(
                         dynamics = obs_dynamics, 
-                        mesh = {'points':np.array([[0.0,0.0]]),'lines':np.array([])},
+                        mesh = {'points':np.array(points),'lines':np.array([])},
                         name = 'obstacle'+str(n), 
                         pos = pos[0:2])
                     
