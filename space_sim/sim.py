@@ -277,7 +277,10 @@ class Sim():
         return min_dist
 
     
-    def get_object_data(self) -> list[Dict[str, Any]]:
+    def get_object_data(
+            self,
+            norm: bool = False
+    ) -> list[Dict[str, Any]]:
         '''
         package data for GUI
         return:
@@ -290,21 +293,28 @@ class Sim():
             final goal so that it is in the center of the plot
         '''
         objects = {}
-        objects['final goal'] = np.array(self.path_planner.goal[0:self.dim])
+        if norm:
+            objects['final goal'] = np.array(self.path_planner.goal[0:self.dim])
+        else:
+            objects['final goal'] = np.array(np.zeros((self.dim,)))
         objects['points'] = np.array(copy.deepcopy(self.main_object.temp_mesh['points'])) - objects['final goal']
         if len(self.main_object.temp_mesh['lines']) > 0:
             objects['lines'] = np.array(copy.deepcopy(self.main_object.temp_mesh['lines'])) - objects['final goal']
         else:
             objects['lines'] = copy.deepcopy(self.main_object.temp_mesh['lines'])
         if self.current_path is not None:
-            objects['goal'] = np.array(self.current_path) - objects['final goal']
+            objects['goal'] = np.array(self.current_path)[:,0:2] - objects['final goal']
         else:
             objects['goal'] = self.current_path
         if self.point_cloud_plot is not None and self.plot_cloud:
             objects['point cloud'] = np.array(self.point_cloud_plot) - objects['final goal']
         if not self.plot_cloud and len(self.obstacles) > 0:
             objects['obstacles'] = np.array([obstacle.dynamics.get_pos() for obstacle in self.obstacles]) - objects['final goal']
-        objects['final goal']  -= objects['final goal'] 
+        if norm:
+            objects['final goal']  -= objects['final goal'] 
+        else:
+            objects['final goal'] = np.array(self.path_planner.goal[0:self.dim])
+
 
         return objects
     

@@ -11,7 +11,7 @@ from ray.rllib.algorithms.sac.sac_torch_policy import _get_dist_class
 
 from learning.make_env import make_env
 from sim_prompters.one_v_one_prompter import oneVOnePrompter
-from sim_prompters.twod_one_v_one_prompter import twodOneVOnePrompter
+from sim_prompters.twod_marl_prompter import twodMARLPrompter
 
 
 #ModelCatalog.register_custom_model("my_torch_model", CustomTorchModel)
@@ -59,7 +59,7 @@ def collect_action_dist_data(
 
     #use same prompter for all envs
     if cfg['env']['dim'] == 2:
-            prompter = twodOneVOnePrompter()
+            prompter = twodMARLPrompter()
     if cfg['env']['dim'] == 3:
             prompter = oneVOnePrompter()
     prompter.seed(seed=cfg['seed'])

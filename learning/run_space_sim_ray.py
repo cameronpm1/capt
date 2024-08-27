@@ -37,7 +37,7 @@ def runSpaceSimRay(
             dim = env.unwrapped.dim,
         )
 
-    for i in range(20):
+    for i in range(1):
 
         obs, _ = env.reset()
 
@@ -53,7 +53,7 @@ def runSpaceSimRay(
 
 
         time.sleep(10)
-        timesteps = 1500
+        timesteps = cfg['env']['max_timestep']
         timestep = 0
         done = False
 
@@ -63,6 +63,7 @@ def runSpaceSimRay(
             else:
                 action,_,_ = model(obs)
             obs,rewards,terminated,truncated,_ = env.step(action)
+            timestep += 1
             if i%10 == 0:
                 if verbose:
                     print('at timestep',i,'distance to goal:', env.unwrapped.sim.distance_to_goal())

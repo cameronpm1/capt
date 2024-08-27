@@ -1,9 +1,9 @@
 import numpy as np
 from gymnasium.utils import seeding
-from sim_prompters.twod_one_v_one_prompter import twodOneVOnePrompter
+from sim_prompters.twod_marl_prompter import twodMARLPrompter
 
 
-class oneVOnePrompter(twodOneVOnePrompter):
+class oneVOnePrompter(twodMARLPrompter):
     
     def __init__(self):
         super().__init__()

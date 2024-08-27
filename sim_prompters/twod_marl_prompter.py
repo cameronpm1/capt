@@ -2,7 +2,7 @@ import numpy as np
 from gymnasium.utils import seeding
 
 
-class twodOneVOnePrompter():
+class twodMARLPrompter():
     
     def __init__(self):
         self._np_random = None
@@ -11,8 +11,8 @@ class twodOneVOnePrompter():
 
         self.sat_range = [0,0] #range of satellite from center
         self.goal_range = [40,40] #range of goal from satellite 
-        self.adv_range = [8,13] #range of adversary on line between sat and goal
-        self.adv_dev = [0,4] #range of deviation of adversary from straight line between sat and goal
+        self.adv_range = [10,30] #range of adversary on line between sat and goal
+        self.adv_dev = [0,6] #range of deviation of adversary from straight line between sat and goal
 
     def set_num_adv(
         self,

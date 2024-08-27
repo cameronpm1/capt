@@ -32,14 +32,14 @@ alg:
 env:
   scenario: test #control, controlImage, adversary, evade, multi, test
   n_policies: 1
-  max_timestep: 1024
+  max_timestep: 2048
   sat_max_control: [0.15,0.15]
   adv_max_control: [0.15,0.15]
   ctrl_type: thrust
   action_scaling: clip
   random_initial_state: True
   dim: 2
-  evader_policy_dir: C:/Users/Cameron Mehlman/Documents/magpie_rl/models/evader_improved_obs
+  evader_policy_dir: #C:/Users/Cameron Mehlman/Documents/magpie_rl/models/evader_improved_obs
 
 satellite:
   name: satellite
@@ -61,16 +61,16 @@ path_planner:
   goal_state: [1,20,0,0,0,0] 
   path_planning_algorithm: VFH
   kwargs:
-    radius: 10
+    radius: 20
     iterations: 1
     distance_tolerance: 0.5
     min_distance: 6
     data_format: histogram
-    layers: 3
-    angle_sections: 72
+    layers: 8
+    angle_sections: 12 #72
   max_distance: 0.3
   interpolation_method: spline
-  n: 25
+  n: 15
 
 sim:
   control_method: PPOC #MPC, PPOC, none
@@ -95,6 +95,18 @@ adversary:
         points: [[0.0,0.0]]
         lines: []
       name: adversary1
+      pos: [0, 5]
+      vel: [0, 0] 
+      euler: [0]
+      data:
+        inertia: 1e4
+        mass: 2000
+      control_lim: [0.15,0.15,0.15]
+    adversary2:
+      mesh:
+        points: [[0.0,0.0]]
+        lines: []
+      name: adversary2
       pos: [0, 5]
       vel: [0, 0] 
       euler: [0]

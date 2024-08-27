@@ -1,6 +1,6 @@
 **/__pycache__/
 logs/
-venv/
+.venv/
 outputs/
 token.txt
 sac_torch_model.py

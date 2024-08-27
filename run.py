@@ -77,7 +77,7 @@ def run_rl_model(cfg: DictConfig):
     if 'ray' in cfg['alg']['lib']:
         if 'test' in cfg['env']['scenario']:
             modeldir=None
-        runSpaceSimRay(cfg,DIRECTORY,modeldir=modeldir,render=True)
+        runSpaceSimRay(cfg,DIRECTORY,modeldir=modeldir,render=True,verbose=False)
     else:
         runSpaceSimSb3(cfg,DIRECTORY,modeldir=modeldir,render=False)
 
