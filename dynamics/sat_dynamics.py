@@ -257,6 +257,7 @@ class satelliteDynamics(baseDynamics):
         self.quat = new_quat
         '''
         dxdt = np.matmul(self.state_matrix,state) + np.squeeze(np.matmul(self.control_matrix,self.control))
+        dxdt[0:self.dim] = np.clip(dxdt[0:self.dim],a_min=-0.015,a_max=0.015)
         return dxdt
     
     def forward_step(self) -> list[float]:
@@ -267,6 +268,7 @@ class satelliteDynamics(baseDynamics):
             timerange,
         )
         self.time += self.timestep*self.horizon
+        sol[-1][0:self.dim] = np.clip(sol[-1][0:self.dim],a_min=-0.015,a_max=0.015)
         self.state = sol[-1]
         return sol
             

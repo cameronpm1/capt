@@ -7,12 +7,19 @@ class twodOneVOnePrompter():
     def __init__(self):
         self._np_random = None
         self.n_obs = 0
+        self.n_adv = 1
 
         self.sat_range = [0,0] #range of satellite from center
-        self.goal_range = [30,40] #range of goal from satellite 
+        self.goal_range = [40,40] #range of goal from satellite 
         self.adv_range = [8,13] #range of adversary on line between sat and goal
         self.adv_dev = [0,4] #range of deviation of adversary from straight line between sat and goal
 
+    def set_num_adv(
+        self,
+        n_adv: int,
+    ) -> None:
+        self.n_adv = n_adv
+    
     def seed(self, seed=None):
         seeds = []
         seeds.append(seed)
@@ -53,11 +60,12 @@ class twodOneVOnePrompter():
         prompt['sat_goal'] = goal_pos
 
         #compute adversary starting position
-        vec = self.random_unit_vec()
-        dev_vec = vec * (self._np_random.random()*(self.adv_dev[1]-self.adv_dev[0]) + self.adv_dev[0])
-        adv_rel_sat += dev_vec
-        adv_pos = sat_pos + adv_rel_sat
-        prompt['adv_pos'] = adv_pos
+        for i in range(self.n_adv):
+            vec = self.random_unit_vec()
+            dev_vec = vec * (self._np_random.random()*(self.adv_dev[1]-self.adv_dev[0]) + self.adv_dev[0])
+            adv_rel_sat += dev_vec
+            adv_pos = sat_pos + adv_rel_sat
+            prompt['adv_pos'+str(i)] = adv_pos
 
         if self.n_obs > 1:
             goal_dist = np.linalg.norm(goal_rel_sat)

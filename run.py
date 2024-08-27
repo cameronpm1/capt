@@ -106,13 +106,6 @@ if __name__ == "__main__":
     if 'evade' in args.env:
         if 'obs' in args.env:
             CONFIG_FILE = 'obstacle_evader_config' + dim_end
-        else:
-            CONFIG_FILE = 'adversary_evader_config' + dim_end
-    elif 'adversary' in args.env:
-        if 'div' in args.env:
-            CONFIG_FILE = 'divergent_adversary_config' + dim_end
-        else:
-            CONFIG_FILE = 'adversary_config' + dim_end
     elif 'control' in args.env:
         CONFIG_FILE = 'controller_config' + dim_end
     elif 'marl' in args.env:
