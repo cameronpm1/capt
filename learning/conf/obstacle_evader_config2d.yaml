@@ -7,15 +7,17 @@ seed: 23 # set experiment seed
 
 logging:
   job:
-    name: obstacle_evadert #multi_adversary_nodiv #adversary_siren_test4 # set job name
+    name: obstacle_evader #multi_adversary_nodiv #adversary_siren_test4 # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
+
+notes: new histogram method, and point cloud generation
 
 alg:
   lib: ray
   type: sac
-  nenv: 1
-  cpu_envs: 1
+  nenv: 10
+  cpu_envs: 40
   lr: 0.0003
   batch: 256
   batch_size: 256
@@ -25,7 +27,7 @@ alg:
   target_ent: 0.1
   train_intensity: 3
   device: cpu # cpu, cuda
-  total_timesteps: 25e6 #20e6
+  total_timesteps: 15e6 #20e6
 
 env:
   scenario: multicontrolImage #control, controlImage, adversary, evade, multi, test
@@ -60,7 +62,6 @@ path_planner:
   path_planning_algorithm: VFH
   kwargs:
     radius: 10
-    min_obstacle_distance: 6
     iterations: 1
     distance_tolerance: 0.5
     layers: 3
@@ -74,7 +75,7 @@ sim:
   control_method: none #MPC, PPOC, none
   point_cloud_size: 50
   path_point_tolerance: 0.1
-  point_cloud_radius: 30
+  point_cloud_radius: 50
   goal_tolerance: 0.5
   collision_tolerance: 3
   track_point_cloud: False #propogate point cloud or not
@@ -89,7 +90,7 @@ obstacles:
 
 random:
   on: True
-  n: 10
+  n: 5
   vel: 0.0
   x_range: [-7,7] #[-7,7]
   y_range: [4,18] #[5,15]

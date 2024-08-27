@@ -197,7 +197,6 @@ if __name__ == "__main__":
                                'angle_sections':14,
                                'distance_tolerance': 0.2,
                                'probability_tolerance': 0.05,
-                               'min_obstacle_distance': 2.0,
                                },
                         n = 30,
                        )

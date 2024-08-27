@@ -66,7 +66,6 @@ path_planner:
   path_planning_algorithm: VFH
   kwargs:
     radius: 10
-    min_obstacle_distance: 6
     iterations: 1
     distance_tolerance: 0.5
     layers: 3 #7
@@ -79,7 +78,7 @@ sim:
   control_method: none #MPC, PPOC, none
   point_cloud_size: 50
   path_point_tolerance: 0.1
-  point_cloud_radius: 30
+  point_cloud_radius: 50
   goal_tolerance: 0.5
   collision_tolerance: 3
   track_point_cloud: False #propogate point cloud or not

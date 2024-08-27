@@ -32,7 +32,6 @@ class basePathPlanner():
                 layers: int = 1,
                 iterations: int = 1,
                 angle_sections: float = 8,
-                min_obstacle_distance: float = 1,
                 probability_tolerance: float = 0.05,
                 distance_tolerance: float = 0.2,
                 data_format: str = 'polarGrid',
@@ -58,7 +57,7 @@ class basePathPlanner():
                                                 probability_tolerance=probability_tolerance,
                                                 distance_tolerance=distance_tolerance,
                                                 )
-            self.min_distance = min_obstacle_distance
+
             self.iterations = iterations
             self.layers = layers
             self.radius = radius

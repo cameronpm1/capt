@@ -285,16 +285,26 @@ class Sim():
             current goal point
             point cloud data ('if available')
             final goal point
+
+            returns everything in coordinates realative to the
+            final goal so that it is in the center of the plot
         '''
         objects = {}
-        objects['points'] = copy.deepcopy(self.main_object.temp_mesh['points'])
-        objects['lines'] = copy.deepcopy(self.main_object.temp_mesh['lines'])
-        objects['goal'] = self.current_path
+        objects['final goal'] = np.array(self.path_planner.goal[0:self.dim])
+        objects['points'] = np.array(copy.deepcopy(self.main_object.temp_mesh['points'])) - objects['final goal']
+        if len(self.main_object.temp_mesh['lines']) > 0:
+            objects['lines'] = np.array(copy.deepcopy(self.main_object.temp_mesh['lines'])) - objects['final goal']
+        else:
+            objects['lines'] = copy.deepcopy(self.main_object.temp_mesh['lines'])
+        if self.current_path is not None:
+            objects['goal'] = np.array(self.current_path) - objects['final goal']
+        else:
+            objects['goal'] = self.current_path
         if self.point_cloud_plot is not None and self.plot_cloud:
-            objects['point cloud'] = self.point_cloud_plot
+            objects['point cloud'] = np.array(self.point_cloud_plot) - objects['final goal']
         if not self.plot_cloud and len(self.obstacles) > 0:
-            objects['obstacles'] = [obstacle.dynamics.get_pos() for obstacle in self.obstacles]
-        objects['final goal'] = self.path_planner.goal[0:3]
+            objects['obstacles'] = np.array([obstacle.dynamics.get_pos() for obstacle in self.obstacles]) - objects['final goal']
+        objects['final goal']  -= objects['final goal'] 
 
         return objects
     

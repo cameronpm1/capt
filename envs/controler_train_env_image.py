@@ -161,7 +161,8 @@ class controlerTrainEnvImage(satGymEnv):
                 space[key] = spaces.Box(low=-np.inf, high=np.inf, shape=val.shape)
             else:
                 image_shape = val.shape
-                space[key] = spaces.Box(low=0, high=1, shape=image_shape, dtype=np.uint8) #shape=(image_shape[1],image_shape[2],image_shape[0]),
+                space[key] = spaces.Box(low=0, high=np.inf, shape=image_shape) #, dtype=np.uint8)
+
         return spaces.Dict(space)
         
 
