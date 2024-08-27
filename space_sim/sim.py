@@ -128,8 +128,8 @@ class Sim():
             if isinstance(obstacle,dynamicObject):
                 obstacle.reset()
         self.update_point_cloud()
-        #if self.use_controller:
-        #    self.get_new_path()
+        if self.use_controller:
+            self.get_new_path()
 
     def step(
             self,

@@ -64,6 +64,7 @@ path_planner:
     radius: 10
     iterations: 1
     distance_tolerance: 0.5
+    min_distance: 6
     data_format: histogram
     layers: 3
     angle_sections: 72
