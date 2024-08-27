@@ -62,7 +62,7 @@ def train_rl_model(cfg: DictConfig):
                               })
         train_ray(cfg,DIRECTORY)
     else:
-        os.chdir('../../../')
+        #os.chdir('../../../')
         train(cfg,DIRECTORY)
 
 #@hydra.main(config_path="learning/conf", config_name=CONFIG_FILE, version_base='1.1')
@@ -72,9 +72,8 @@ def retrain_rl_model(cfg: DictConfig):
 
 #@hydra.main(config_path="learning/conf", config_name=CONFIG_FILE, version_base='1.1')
 def run_rl_model(cfg: DictConfig):
-    os.chdir('../../../')
     modeldir = '/home/cameron/magpie_rl/logs/test18/2024-08-07/checkpoint5353200'
-    modeldir = '/home/cameron/magpie_rl/logs/2d_flat/2024-08-08/checkpoint13442400/policies/policy0'
+    modeldir = 'C:/Users/Cameron Mehlman/Documents/magpie_rl/models/evader_improved_obs'
     if 'ray' in cfg['alg']['lib']:
         if 'test' in cfg['env']['scenario']:
             modeldir=None
@@ -121,6 +120,8 @@ if __name__ == "__main__":
             CONFIG_FILE = 'marl_base_config' + dim_end
         else:
             CONFIG_FILE = 'marl_config' + dim_end
+    elif 'test' in args.env:
+        CONFIG_FILE = 'test_config' + dim_end
     else:
         CONFIG_FILE = 'config2'
 

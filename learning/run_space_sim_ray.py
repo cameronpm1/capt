@@ -28,18 +28,20 @@ def runSpaceSimRay(
     env = make_env(filedir,cfg)
     env.unwrapped.seed(seed=cfg['seed'])
 
-    for i in range(1):
+    if render:
+        renderer = Renderer(
+            xlim = [-40,40],
+            ylim = [-40,40],
+            zlim = [-40,40],
+            vista = False,
+            dim = env.unwrapped.dim,
+        )
+
+    for i in range(20):
 
         obs, _ = env.reset()
 
         if render:
-            renderer = Renderer(
-                xlim = [-40,40],
-                ylim = [-40,40],
-                zlim = [-40,40],
-                vista = False,
-                dim = env.unwrapped.dim,
-            )
             renderer.plot(env.render())
 
         if modeldir is not None:

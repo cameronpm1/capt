@@ -1,0 +1,108 @@
+#defaults:  
+#  - _self_  
+#  - override hydra/hydra_logging: disabled  
+#  - override hydra/job_logging: disabled
+
+seed: 5 # set experiment seed
+
+logging:
+  job:
+    name: test #multi_adversary_nodiv #adversary_siren_test4 # set job name
+  run:
+    dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
+
+alg:
+  lib: ray
+  type: sac
+  nenv: 10
+  cpu_envs: 40
+  lr: 0.0003
+  batch: 256
+  batch_size: 256
+  gamma: 0.99
+  pi: [512, 512]
+  vf: [512, 512]
+  target_ent: 0.1
+  train_intensity: 3
+  device: cpu # cpu, cuda
+  total_timesteps: 30e6 #20e6
+  
+
+
+env:
+  scenario: test #control, controlImage, adversary, evade, multi, test
+  n_policies: 1
+  max_timestep: 1024
+  sat_max_control: [0.15,0.15]
+  adv_max_control: [0.15,0.15]
+  ctrl_type: thrust
+  action_scaling: clip
+  random_initial_state: True
+  dim: 2
+  evader_policy_dir: C:/Users/Cameron Mehlman/Documents/magpie_rl/models/evader_improved_obs
+
+satellite:
+  name: satellite
+  mesh: 
+    points: [[0.0,0.0]]
+    lines: []
+  dynamics:
+    timestep: 3
+    horizon: 5
+    pos: [0, 0]
+    vel: [0, 0] 
+    euler: [0]
+    data:
+      inertia: 1e4
+      mass: 2000
+    control_lim: [0.1,0.1,0.1]
+
+path_planner:
+  goal_state: [1,20,0,0,0,0] 
+  path_planning_algorithm: VFH
+  kwargs:
+    radius: 10
+    iterations: 1
+    distance_tolerance: 0.5
+    data_format: histogram
+    layers: 3
+    angle_sections: 72
+  max_distance: 0.3
+  interpolation_method: spline
+  n: 25
+
+sim:
+  control_method: PPOC #MPC, PPOC, none
+  point_cloud_size: 50
+  path_point_tolerance: 0.1
+  point_cloud_radius: 30
+  goal_tolerance: 0.5
+  collision_tolerance: 1
+  track_point_cloud: False #propogate point cloud or not
+  kwargs:
+    upper_state_bounds: [1e10,  1e10,  1e10, 1e10, 1e10, 1e10]
+    lower_state_bounds: [-1e10,  -1e10,  -1e10, -1e10, -1e10, -1e10]
+    horizon: 8
+    valued_actions: 1
+    max_ctrl: [0.3,0.3,0.3] #only for MPC or PPOC
+
+adversary:
+  on: True
+  adversaries:
+    adversary1:
+      mesh:
+        points: [[0.0,0.0]]
+        lines: []
+      name: adversary1
+      pos: [0, 5]
+      vel: [0, 0] 
+      euler: [0]
+      data:
+        inertia: 1e4
+        mass: 2000
+      control_lim: [0.15,0.15,0.15]
+
+obstacles:
+
+random:
+  on: False

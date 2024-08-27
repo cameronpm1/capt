@@ -32,12 +32,14 @@ class basePathPlanner():
                 layers: int = 1,
                 iterations: int = 1,
                 angle_sections: float = 8,
+                min_distance: float = 1,
                 probability_tolerance: float = 0.05,
                 distance_tolerance: float = 0.2,
                 data_format: str = 'polarGrid',
                 dim: int = 3
         ):
             self.dim = dim
+            self.min_distance = min_distance
 
             if self.dim == 3:
                 self.histogram = polarGrid3D(radius=radius, 
@@ -50,7 +52,7 @@ class basePathPlanner():
                 if 'histogram' in data_format:
                     data_struct = polarHistogram2D
                 else:
-                    data_struct = polarGrid
+                    data_struct = polarGrid2D
                 self.histogram = data_struct(radius=radius, 
                                                 layers=layers, 
                                                 angle_sections=angle_sections,

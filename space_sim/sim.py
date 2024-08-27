@@ -50,7 +50,7 @@ class Sim():
             collision_tolerance: float = 1,
             perturbation_force: Optional[float] = None,
             plot_cloud: bool = False,
-            control_model_path: Optional[str] = '/home/cameron/magpie_rl/models/3DOFcontrol.zip', #'C:/Users/Cameron Mehlman/Documents/magpie_rl/models/3DOFcontrol.zip',
+            control_model_path: Optional[str] = 'C:/Users/Cameron Mehlman/Documents/magpie_rl/models/2D control policy', #'C:/Users/Cameron Mehlman/Documents/magpie_rl/models/3DOFcontrol.zip',
             track_point_cloud: bool = True,
     ):
         
@@ -128,8 +128,8 @@ class Sim():
             if isinstance(obstacle,dynamicObject):
                 obstacle.reset()
         self.update_point_cloud()
-        if self.use_controller:
-            self.get_new_path()
+        #if self.use_controller:
+        #    self.get_new_path()
 
     def step(
             self,
