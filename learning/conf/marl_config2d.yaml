@@ -11,13 +11,13 @@ logging:
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
-notes: pos rew
+notes: adv train first, no adv end, vel cap
 
 alg:
   lib: ray
   type: sac
-  nenv: 10
-  cpu_envs: 40
+  nenv: 1 #10
+  cpu_envs: 1 # 40
   batch: 256
   batch_size: 256
   gamma: 0.99
@@ -43,7 +43,7 @@ env:
   action_scaling: clip
   random_initial_state: True
   dim: 2
-  evader_policy_dir: '/home/cameron/magpie_rl/models/evader 10 obs'
+  evader_policy_dir: '/home/cameron/capt/models/evader 5 obs'
 
 satellite:
   name: satellite

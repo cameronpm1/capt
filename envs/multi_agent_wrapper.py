@@ -47,7 +47,8 @@ class multiAgentWrapper(MultiAgentEnv):
         truncated_all = False
 
         obs,rew,terminated,truncated,_ = self.env.step(action_dict)
-
+        
+        '''
         for key in action_dict.keys():
             if terminated[key]:
                 terminated_all = True
@@ -56,6 +57,7 @@ class multiAgentWrapper(MultiAgentEnv):
 
         terminated['__all__'] = terminated_all
         truncated['__all__'] = truncated_all
+        '''
 
         return obs,rew,terminated,truncated,{}
     

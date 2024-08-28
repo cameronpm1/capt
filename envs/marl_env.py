@@ -126,11 +126,13 @@ class MARLEnv(satGymEnv):
 
     def step(self, action_dict):
         key_map = {}
+        agents = []
 
         #preprocess and set model action for adversary
         i = 0
         adversary_control = []
         for key, action in action_dict.items():
+            agents.append(key)
             if 'evader' in key:
                 self.sim.set_sat_control(self.preprocess_action(action,self.max_ctrl))
                 key_map['evader'] = key
@@ -150,18 +152,17 @@ class MARLEnv(satGymEnv):
         temp_obs = self._get_obs()
         temp_rew = self._get_rew()
 
-        for label in self.agents:
-            
-            obs[key_map[label]] = temp_obs[label]
-            rew[key_map[label]] = temp_rew[label]
+        for label in agents:
+            obs[label] = temp_obs[label]
+            rew[label] = temp_rew[label]
 
         #check episode end and adjust reward
         bad_term, good_term, trunc = self._end_episode() #end by collision, end by max episode
 
         #fill terminated and truncated dict
-        for label in self.agents:
-            terminated[key_map[label]] = False
-            truncated[key_map[label]] = trunc
+        for label in agents:
+            terminated[label] = False
+            truncated[label] = trunc
 
         if good_term:
             #goal reward/punishment
@@ -169,20 +170,30 @@ class MARLEnv(satGymEnv):
                 self.goal_count = 1
                 good_term = False
                 self.sim.set_sat_goal(goal=np.zeros((len(self.sim.get_sat_goal()),)))
-            for label in self.agents:
-                terminated[key_map[label]] = good_term
+            for label in agents:
+                terminated[label] = good_term
                 if 'evader' in label:
-                    rew[key_map[label]] += 500
+                    rew[label] += 500
                 if 'adversary' in label:
-                    rew[key_map[label]] -= 1000
+                    rew[label] -= 1000
         if bad_term:
             #collision punishment
-            for label in self.agents:
-                terminated[key_map[label]] = bad_term
+            for label in agents:
+                terminated[label] = bad_term
                 if 'evader' in label:
-                    rew[key_map[label]] -= 1000
+                    rew[label] -= 1000
                 if 'adversary' in label:
-                    rew[key_map[label]] += 500
+                    rew[label] += 500
+
+        adv_end = self.get_adversary_end()
+        for i,end in enumerate(adv_end):
+            terminated['adversary'+str(i)] = end
+            if end and ('adversary'+str(i)) in agents:
+                rew['adversary'+str(i)] -= 1000
+    
+
+        terminated['__all__'] = terminated['evader']
+        truncated['__all__'] = truncated['evader']
 
         return obs, rew, terminated, truncated, {}
 
@@ -228,7 +239,7 @@ class MARLEnv(satGymEnv):
     ) -> float:
         #opposite of normalized distance to goal
         rew = dist 
-        return 1/dist/60 #-1*rew
+        return -1*rew
     
     def get_adversary_reward(
             self,
@@ -292,9 +303,13 @@ class MARLEnv(satGymEnv):
 
         return collision or too_far, goal_reached, self._step >= self.max_episode_length
     
-    def get_adversary_end(
-            self,
-            collision: bool,
-    ) -> bool:
+    def get_adversary_end(self) -> bool:
+        too_far = []
 
-        return collision, False, self._step >= self.max_episode_length
+        for i in range(self.n_adv):
+            if self.sim.distance_to_adversary(idx=i) > 40:
+                too_far.append(True)
+            else:
+                too_far.append(False)
+
+        return too_far

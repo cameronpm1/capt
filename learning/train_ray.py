@@ -128,9 +128,9 @@ def train_ray(cfg: DictConfig,filedir):
             #receives none when checking for target network update
             if batch is not None:
                 self.max_samples = max(batch[pid]['unroll_id'])/len(batch.policy_batches)*self.workers
-            if 'evade' in pid:
+            if 'adversary' in pid:
                 return True
-            elif 'adversary' in pid and self.max_samples > 4.5e6:
+            elif 'evade' in pid and self.max_samples > 9e6:
                 return True
             else:
                 return False
@@ -186,10 +186,10 @@ def train_ray(cfg: DictConfig,filedir):
                 'fcnet_hiddens': cfg['alg']['vf_adv'],
             }
             evader_policy_model_dict = {
-                'fcnet_hiddens': cfg['alg']['pi_evader'],
+                'post_fcnet_hiddens': cfg['alg']['pi_evader'],
             }
             evader_q_model_dict = {
-                'fcnet_hiddens': cfg['alg']['pi_evader'],
+                'post_fcnet_hiddens': cfg['alg']['pi_evader'],
             }
             batch = cfg['alg']['batch']*(cfg['env']['n_policies']+1)
 
@@ -289,7 +289,7 @@ def train_ray(cfg: DictConfig,filedir):
     algo_build = algo_config.build(logger_creator=logger_creator)
 
     #set pre trained weights if training final evade or marl
-    if 'evade' in cfg['env']['scenario']: # or 'marl' in cfg['env']['scenario']:
+    if 'evade' in cfg['env']['scenario'] or 'marl' in cfg['env']['scenario']:
         pre_trained_policy = Policy.from_checkpoint(cfg['env']['evader_policy_dir'])
         pre_trained_policy_weights = pre_trained_policy.get_weights()
         if 'marl' in cfg['env']['scenario']:
