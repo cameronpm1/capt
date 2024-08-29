@@ -16,8 +16,8 @@ notes: adv train first, no adv end, vel cap
 alg:
   lib: ray
   type: sac
-  nenv: 1 #10
-  cpu_envs: 1 # 40
+  nenv: 10
+  cpu_envs: 40
   batch: 256
   batch_size: 256
   gamma: 0.99
@@ -65,7 +65,7 @@ path_planner:
   goal_state: [1,20,0,0,0,0] 
   path_planning_algorithm: VFH
   kwargs:
-    radius: 15
+    radius: 10
     iterations: 1
     distance_tolerance: 0.5
     data_format: histogram

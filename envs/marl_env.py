@@ -137,7 +137,7 @@ class MARLEnv(satGymEnv):
                 self.sim.set_sat_control(self.preprocess_action(action,self.max_ctrl))
                 key_map['evader'] = key
             if 'adversary' in key:
-                adversary_control.append(self.preprocess_action(action,self.adv_max_ctrl)*0)
+                adversary_control.append(self.preprocess_action(action,self.adv_max_ctrl))
                 key_map['adversary'+str(i)] = key
                 i += 1 
         self.sim.set_adversary_control(adversary_control)
@@ -185,16 +185,16 @@ class MARLEnv(satGymEnv):
                 if 'adversary' in label:
                     rew[label] += 500
 
+        
         adv_end = self.get_adversary_end()
         for i,end in enumerate(adv_end):
             terminated['adversary'+str(i)] = end
             if end and ('adversary'+str(i)) in agents:
                 rew['adversary'+str(i)] -= 1000
-    
+        
 
         terminated['__all__'] = terminated['evader']
         truncated['__all__'] = truncated['evader']
-
         return obs, rew, terminated, truncated, {}
 
     def _end_episode(self) -> bool:
