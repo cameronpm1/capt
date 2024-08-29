@@ -11,7 +11,7 @@ logging:
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
-notes: adv train first, no adv end, vel cap
+notes: collision tol 1
 
 alg:
   lib: ray

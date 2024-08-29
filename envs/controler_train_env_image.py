@@ -85,14 +85,8 @@ class controlerTrainEnvImage(satGymEnv):
 
             will have to use cnn as input for for rl model
         '''
-        #scale sat action and set action
-        scalled_action = self.scaling_function(action)
-        if self.dim == 3:
-            full_action = np.zeros((9,))
-        if self.dim ==2:
-            full_action = np.zeros((3,))
-        full_action[0:self.dim] = scalled_action
-        self.sim.set_sat_control(full_action)
+        #set sat control
+        self.sim.set_sat_control(self.preprocess_action(action=action,max_ctrl=self.max_ctrl))
         #take step
         self.sim.step()
         self._step += 1

@@ -621,7 +621,7 @@ class Sim():
             action,_,_ = self.controller(self.rel_goal)
             scalled_action = self.scaling_function(action)
             if self.dim == 3:
-                full_action = np.zeros((9,))
+                full_action = np.zeros((6,))
             if self.dim == 2:
                 full_action = np.zeros((3,))
             full_action[0:self.dim] = scalled_action[0:self.dim]

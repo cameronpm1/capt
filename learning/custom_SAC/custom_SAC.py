@@ -15,7 +15,7 @@ from ray.rllib.utils.typing import  ResultDict, PolicyID
 from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
 from ray.rllib.algorithms.dqn.dqn import calculate_rr_weights
 from ray.rllib.algorithms.sac.sac_tf_policy import SACTFPolicy
-from ray.rllib.utils.typing import RLModuleSpec, SampleBatchType
+from ray.rllib.utils.typing import SampleBatchType
 from ray.rllib.algorithms.algorithm_config import AlgorithmConfig
 from ray.rllib.execution.rollout_ops import synchronous_parallel_sample
 from ray.rllib.utils.replay_buffers.utils import sample_min_n_steps_from_buffer
@@ -77,7 +77,7 @@ class custom_SAC(SAC):
 
         if '33' in ray_version:
             self.worker_call_name = 'workers'
-        if '34' in ray_version:
+        else:
             self.worker_call_name = 'env_runner_group'
 
     @classmethod
@@ -191,7 +191,7 @@ class custom_SAC(SAC):
                                         model_out, _ = model(
                                             SampleBatch(obs=torch.from_numpy(train_batch[policy_id1][SampleBatch.CUR_OBS]), _is_training=True), [], None
                                         )
-                                        divergent_actions_input, _ = model.get_action_model_outputs(model_out.cpu())
+                                        divergent_actions_input, _ = model.get_action_model_outputs(model_out.cuda())
                                         action_dist_class = _get_dist_class(policy, policy.config, policy.action_space)
                                         divergent_actions[policy_id2] = action_dist_class(divergent_actions_input, model)
                         #set divergent actions policy attribute directly to policy

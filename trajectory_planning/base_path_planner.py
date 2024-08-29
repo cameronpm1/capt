@@ -5,6 +5,7 @@ from typing import Dict, Any, Type
 from trajectory_planning.polar_grid_3D import polarGrid3D
 from trajectory_planning.polar_grid_2D import polarGrid2D
 from trajectory_planning.polar_histogram_2D import polarHistogram2D
+from trajectory_planning.polar_histogram_3D import polarHistogram3D
 
 class basePathPlanner():
 
@@ -42,23 +43,21 @@ class basePathPlanner():
             self.min_distance = min_distance
 
             if self.dim == 3:
-                self.histogram = polarGrid3D(radius=radius, 
-                                                layers=layers, 
-                                                angle_sections=angle_sections,
-                                                probability_tolerance=probability_tolerance,
-                                                distance_tolerance=distance_tolerance,
-                                                )
+                if 'histogram' in data_format:
+                    data_struct = polarHistogram3D
+                else:
+                    data_struct = polarGrid3D
             if self.dim == 2:
                 if 'histogram' in data_format:
                     data_struct = polarHistogram2D
                 else:
                     data_struct = polarGrid2D
-                self.histogram = data_struct(radius=radius, 
-                                                layers=layers, 
-                                                angle_sections=angle_sections,
-                                                probability_tolerance=probability_tolerance,
-                                                distance_tolerance=distance_tolerance,
-                                                )
+            self.histogram = data_struct(radius=radius, 
+                                            layers=layers, 
+                                            angle_sections=angle_sections,
+                                            probability_tolerance=probability_tolerance,
+                                            distance_tolerance=distance_tolerance,
+                                            )
 
             self.iterations = iterations
             self.layers = layers

@@ -8,10 +8,6 @@ class controlPrompter(twodControlPrompter):
     def __init__(self):
         super().__init__()
 
-        self.sat_range = [0,0]
-        self.vel_range = [0,0]
-        self.goal_range = [30,40]
-
     def seed(self, seed=None):
         seeds = []
         seeds.append(seed)
@@ -40,7 +36,7 @@ class controlPrompter(twodControlPrompter):
 
         vec = self.random_unit_vec()
         goal_vec = vec * (self._np_random.random()*(self.goal_range[1]-self.goal_range[0]) + self.goal_range[0])
-        goal_pos = np.zeros((15,))
+        goal_pos = np.zeros((12,))
         goal_pos[0:3] = sat_pos + goal_vec
         prompt['sat_goal'] = goal_pos
 

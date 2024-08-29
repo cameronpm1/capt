@@ -84,21 +84,19 @@ def make_env(filedir: str, cfg: DictConfig):
                         horizon = cfg['satellite']['dynamics']['horizon'],
                         pos = pos,
                         vel = vel,
-                        initial_orbit = orbit_params,
-                        initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
                         spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data']
                     )
 
-                    if cfg['random']['point']:
-                        mesh = {'points':np.array([pos]),'lines':np.array([])}
-                    else:
-                        mesh = pv.read(cfg['random']['stl'])
-                        mesh.points *= cfg['random']['stl_scale']
+                    points = []
+                    for i in range(int(cfg['sim']['point_cloud_size']/cfg['random']['n'])):
+                        vec = np.random.random((3,))
+                        points.append((vec/np.linalg.norm(vec)))
+
                     temp_obstacle = dynamicObject(
                         dynamics = obs_dynamics, 
-                        mesh = mesh,
+                        mesh = {'points':np.array(points),'lines':np.array([])},
                         name = 'obstacle'+str(n), 
-                        pos = pos)
+                        pos = pos[0:3])
 
                 sim.add_obstacle(obstacle=temp_obstacle)
 
@@ -132,7 +130,6 @@ def make_env(filedir: str, cfg: DictConfig):
                         pos = np.array(cfg['adversary']['adversaries'][adversary]['pos']),
                         vel = np.array(cfg['adversary']['adversaries'][adversary]['vel']),
                         initial_orbit = orbit_params,
-                        initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
                         spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
                         max_control = cfg['adversary']['adversaries'][adversary]['control_lim'],
                     )
@@ -161,7 +158,10 @@ def make_env(filedir: str, cfg: DictConfig):
             max_control = cfg['satellite']['dynamics']['control_lim']
         )
     else:
-        orbit_params = correct_orbit_units(cfg['satellite']['dynamics']['initial_orbit'])
+        if 'initial_orbit' in cfg['satellite']['dynamics'].keys():
+            orbit_params = correct_orbit_units(cfg['satellite']['dynamics']['initial_orbit'])
+        else:
+            orbit_params = None
 
         dynamics = satelliteDynamics(
             timestep = cfg['satellite']['dynamics']['timestep'],
@@ -169,7 +169,6 @@ def make_env(filedir: str, cfg: DictConfig):
             pos = np.array(cfg['satellite']['dynamics']['pos']),
             vel = np.array(cfg['satellite']['dynamics']['vel']),
             initial_orbit = orbit_params,
-            initial_state_data = cfg['satellite']['dynamics']['initial_state_data'],
             spacecraft_data = cfg['satellite']['dynamics']['spacecraft_data'],
             max_control = cfg['satellite']['dynamics']['control_lim']
         )
