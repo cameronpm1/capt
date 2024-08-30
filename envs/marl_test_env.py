@@ -76,9 +76,20 @@ class MARLTestEnv(satGymEnv):
         self.EVADE = False
         if evader_policy_dir is None:
             self.EVADE = True
+            self.sim.EVADE = True
         else:
             self.evader_policy = Policy.from_checkpoint(evader_policy_dir)
             self.evader_model = lambda obs: self.evader_policy.compute_single_action(obs)
+
+        self.controller_policy = Policy.from_checkpoint('C:/Users/Cameron Mehlman/Documents/magpie_rl/models/2D control policy')
+        self.adversary_controller = lambda pos: self.controller_policy.compute_single_action(pos)
+
+        self.adv1_goal = None
+        self.adv2_goal = None
+        self.adv1_counter = 0
+        self.adv2_counter = 0
+        self.adv1_update_freq = 15
+        self.adv2_update_freq = 15
 
     @property
     def action_space(
@@ -123,6 +134,8 @@ class MARLTestEnv(satGymEnv):
         self._episode += 1
         self._step = 0
         self.goal_count = 0
+        self.adv1_counter = 0
+        self.adv2_counter = 0
         self.sim.reset()
         obs = {}
         temp_obs = self._get_obs()
@@ -134,16 +147,16 @@ class MARLTestEnv(satGymEnv):
         obs = self._get_obs()
 
         adversary_actions = []
-        for label in self.agents:
-            if 'evader' in label:
-                if self.EVADE:
-                    evader_action = self.sim.compute_evade_control()
-                else:
-                    evader_action = self.evader_model(obs[label])[0]
-                self.sim.set_sat_control(self.preprocess_action(evader_action,self.max_ctrl))
-            if 'adversary' in label:
-                adversary_action = self.heuristic_adversary_policy(obs=obs[label])
-                adversary_actions.append(self.preprocess_action(adversary_action,max_ctrl=self.adv_max_ctrl))
+        #compute evader action
+        if self.EVADE:
+            evader_action = self.sim.compute_evade_control()
+        else:
+            evader_action = self.evader_policy.compute_single_action(obs['evader'])[0]
+        self.sim.set_sat_control(self.preprocess_action(evader_action,self.max_ctrl))
+        #compute heuristic adversary actions
+        adversary1_action, adversary2_action = self.heuristic_adversary_policy(obs=obs)
+        adversary_actions.append(self.preprocess_action(adversary1_action,max_ctrl=self.adv_max_ctrl))
+        adversary_actions.append(self.preprocess_action(adversary2_action,max_ctrl=self.adv_max_ctrl))
         self.sim.set_adversary_control(adversary_actions)
 
 
@@ -266,12 +279,14 @@ class MARLTestEnv(satGymEnv):
            rel_evader_state: state of evader relative to advesary
            rel_goal_state: state of the evaders goal relative to the adversary
         """
-        adversary_obs = obs['evader_state'] - obs['adversary'+str(idx)+'_state']
+        adversary_obs = OrderedDict()
+        adversary_obs['rel_evader_state'] = obs['evader_state'] - obs['adversary'+str(idx)+'_state']
+        adversary_obs['rel_evader_goal'] = obs['goal_state'] - obs['adversary'+str(idx)+'_state']
 
         for i in range(self.n_adv):
             if i != idx:
                 adv_state = obs['adversary'+str(i)+'_state'] - obs['adversary'+str(idx)+'_state']
-                adversary_obs = np.concatenate((adversary_obs,adv_state))
+                adversary_obs['rel_adversary'+str(i)+'_state'] = adv_state
 
         return adversary_obs
     
@@ -279,7 +294,7 @@ class MARLTestEnv(satGymEnv):
             self,
             collision: bool,
     ) -> bool:
-        
+
         goal_reached = self.sim.goal_check()
         return collision, goal_reached, self._step >= self.max_episode_length
     
@@ -296,6 +311,27 @@ class MARLTestEnv(satGymEnv):
         obs: dict
     ) -> list[float]:
 
-        return np.zeros((self.dim,))
+        if self.adv1_goal is None or self.adv1_counter == 0:
+            evader_pos = obs['adversary0']['rel_evader_state']
+            evader_goal = obs['adversary0']['rel_evader_goal']
+            evader_straight = evader_goal - evader_pos
+            block_point = evader_pos + 0.5*evader_straight
+            block_point_dist = np.linalg.norm(block_point)
+            if block_point_dist > 1.5: block_point_dist = 1
+            self.adv1_goal = block_point/np.linalg.norm(block_point) * block_point_dist
+            self.adv1_counter = self.adv1_update_freq
+
+        if self.adv2_goal is None or self.adv2_counter == 0:
+            evader_pos = obs['adversary1']['rel_evader_state']
+            collision_point = evader_pos
+            collision_point_dist = np.linalg.norm(collision_point)
+            if collision_point_dist > 1.5: collision_point_dist = 1
+            self.adv2_goal = collision_point/np.linalg.norm(collision_point) * collision_point_dist
+            self.adv2_counter = self.adv2_update_freq
+
+        self.adv1_counter -= 1
+        self.adv2_counter -= 1
+
+        return self.adversary_controller(self.adv1_goal)[0],self.adversary_controller(self.adv2_goal)[0]
 
         
