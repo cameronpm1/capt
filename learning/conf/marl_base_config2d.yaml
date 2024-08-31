@@ -7,9 +7,11 @@ seed: 2 # set experiment seed
 
 logging:
   job:
-    name: adversary_evader_marl_base # set job name
+    name: marl_base # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
+
+notes: base marl
 
 alg:
   lib: ray
@@ -24,15 +26,15 @@ alg:
   device: cpu # cpu, cuda
   total_timesteps: 30e6 #20e6
   #model dependant training variables:
+  pi: [512, 512]
+  vf: [512, 512]
   pi_adv: [512, 512]
   vf_adv: [512, 512]
-  pi_evader: [512, 512]
-  vf_evader: [512, 512]
   lr_adv: 0.0003
   lr_evader: 0.0003
   
 env:
-  scenario: marl #control, controlImage, adversary, evade, multi, test
+  scenario: marlbase #control, controlImage, adversary, evade, multi, test
   n_policies: 3 #number of adversary policies
   max_timestep: 1024
   sat_max_control: [0.15,0.15]
@@ -57,7 +59,7 @@ satellite:
     data:
       inertia: 1e4
       mass: 2000
-    control_lim: [0.1,0.1,0.1]
+    control_lim: [0.15,0.15,0.15]
 
 path_planner:
   goal_state: [1,20,0,0,0,0] 

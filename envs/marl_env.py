@@ -173,7 +173,7 @@ class MARLEnv(satGymEnv):
             for label in agents:
                 terminated[label] = good_term
                 if 'evader' in label:
-                    rew[label] += 500
+                    rew[label] += 1000
                 if 'adversary' in label:
                     rew[label] -= 1000
         if bad_term:
@@ -181,7 +181,7 @@ class MARLEnv(satGymEnv):
             for label in agents:
                 terminated[label] = bad_term
                 if 'evader' in label:
-                    rew[label] -= 1000
+                    rew[label] -= (1000-np.clip(self._step,0,1000))
                 if 'adversary' in label:
                     rew[label] += 500
 

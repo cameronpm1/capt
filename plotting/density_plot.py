@@ -31,7 +31,7 @@ def collect_action_dist_data(
         filedir: str,
         master_dir: str,
 ):
-    iter = 3
+    iter = 5
 
     evader = None
     models = []
@@ -60,6 +60,7 @@ def collect_action_dist_data(
         elif 'evader' in model_dir:
             policy = Policy.from_checkpoint(master_dir+'/'+model_dir)
             evader = policy
+    print(policies)
 
     #use same prompter for all envs
     if cfg['env']['dim'] == 2:
@@ -98,6 +99,7 @@ def collect_action_dist_data(
                     observations[j].append(obs)
                     if terminated['__all__'] or truncated['__all__']:
                         dones[j] = True
+                        print(t)
                     else:
                         dones[j] = False
 
@@ -116,7 +118,9 @@ def collect_action_dist_data(
 
         for j,env in enumerate(envs):
             #compute action dist outputs
-            model_out, _ = models[j]({'obs':np.array([obs['adversary0'] for obs in observations]).squeeze()})
+            obs = np.array([obs['adversary0'] for obs in observations])
+            #obs = np.concatenate((obs,np.array([obs['adversary1'] for obs in observations])))
+            model_out, _ = models[j]({'obs':obs.squeeze()})
             actions_input, _ = models[j].get_action_model_outputs(torch.from_numpy(model_out).cuda())
             action_dist_class = _get_dist_class(policies[j], policies[j].config, policies[j].action_space)
             action_dist = action_dist_class(actions_input, models[j])
@@ -161,9 +165,9 @@ def action_density_plot(
          grid_size = 50
          iter = 2/grid_size
          grid = np.zeros((grid_size,grid_size))
-         if data[i].max() > 0 or data[i].min() < -1:
+         if data[i].max() > 1 or data[i].min() < -1:
               data1 = normalize(data[i][:,0],-1,1)
-              data2 = normalize(data[i][:,2],-1,1)
+              data2 = normalize(data[i][:,1],-1,1)
               normalize_on = True
          else:
               normalize_on = False
@@ -179,7 +183,7 @@ def action_density_plot(
             grid[int(idx1),int(idx2)] += 1
          grid /= len(data[i])
         #compute prob contour lines
-         n = 200
+         n = 100
          t = np.linspace(0, grid.max(), n)
          integral = ((grid >= t[:, None, None]) * grid).sum(axis=(1,2))
          f = interpolate.interp1d(integral, t)
