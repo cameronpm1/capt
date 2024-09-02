@@ -30,14 +30,18 @@ def runSpaceSimRay(
 
     if render:
         renderer = Renderer(
-            xlim = [-40,40],
-            ylim = [-40,40],
-            zlim = [-40,40],
+            xlim = [-50,50],
+            ylim = [-50,50],
+            zlim = [-50,50],
             vista = False,
             dim = env.unwrapped.dim,
         )
 
-    for i in range(1):
+    first_goal_count = 0
+    second_goal_count = 0
+    eps = 20
+
+    for i in range(20):
 
         obs, _ = env.reset()
 
@@ -62,19 +66,28 @@ def runSpaceSimRay(
                 action = np.zeros(env.unwrapped.dim,)
             else:
                 action,_,_ = model(obs)
-            obs,rewards,terminated,truncated,_ = env.step(action)
+            obs,rewards,terminated,truncated,info = env.step(action)
             timestep += 1
+            #print(env.unwrapped.sim.main_object.dynamics.get_pos())
+            #print(env.unwrapped.sim.adversary[0].dynamics.get_pos(),env.unwrapped.sim.adversary[1].dynamics.get_pos())
             if i%10 == 0:
                 if verbose:
                     print('at timestep',i,'distance to goal:', env.unwrapped.sim.distance_to_goal())
             if terminated or truncated:
                 timestep = i
+                if info['goal_count'] == 1:
+                    first_goal_count += 1
+                if info['goal_count'] == 2:
+                    second_goal_count += 1
                 break
             if render:
                 renderer.plot(env.unwrapped.render())
 
         print('Simulation ended at timestep',timestep)
     
+    print('total episodes:',eps)
+    print('first goal reached:',first_goal_count)
+    print('second goal reached:',second_goal_count)
 
 if __name__ == "__main__":
     sys.path.insert(1, os.getcwd())

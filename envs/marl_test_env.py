@@ -180,9 +180,11 @@ class MARLTestEnv(satGymEnv):
         if good_term:
             #goal reward/punishment
             if self.goal_count == 0:
-                self.goal_count = 1
+                self.goal_count += 1
                 good_term = False
                 self.sim.set_sat_goal(goal=np.zeros((len(self.sim.get_sat_goal()),)))
+            else:
+                self.goal_count += 1
             for label in self.agents:
                 if 'evader' in label:
                     rew[label] += 500
@@ -196,7 +198,7 @@ class MARLTestEnv(satGymEnv):
                 if 'adversary' in label:
                     rew[label] += 500
 
-        return obs, rew, good_term or bad_term, trunc, {}
+        return obs, rew, good_term or bad_term, trunc, {'goal_count':self.goal_count}
 
     def _end_episode(self) -> bool:
         '''
