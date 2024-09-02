@@ -121,8 +121,15 @@ def make_env(filedir: str, cfg: DictConfig):
                         max_control = cfg['adversary']['adversaries'][adversary]['control_lim']
                     )
                 else:
-                    stl = pv.read(filedir+'/'+cfg['adversary']['adversaries'][adversary]['stl'])
-                    stl.points *= cfg['adversary']['adversaries'][adversary]['stl_scale']
+                    stl = {
+                        'points':np.array(cfg['adversary']['adversaries'][adversary]['mesh']['points']),
+                        'lines':np.array(cfg['adversary']['adversaries'][adversary]['mesh']['lines'])
+                        }
+
+                    if 'initial_orbit' in cfg['satellite']['dynamics'].keys():
+                        orbit_params = correct_orbit_units(cfg['satellite']['dynamics']['initial_orbit'])
+                    else:
+                        orbit_params = None
 
                     adversary_dynamics = satelliteDynamics(
                         timestep = cfg['satellite']['dynamics']['timestep'],
@@ -187,7 +194,6 @@ def make_env(filedir: str, cfg: DictConfig):
         #histogram does not work w evade, must overwrite if evade is to be used
         path_planner_kwargs['data_format'] = 'grid'
         
-
     path_planner = pathPlanner(
         goal_state = cfg['path_planner']['goal_state'],
         path_planning_algorithm = cfg['path_planner']['path_planning_algorithm'],

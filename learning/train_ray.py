@@ -176,7 +176,7 @@ def train_ray(cfg: DictConfig,filedir):
     batch = None
 
     if 'sac' in cfg['alg']['type']:
-        if 'marl' in cfg['env']['scenario'] and 'base' not in cfg['env']['scenario']:
+        if 'marl' in cfg['env']['scenario']: # and 'base' not in cfg['env']['scenario']:
             algo = custom_SACConfig()
             adv_policy_model_dict = {
                 'custom_model': 'sirenfcnet',

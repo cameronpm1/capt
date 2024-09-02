@@ -10,8 +10,8 @@ from ray.rllib.policy.policy import Policy
 from ray.rllib.algorithms.sac.sac_torch_policy import _get_dist_class
 
 from learning.make_env import make_env
-from sim_prompters.one_v_one_prompter import oneVOnePrompter
 from sim_prompters.twod_marl_prompter import twodMARLPrompter
+from sim_prompters.threed_marl_prompter import threedMARLPrompter
 
 
 #ModelCatalog.register_custom_model("my_torch_model", CustomTorchModel)
@@ -31,7 +31,7 @@ def collect_action_dist_data(
         filedir: str,
         master_dir: str,
 ):
-    iter = 5
+    iter = 15
 
     evader = None
     models = []
@@ -66,7 +66,7 @@ def collect_action_dist_data(
     if cfg['env']['dim'] == 2:
             prompter = twodMARLPrompter()
     if cfg['env']['dim'] == 3:
-            prompter = oneVOnePrompter()
+            prompter = threedMARLPrompter()
     prompter.seed(seed=cfg['seed'])
     prompter.set_num_adv(len(models))
 
@@ -165,9 +165,9 @@ def action_density_plot(
          grid_size = 50
          iter = 2/grid_size
          grid = np.zeros((grid_size,grid_size))
-         if data[i].max() > 1 or data[i].min() < -1:
+         if data[i][:,].max() > 1 or data[i][:,].min() < -1:
               data1 = normalize(data[i][:,0],-1,1)
-              data2 = normalize(data[i][:,1],-1,1)
+              data2 = normalize(data[i][:,2],-1,1)
               normalize_on = True
          else:
               normalize_on = False

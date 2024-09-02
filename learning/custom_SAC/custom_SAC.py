@@ -104,7 +104,7 @@ class custom_SAC(SAC):
         self,
         ts: int
     ):
-        start_val = 1
+        start_val = 100
         stop_val = 0
         ts_begin = 0
         ts_end = 10e6

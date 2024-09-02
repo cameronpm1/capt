@@ -3,43 +3,47 @@
 #  - override hydra/hydra_logging: disabled  
 #  - override hydra/job_logging: disabled
 
-seed: 23 # set experiment seed
+seed: 100 # set experiment seed
 
 logging:
   job:
-    name: obstacle_evader3d #multi_adversary_nodiv #adversary_siren_test4 # set job name
+    name: marl3d #multi_adversary_nodiv #adversary_siren_test4 # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
-notes: 2000kg mass, 7 obs
+notes: new histogram method, and point cloud generation
 
 alg:
   lib: ray
   type: sac
   nenv: 10
   cpu_envs: 40
-  lr_evader: 0.0003
   batch: 256
   batch_size: 256
   gamma: 0.99
-  pi: [512, 512]
-  vf: [512, 512]
   target_ent: 0.1
   train_intensity: 3
   device: cpu # cpu, cuda
   total_timesteps: 20e6 #20e6
+  #model dependant training variables:
+  pi_adv: [512, 512]
+  vf_adv: [512, 512]
+  pi_evader: [512, 512]
+  vf_evader: [512, 512]
+  lr_adv: 0.0003
+  lr_evader: 0.0003
 
 env:
-  scenario: multicontrolImage #control, controlImage, adversary, evade, multi, test
-  n_policies: 1
+  scenario: marl #control, controlImage, adversary, evade, multi, test
+  n_policies: 3 #number of adversary policies
   max_timestep: 1024
   sat_max_control: [0.15,0.15,.15]
   adv_max_control: [0.15,0.15,.15]
   ctrl_type: thrust
   action_scaling: clip
   random_initial_state: True
-  curriculum: True
   dim: 3
+  evader_policy_dir: '/home/cameron/capt/models/evader 5 obs 3d'
 
 satellite:
   name: satellite
@@ -87,14 +91,35 @@ sim:
     valued_actions: 1
     max_ctrl: [0.3,0.3,0.3] #only for MPC or PPOC
 
+adversary:
+  on: True
+  adversaries:
+    adversary1:
+      mesh:
+        points: [[0.0,0.0,0.0]]
+        lines: []
+      name: adversary1
+      pos: [0, 0, 0]
+      vel: [0, 0, 0] 
+      spacecraft_data:
+        J_sc: [1.7e4, 2.7e4, 2.7e4]
+        alpha: [0.8, 0.8, 0.8]
+        mass: 2000
+      control_lim: [0.15,0.15,0.15,0.1,0.1,0.1]
+    adversary2:
+      mesh:
+        points: [[0.0,0.0,0.0]]
+        lines: []
+      name: adversary2
+      pos: [0, 0, 0]
+      vel: [0, 0, 0] 
+      spacecraft_data:
+        J_sc: [1.7e4, 2.7e4, 2.7e4]
+        alpha: [0.8, 0.8, 0.8]
+        mass: 2000
+      control_lim: [0.15,0.15,0.15,0.1,0.1,0.1]
+
 obstacles:
 
 random:
-  on: True
-  n: 7
-  vel: 0.0
-  x_range: [-7,7] #[-7,7]
-  y_range: [4,18] #[5,15]
-  z_range: [-7,7] #[-7,7]
-  stl: stl_files/ball_simplified.stl
-  stl_scale: 0.001
+  on: False

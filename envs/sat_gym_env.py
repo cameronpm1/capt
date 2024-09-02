@@ -16,7 +16,7 @@ from typing import Any, Dict, Type, Optional, Union
 from logger import getlogger
 from space_sim.sim import Sim
 #from train.make_env import make_env
-from sim_prompters.one_v_one_prompter import oneVOnePrompter
+from sim_prompters.threed_marl_prompter import threedMARLPrompter
 
 logger = getlogger(__name__)
 
