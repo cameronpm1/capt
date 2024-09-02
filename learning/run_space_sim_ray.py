@@ -41,7 +41,7 @@ def runSpaceSimRay(
     second_goal_count = 0
     eps = 20
 
-    for i in range(20):
+    for i in range(10):
 
         obs, _ = env.reset()
 
@@ -74,11 +74,15 @@ def runSpaceSimRay(
                 if verbose:
                     print('at timestep',i,'distance to goal:', env.unwrapped.sim.distance_to_goal())
             if terminated or truncated:
-                timestep = i
-                if info['goal_count'] == 1:
-                    first_goal_count += 1
-                if info['goal_count'] == 2:
-                    second_goal_count += 1
+                if 'obs' in cfg['env']['scenario']:
+                    if info['success']:
+                        first_goal_count += 1
+                else:
+                    timestep = i
+                    if info['goal_count'] == 1:
+                        first_goal_count += 1
+                    if info['goal_count'] == 2:
+                        second_goal_count += 1
                 break
             if render:
                 renderer.plot(env.unwrapped.render())

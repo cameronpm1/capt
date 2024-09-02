@@ -73,11 +73,11 @@ def retrain_rl_model(cfg: DictConfig):
 #@hydra.main(config_path="learning/conf", config_name=CONFIG_FILE, version_base='1.1')
 def run_rl_model(cfg: DictConfig):
     modeldir = '/home/cameron/magpie_rl/logs/test18/2024-08-07/checkpoint5353200'
-    modeldir = 'C:/Users/Cameron Mehlman/Documents/magpie_rl/models/evader_improved_obs'
+    modeldir = 'C:/Users/Cameron Mehlman/Documents/capt/models/evader 5 obs 3d'
     if 'ray' in cfg['alg']['lib']:
         if 'test' in cfg['env']['scenario']:
             modeldir=None
-        runSpaceSimRay(cfg,DIRECTORY,modeldir=modeldir,render=True,verbose=False)
+        runSpaceSimRay(cfg,DIRECTORY,modeldir=modeldir,render=False,verbose=False)
     else:
         runSpaceSimSb3(cfg,DIRECTORY,modeldir=modeldir,render=False)
 

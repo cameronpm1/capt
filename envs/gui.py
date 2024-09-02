@@ -148,7 +148,9 @@ class gui(object):
         #self._ax1.set_yticks(np.linspace(self.ylim[0],self.ylim[1],10))
         #self._ax1.set_zticks(np.linspace(self.zlim[0],self.zlim[1],10))
             
-        
+        #self._ax1.set_xbound(lower=self.xlim[0], upper=self.xlim[1])
+        #self._ax1.set_ybound(lower=self.ylim[0], upper=self.ylim[1])
+        #self._ax1.set_zbound(lower=self.zlim[0], upper=self.zlim[1])
 
         self._ax1.xaxis.set_pane_color('k')
         self._ax1.yaxis.set_pane_color('k')
@@ -205,11 +207,11 @@ class gui(object):
         z_middle = np.mean(z_limits)
         '''
 
-        y_range = 40
+        y_range = 80
         y_middle = np.mean(17.5)
-        x_range = 20
+        x_range = 80
         x_middle = np.mean(0)
-        z_range = 20
+        z_range = 80
         z_middle = np.mean(0)
 
         # The plot bounding box is a sphere in the sense of the infinity

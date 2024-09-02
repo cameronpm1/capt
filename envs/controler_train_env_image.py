@@ -100,7 +100,7 @@ class controlerTrainEnvImage(satGymEnv):
         if terminated_good:
             rew += 1000
 
-        return obs, rew, terminated_bad or terminated_good, truncated, {'done': (terminated_bad or terminated_good, truncated), 'reward': rew}
+        return obs, rew, terminated_bad or terminated_good, truncated, {'success': terminated_good, 'reward': rew}
 
     def _get_obs(self) -> OrderedDict:
         """Return observation
