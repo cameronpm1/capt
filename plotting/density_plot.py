@@ -10,8 +10,8 @@ from ray.rllib.policy.policy import Policy
 from ray.rllib.algorithms.sac.sac_torch_policy import _get_dist_class
 
 from learning.make_env import make_env
-from sim_prompters.one_v_one_prompter import oneVOnePrompter
 from sim_prompters.twod_marl_prompter import twodMARLPrompter
+from sim_prompters.threed_marl_prompter import threedMARLPrompter
 
 
 #ModelCatalog.register_custom_model("my_torch_model", CustomTorchModel)
@@ -31,8 +31,9 @@ def collect_action_dist_data(
         filedir: str,
         master_dir: str,
 ):
-    iter = 5
+    iter = 15
 
+    evader = None
     models = []
     policies = []
     envs = []
@@ -43,26 +44,31 @@ def collect_action_dist_data(
     dummy_prompter1 = dummy_prompter()
 
     for model_dir in model_dirs:
+        if 'adversary' in model_dir:
+            policy = Policy.from_checkpoint(master_dir+'/'+model_dir)
+            policies.append(policy)
+            model = policy.model
+            models.append(model)
 
-        policy = Policy.from_checkpoint(master_dir+'/'+model_dir)
-        policies.append(policy)
-        model = policy.model
-        models.append(model)
+            filedir = filedir
+            env = make_env(filedir,cfg)
+            env.unwrapped.seed(seed=cfg['seed'])
+            env.unwrapped.prompter=dummy_prompter1
+            envs.append(env)
 
-        filedir = filedir
-        env = make_env(filedir,cfg)
-        env.unwrapped.seed(seed=cfg['seed'])
-        env.unwrapped.prompter=dummy_prompter1
-        envs.append(env)
-
-        action_dist_data.append(np.array([]))        
+            action_dist_data.append(np.array([]))        
+        elif 'evader' in model_dir:
+            policy = Policy.from_checkpoint(master_dir+'/'+model_dir)
+            evader = policy
+    print(policies)
 
     #use same prompter for all envs
     if cfg['env']['dim'] == 2:
             prompter = twodMARLPrompter()
     if cfg['env']['dim'] == 3:
-            prompter = oneVOnePrompter()
+            prompter = threedMARLPrompter()
     prompter.seed(seed=cfg['seed'])
+    prompter.set_num_adv(len(models))
 
     end_timestep = cfg['env']['max_timestep']
 
@@ -85,11 +91,15 @@ def collect_action_dist_data(
             for j,env in enumerate(envs):
                 if not dones[j]:
                     #compute next action and take forward step
-                    action,_,_ = policies[j].compute_single_action(observations[j][-1])
-                    obs,rewards,terminated,truncated,_ = env.step(action)
+                    action_dict = {}
+                    action_dict['evader'],_,_ = evader.compute_single_action(observations[j][-1]['evader'])
+                    action_dict['adversary0'],_,_ = policies[j].compute_single_action(observations[j][-1]['adversary0'])
+                    action_dict['adversary1'],_,_ = policies[i%cfg['env']['n_policies']].compute_single_action(observations[j][-1]['adversary1'])
+                    obs,rewards,terminated,truncated,_ = env.step(action_dict)
                     observations[j].append(obs)
-                    if terminated or truncated:
+                    if terminated['__all__'] or truncated['__all__']:
                         dones[j] = True
+                        print(t)
                     else:
                         dones[j] = False
 
@@ -108,8 +118,10 @@ def collect_action_dist_data(
 
         for j,env in enumerate(envs):
             #compute action dist outputs
-            model_out, _ = models[j]({'obs':np.array([observations]).squeeze()})
-            actions_input, _ = models[j].get_action_model_outputs(torch.from_numpy(model_out).cpu())
+            obs = np.array([obs['adversary0'] for obs in observations])
+            #obs = np.concatenate((obs,np.array([obs['adversary1'] for obs in observations])))
+            model_out, _ = models[j]({'obs':obs.squeeze()})
+            actions_input, _ = models[j].get_action_model_outputs(torch.from_numpy(model_out).cuda())
             action_dist_class = _get_dist_class(policies[j], policies[j].config, policies[j].action_space)
             action_dist = action_dist_class(actions_input, models[j])
             #divergent_action_input = [mean1,mean2,log_std1,log_std2]
@@ -119,6 +131,11 @@ def collect_action_dist_data(
                 action_dist_data[j] = np.concatenate((action_dist_data[j],episode_dist_data),axis=0)
             else:
                 action_dist_data[j] = episode_dist_data
+
+    file_dirs = os.listdir(master_dir)
+    for file in file_dirs:
+         if 'data' in file:
+              os.remove(master_dir+'/'+file)
 
     for i,array in enumerate(action_dist_data):
         np.save(master_dir+'/'+'data'+str(i)+'.npy',array)
@@ -136,9 +153,7 @@ def normalize(arr, t_min, t_max):
 def action_density_plot(
         load_dir: str,
 ):
-
-    files = model_dirs = os.listdir(load_dir)
-
+    files = os.listdir(load_dir)
     data = []
 
     for file in files:
@@ -150,9 +165,9 @@ def action_density_plot(
          grid_size = 50
          iter = 2/grid_size
          grid = np.zeros((grid_size,grid_size))
-         if data[i].max() > 0 or data[i].min() < -1:
+         if data[i][:,].max() > 1 or data[i][:,].min() < -1:
               data1 = normalize(data[i][:,0],-1,1)
-              data2 = normalize(data[i][:,1],-1,1)
+              data2 = normalize(data[i][:,2],-1,1)
               normalize_on = True
          else:
               normalize_on = False
@@ -168,7 +183,7 @@ def action_density_plot(
             grid[int(idx1),int(idx2)] += 1
          grid /= len(data[i])
         #compute prob contour lines
-         n = 200
+         n = 100
          t = np.linspace(0, grid.max(), n)
          integral = ((grid >= t[:, None, None]) * grid).sum(axis=(1,2))
          f = interpolate.interp1d(integral, t)
@@ -181,8 +196,7 @@ def action_density_plot(
         #mean2 = data[i][:,1]
         #
         #plt.scatter(mean1,mean2,s=1)
-
-    plt.savefig('test.png')
+    plt.savefig(load_dir+'/'+'test.png')
 
 
 if __name__ == "__main__":

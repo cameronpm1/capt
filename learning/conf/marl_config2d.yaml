@@ -3,7 +3,7 @@
 #  - override hydra/hydra_logging: disabled  
 #  - override hydra/job_logging: disabled
 
-seed: 4 # set experiment seed
+seed: 75 # set experiment seed
 
 logging:
   job:
@@ -11,7 +11,7 @@ logging:
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
-notes: collision tol 1
+notes: mse (1-kl loss) * 100->0, marl3
 
 alg:
   lib: ray
@@ -59,7 +59,7 @@ satellite:
     data:
       inertia: 1e4
       mass: 2000
-    control_lim: [0.1,0.1,0.1]
+    control_lim: [0.15,0.15,0.15]
 
 path_planner:
   goal_state: [1,20,0,0,0,0] 
@@ -99,24 +99,24 @@ adversary:
         points: [[0.0,0.0]]
         lines: []
       name: adversary1
-      pos: [0, 5]
+      pos: [0, 0]
       vel: [0, 0] 
       euler: [0]
       data:
         inertia: 1e4
-        mass: 2000
+        mass: 4000
       control_lim: [0.15,0.15,0.15]
     adversary2:
       mesh:
         points: [[0.0,0.0]]
         lines: []
       name: adversary2
-      pos: [0, 5]
+      pos: [0, 0]
       vel: [0, 0] 
       euler: [0]
       data:
         inertia: 1e4
-        mass: 2000
+        mass: 4000
       control_lim: [0.15,0.15,0.15]
 
 obstacles:

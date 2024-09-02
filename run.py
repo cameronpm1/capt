@@ -87,8 +87,9 @@ def run_rl_model(cfg: DictConfig):
 def collect_data(cfg: DictConfig):
     os.chdir('../../../')
     master_dir = '/home/cameron/magpie_rl/logs/div_policies3'
-    master_dir = '/home/cameron/magpie_rl/logs/nondiv_policies3'
+    master_dir = '/home/cameron/capt/logs/div adv early'
     collect_action_dist_data(cfg,DIRECTORY,master_dir)
+    return master_dir
 
 if __name__ == "__main__":
     '''

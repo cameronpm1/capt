@@ -12,8 +12,8 @@ from space_sim.sim import Sim
 from envs.sat_gym_env import satGymEnv
 from dynamics.dynamic_object import dynamicObject
 from trajectory_planning.path_planner import pathPlanner
-from sim_prompters.one_v_one_prompter import oneVOnePrompter
 from sim_prompters.twod_marl_prompter import twodMARLPrompter
+from sim_prompters.threed_marl_prompter import threedMARLPrompter
 
 
 class MARLTestEnv(satGymEnv):
@@ -52,7 +52,7 @@ class MARLTestEnv(satGymEnv):
         if self.randomize_initial_state and self.dim == 2:
             self.prompter = twodMARLPrompter()
         if self.randomize_initial_state and self.dim == 3:
-            self.prompter = oneVOnePrompter()
+            self.prompter = threedMARLPrompter()
             
         self._obs = None
         self.initial_goal_distance = 0

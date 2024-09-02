@@ -128,7 +128,7 @@ def train_ray(cfg: DictConfig,filedir):
             #receives none when checking for target network update
             if batch is not None:
                 self.max_samples = max(batch[pid]['unroll_id'])/len(batch.policy_batches)*self.workers
-            if 'adversary' in pid:
+            if ('adversary' in pid and self.max_samples < 9e6): # or (batch is not None and np.average(batch['evader']['rewards']) > 0.0):
                 return True
             elif 'evade' in pid and self.max_samples > 9e6:
                 return True
@@ -176,7 +176,7 @@ def train_ray(cfg: DictConfig,filedir):
     batch = None
 
     if 'sac' in cfg['alg']['type']:
-        if 'marl' in cfg['env']['scenario'] and 'base' not in cfg['env']['scenario']:
+        if 'marl' in cfg['env']['scenario']: # and 'base' not in cfg['env']['scenario']:
             algo = custom_SACConfig()
             adv_policy_model_dict = {
                 'custom_model': 'sirenfcnet',
@@ -238,7 +238,7 @@ def train_ray(cfg: DictConfig,filedir):
                             'post_fcnet_hiddens': cfg['alg']['pi'],
                         }
                     else:
-                        agent_label = 'adversary'
+                        agent_label = 'adversary0'
                         policy_model_dict = {
                             'fcnet_hiddens': cfg['alg']['pi_adv'],
                         }
@@ -249,7 +249,7 @@ def train_ray(cfg: DictConfig,filedir):
                                 None, #policy_class
                                 test_env.observation_space[agent_label], #observation_space
                                 test_env.action_space[agent_label], #action_space
-                                {'lr':cfg['alg']['lr'],
+                                {'lr':cfg['alg']['lr_evader'],
                                  'policy_model_config':policy_model_dict,
                                  'q_model_config':q_model_dict,
                                 } #config (gamma,lr,etc.)
@@ -300,7 +300,7 @@ def train_ray(cfg: DictConfig,filedir):
         algo_build.set_weights(pre_trained_policy_weights)    
 
     #train 15,000 iterations
-    for i in range(40000): 
+    for i in range(50000): 
         result = algo_build.train()
         if i % 1000 == 0:# and i != 0:
             save_dir = logdir+'/checkpoint'+str(result['timesteps_total'])
