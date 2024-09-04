@@ -34,6 +34,15 @@ class controlerTrainEnv(satGymEnv):
             parallel_envs=parallel_envs,
         )
 
+        '''
+        env for training controller
+
+        does not initialize obstacles
+        does initialize random starting vel
+
+        obs if rel_goal        
+        '''
+
         if self.randomize_initial_state and self.dim == 2:
             self.prompter = twodControlPrompter()
         if self.randomize_initial_state and self.dim == 3:
@@ -52,25 +61,16 @@ class controlerTrainEnv(satGymEnv):
         if self.randomize_initial_state:
             prompt = self.prompter.prompt()
             self.sim.set_sat_initial_pos(pos=prompt['sat_pos']) #set initial sat position
-            #self.sim.set_sat_initial_vel(vel=prompt['sat_vel']) #set initial sat velocity
+            self.sim.set_sat_initial_vel(vel=prompt['sat_vel']) #set initial sat velocity
             self.sim.set_sat_goal(goal=prompt['sat_goal']) #set new sat goal
-            for i in range(self.n_obs):
-                label = 'obs' + str(i) + '_pos'
-                self.sim.set_obs_initial_pos(pos=prompt[label],idx=self.obs_idx[i])
         self._episode += 1
         self._step = 0
         self.sim.reset()
         return self._get_obs(), {'episode': self._episode}
 
     def step(self, action):
-        #scale sat action and set action
-        scalled_action = self.scaling_function(action)
-        if self.dim == 3:
-            full_action = np.zeros((9,))
-        if self.dim ==2:
-            full_action = np.zeros((3,))
-        full_action[0:self.dim] = scalled_action
-        self.sim.set_sat_control(full_action)
+        #set sat control
+        self.sim.set_sat_control(self.preprocess_action(action=action,max_ctrl=self.max_ctrl))
         #take step
         self.sim.step()
         self._step += 1

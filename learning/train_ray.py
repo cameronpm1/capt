@@ -302,7 +302,7 @@ def train_ray(cfg: DictConfig,filedir):
     #train 15,000 iterations
     for i in range(50000): 
         result = algo_build.train()
-        if i % 1000 == 0:# and i != 0:
+        if i % 500 == 0:# and i != 0:
             save_dir = logdir+'/checkpoint'+str(result['timesteps_total'])
             algo_build.save(checkpoint_dir=save_dir)
             print(pretty_print(result))

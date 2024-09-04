@@ -15,6 +15,7 @@ from ray.rllib.utils.typing import  ResultDict, PolicyID
 from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
 from ray.rllib.algorithms.dqn.dqn import calculate_rr_weights
 from ray.rllib.algorithms.sac.sac_tf_policy import SACTFPolicy
+from ray.rllib.algorithms.sac.sac_torch_policy import SACTorchPolicy
 from ray.rllib.utils.typing import SampleBatchType
 from ray.rllib.algorithms.algorithm_config import AlgorithmConfig
 from ray.rllib.execution.rollout_ops import synchronous_parallel_sample

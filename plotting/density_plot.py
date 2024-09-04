@@ -196,7 +196,7 @@ def action_density_plot(
         #mean2 = data[i][:,1]
         #
         #plt.scatter(mean1,mean2,s=1)
-    plt.savefig(load_dir+'/'+'test.png')
+    plt.savefig(load_dir+'/'+'density.png')
 
 
 if __name__ == "__main__":

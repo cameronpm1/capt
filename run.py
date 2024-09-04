@@ -6,12 +6,12 @@ import torch
 import argparse
 from pathlib import Path
 from typing import Optional
-from omegaconf import OmegaConf
-from omegaconf import DictConfig
 from hydra.utils import get_original_cwd
+from omegaconf import OmegaConf,DictConfig,SCMode
 from hydra.experimental import compose, initialize
 
 from logger import getlogger
+from plotting.eval_plot import eval_plot
 from learning.train_ray import train_ray
 from learning.train_sb3 import train, retrain
 from learning.run_space_sim_ray import runSpaceSimRay
@@ -83,6 +83,10 @@ def run_rl_model(cfg: DictConfig):
 
     return modeldir
 
+def eval_training(cfg: DictConfig):
+    master_dir = '/home/cameron/capt/logs/marl3d/2024-09-03_19-40-09'
+    eval_plot(cfg,DIRECTORY,master_dir=master_dir)
+
 #@hydra.main(config_path="learning/conf", config_name=CONFIG_FILE, version_base='1.1')
 def collect_data(cfg: DictConfig):
     os.chdir('../../../')
@@ -128,6 +132,9 @@ if __name__ == "__main__":
     if 'train' in args.run:
         train_rl_model(OmegaConf.to_container(cfg, resolve=True))
     if 'plot' in args.run:
-        data_dir = collect_data(OmegaConf.to_container(cfg, resolve=True))
-        action_density_plot(load_dir=data_dir)
+        if 'test' in args.env:
+            eval_training(OmegaConf.to_container(cfg, resolve=True)) #,structured_config_mode=SCMode.DICT))
+        else:
+            data_dir = collect_data(OmegaConf.to_container(cfg, resolve=True))
+            action_density_plot(load_dir=data_dir)
     

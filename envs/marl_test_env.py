@@ -38,6 +38,7 @@ class MARLTestEnv(satGymEnv):
             randomize_initial_state: bool = False,
             evader_policy_dir: Optional[str] = None,
             parallel_envs: int = 20,
+            control_model_path: str = 'models/2D control policy'
     ):
         super().__init__(
             sim=sim,
@@ -78,10 +79,11 @@ class MARLTestEnv(satGymEnv):
             self.EVADE = True
             self.sim.EVADE = True
         else:
+            self.sim.EVADE = False
             self.evader_policy = Policy.from_checkpoint(evader_policy_dir)
             self.evader_model = lambda obs: self.evader_policy.compute_single_action(obs)
 
-        self.controller_policy = Policy.from_checkpoint('C:/Users/Cameron Mehlman/Documents/magpie_rl/models/2D control policy')
+        self.controller_policy = Policy.from_checkpoint(control_model_path)
         self.adversary_controller = lambda pos: self.controller_policy.compute_single_action(pos)
 
         self.adv1_goal = None
@@ -141,7 +143,8 @@ class MARLTestEnv(satGymEnv):
         temp_obs = self._get_obs()
         for label in self.agents:
             obs[label] = temp_obs[label]
-        return obs, {'episode': self._episode}
+
+        return obs['evader'], {'episode': self._episode}
 
     def step(self,_):
         obs = self._get_obs()
@@ -198,7 +201,7 @@ class MARLTestEnv(satGymEnv):
                 if 'adversary' in label:
                     rew[label] += 500
 
-        return obs, rew, good_term or bad_term, trunc, {'goal_count':self.goal_count}
+        return obs['evader'], rew, good_term or bad_term, trunc, {'goal_count':self.goal_count}
 
     def _end_episode(self) -> bool:
         '''

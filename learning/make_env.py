@@ -306,6 +306,7 @@ def make_env(filedir: str, cfg: DictConfig):
             goal_tolerance = cfg['sim']['goal_tolerance'],
             collision_tolerance = cfg['sim']['collision_tolerance'],
             track_point_cloud = cfg['sim']['track_point_cloud'],
+            control_model_path = cfg['env']['adversary_controller'],
             kwargs = kwargs,
         )
 
@@ -322,6 +323,7 @@ def make_env(filedir: str, cfg: DictConfig):
             action_scaling_type=cfg['env']['action_scaling'],
             evader_policy_dir=cfg['env']['evader_policy_dir'],
             randomize_initial_state=cfg['env']['random_initial_state'],
+            control_model_path = cfg['env']['adversary_controller'],
         )
 
     else:

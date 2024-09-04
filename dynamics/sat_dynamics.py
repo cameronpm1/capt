@@ -128,10 +128,6 @@ class satelliteDynamics(baseDynamics):
         A[6][9] = 1
         A[7][10] = 1
         A[8][11] = 1
-        #A[9][11] = -(self.spacecraft_data['J_sc'][1]-self.spacecraft_data['J_sc'][2])*self.n/self.spacecraft_data['J_sc'][0]
-        #A[9][14] = self.n*self.spacecraft_data['alpha'][2]/self.spacecraft_data['J_sc'][0]
-        #A[11][9] = -(self.spacecraft_data['J_sc'][0]-self.spacecraft_data['J_sc'][1])*self.n/self.spacecraft_data['J_sc'][2]
-        #A[11][12] = self.n*self.spacecraft_data['alpha'][0]/self.spacecraft_data['J_sc'][2]
         return A
     
     @property
@@ -141,15 +137,9 @@ class satelliteDynamics(baseDynamics):
         B[3][0] = 1/self.mass
         B[4][1] = 1/self.mass
         B[5][2] = 1/self.mass
-        B[9][6] = -self.spacecraft_data['alpha'][0]/self.spacecraft_data['J_sc'][0]
         B[9][3] = 1/self.spacecraft_data['J_sc'][0]
-        B[10][7] = -self.spacecraft_data['alpha'][1]/self.spacecraft_data['J_sc'][1]
         B[10][4] = 1/self.spacecraft_data['J_sc'][1]
-        B[11][8] = -self.spacecraft_data['alpha'][2]/self.spacecraft_data['J_sc'][2]
         B[11][5] = 1/self.spacecraft_data['J_sc'][2]
-        B[12][3] = 1
-        B[13][4] = 1
-        B[14][5] = 1
         return B
     
     @property

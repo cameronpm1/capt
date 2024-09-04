@@ -41,7 +41,7 @@ def runSpaceSimRay(
     second_goal_count = 0
     eps = 20
 
-    for i in range(10):
+    for i in range(eps):
 
         obs, _ = env.reset()
 
@@ -92,6 +92,8 @@ def runSpaceSimRay(
     print('total episodes:',eps)
     print('first goal reached:',first_goal_count)
     print('second goal reached:',second_goal_count)
+
+    return first_goal_count, second_goal_count, eps
 
 if __name__ == "__main__":
     sys.path.insert(1, os.getcwd())

@@ -40,6 +40,7 @@ env:
   random_initial_state: True
   dim: 2
   evader_policy_dir: #C:/Users/Cameron Mehlman/Documents/magpie_rl/models/evader_improved_obs
+  adversary_controller: 'models/2D control policy'
 
 satellite:
   name: satellite
@@ -67,7 +68,7 @@ path_planner:
     min_distance: 6
     data_format: histogram
     layers: 8
-    angle_sections: 12 #72
+    angle_sections: 72
   max_distance: 0.3
   interpolation_method: spline
   n: 15

@@ -3,16 +3,13 @@
 #  - override hydra/hydra_logging: disabled  
 #  - override hydra/job_logging: disabled
 
-seed: 7 # set experiment seed
+seed: 98 # set experiment seed
 
 logging:
   job:
-    name: marl_base3d #multi_adversary_nodiv #adversary_siren_test4 # set job name
+    name: marl3dt #multi_adversary_nodiv #adversary_siren_test4 # set job name
   run:
-    dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
-
-notes: new histogram method, and point cloud generation
-
+    dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} 
 alg:
   lib: ray
   type: sac
@@ -34,7 +31,7 @@ alg:
   lr_evader: 0.0003
 
 env:
-  scenario: marlbase #control, controlImage, adversary, evade, multi, test
+  scenario: test #control, controlImage, adversary, evade, multi, test
   n_policies: 3 #number of adversary policies
   max_timestep: 1024
   sat_max_control: [0.15,0.15,.15]
@@ -43,7 +40,8 @@ env:
   action_scaling: clip
   random_initial_state: True
   dim: 3
-  evader_policy_dir: '/home/cameron/capt/models/evader 10 obs 3d'
+  evader_policy_dir:
+  adversary_controller: 'models/3D control policy'
 
 satellite:
   name: satellite
@@ -77,11 +75,11 @@ path_planner:
   n: 25
 
 sim:
-  control_method: none #MPC, PPOC, none
+  control_method: PPOC #MPC, PPOC, none
   point_cloud_size: 50
   path_point_tolerance: 0.1
   point_cloud_radius: 50
-  goal_tolerance: 0.5
+  goal_tolerance: 4
   collision_tolerance: 3
   track_point_cloud: False #propogate point cloud or not
   kwargs:
