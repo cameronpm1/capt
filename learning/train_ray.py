@@ -128,9 +128,9 @@ def train_ray(cfg: DictConfig,filedir):
             #receives none when checking for target network update
             if batch is not None:
                 self.max_samples = max(batch[pid]['unroll_id'])/len(batch.policy_batches)*self.workers
-            if ('adversary' in pid and self.max_samples < 9e6): # or (batch is not None and np.average(batch['evader']['rewards']) > 0.0):
+            if ('adversary' in pid and self.max_samples < 12e6) or (batch is not None and np.average(batch['evader']['rewards']) > 0.0):
                 return True
-            elif 'evade' in pid and self.max_samples > 9e6:
+            elif 'evade' in pid and self.max_samples > 12e6:
                 return True
             else:
                 return False

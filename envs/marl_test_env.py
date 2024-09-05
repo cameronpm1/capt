@@ -62,7 +62,7 @@ class MARLTestEnv(satGymEnv):
         self._np_random = None
         self.adv_max_ctrl = adv_max_ctrl
 
-        self.distance_max = 30
+        self.distance_max = 60
 
         #handle multiple adversary in prompter and label list
         self.n_adv = 2
@@ -215,7 +215,7 @@ class MARLTestEnv(satGymEnv):
         return self.get_evader_end(collision=collision)
     
     def _get_rew(self) -> float:
-        norm_dist = self.sim.distance_to_goal() #/60 #normalized distance to goal
+        norm_dist = self.sim.distance_to_goal()/self.distance_max #/60 #normalized distance to goal
         evader_rew, adv_rew = self.get_evader_reward(dist=norm_dist), self.get_adversary_reward(dist=norm_dist)
 
         rew = {}

@@ -3,11 +3,11 @@
 #  - override hydra/hydra_logging: disabled  
 #  - override hydra/job_logging: disabled
 
-seed: 98 # set experiment seed
+seed: 22 # set experiment seed
 
 logging:
   job:
-    name: marl3dt #multi_adversary_nodiv #adversary_siren_test4 # set job name
+    name: marl3d #multi_adversary_nodiv #adversary_siren_test4 # set job name
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
@@ -43,7 +43,7 @@ env:
   action_scaling: clip
   random_initial_state: True
   dim: 3
-  evader_policy_dir: '/home/cameron/capt/models/evader 10 obs 3d'
+  evader_policy_dir: '/home/cameron/capt/models/evader 5 obs 3d'
 
 satellite:
   name: satellite
@@ -81,7 +81,7 @@ sim:
   point_cloud_size: 50
   path_point_tolerance: 0.1
   point_cloud_radius: 50
-  goal_tolerance: 0.5
+  goal_tolerance: 2
   collision_tolerance: 3
   track_point_cloud: False #propogate point cloud or not
   kwargs:
@@ -98,6 +98,7 @@ adversary:
       mesh:
         points: [[0.0,0.0,0.0]]
         lines: []
+      rad: 0.7
       name: adversary1
       pos: [0, 0, 0]
       vel: [0, 0, 0] 
@@ -110,6 +111,7 @@ adversary:
       mesh:
         points: [[0.0,0.0,0.0]]
         lines: []
+      rad: 0.7
       name: adversary2
       pos: [0, 0, 0]
       vel: [0, 0, 0] 

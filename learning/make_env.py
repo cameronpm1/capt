@@ -121,6 +121,11 @@ def make_env(filedir: str, cfg: DictConfig):
                         max_control = cfg['adversary']['adversaries'][adversary]['control_lim']
                     )
                 else:
+                    points = []
+                    for i in range(int(cfg['sim']['point_cloud_size']/len(cfg['adversary']['adversaries']))):
+                        vec = np.random.random((3,))
+                        points.append((vec/np.linalg.norm(vec)*cfg['adversary']['adversaries'][adversary]['rad']))
+
                     stl = {
                         'points':np.array(cfg['adversary']['adversaries'][adversary]['mesh']['points']),
                         'lines':np.array(cfg['adversary']['adversaries'][adversary]['mesh']['lines'])

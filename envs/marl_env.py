@@ -62,7 +62,7 @@ class MARLEnv(satGymEnv):
         self._np_random = None
         self.adv_max_ctrl = adv_max_ctrl
 
-        self.distance_max = 50
+        self.distance_max = 60
 
         #handle multiple adversary in prompter and label list
         self.n_adv = 2
@@ -181,7 +181,7 @@ class MARLEnv(satGymEnv):
             for label in agents:
                 terminated[label] = bad_term
                 if 'evader' in label:
-                    rew[label] -= (1000-np.clip(self._step,0,1000))
+                    rew[label] -= 1000 #(1000-np.clip(self._step,0,1000))
                 if 'adversary' in label:
                     rew[label] += 500
 

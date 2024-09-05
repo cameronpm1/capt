@@ -80,7 +80,7 @@ sim:
   path_point_tolerance: 0.1
   point_cloud_radius: 50
   goal_tolerance: 4
-  collision_tolerance: 3
+  collision_tolerance: 1
   track_point_cloud: False #propogate point cloud or not
   kwargs:
     upper_state_bounds: [1e10,  1e10,  1e10, 1e10, 1e10, 1e10]
