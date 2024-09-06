@@ -128,7 +128,7 @@ def train_ray(cfg: DictConfig,filedir):
             #receives none when checking for target network update
             if batch is not None:
                 self.max_samples = max(batch[pid]['unroll_id'])/len(batch.policy_batches)*self.workers
-            if ('adversary' in pid and self.max_samples < 12e6) or (batch is not None and np.average(batch['evader']['rewards']) > 0.0):
+            if ('adversary' in pid and self.max_samples < 12e6): # or (batch is not None and np.average(batch['evader']['rewards']) > 0.0):
                 return True
             elif 'evade' in pid and self.max_samples > 12e6:
                 return True
@@ -265,7 +265,7 @@ def train_ray(cfg: DictConfig,filedir):
                         num_envs_per_worker=cfg['alg']['cpu_envs'], #60
                         num_cpus_per_env_runner=1
                         )
-            .resources(num_gpus=1)
+            .resources(num_gpus=0)
             .multi_agent(policy_mapping_fn=policy_mapping_fn,
                             policies_to_train=policy_training_fn,
                             policies=policy_info)

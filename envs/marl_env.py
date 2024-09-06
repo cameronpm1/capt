@@ -307,7 +307,7 @@ class MARLEnv(satGymEnv):
         too_far = []
 
         for i in range(self.n_adv):
-            if self.sim.distance_to_adversary(idx=i) > 40:
+            if self.sim.distance_to_adversary(idx=i) > 30:
                 too_far.append(True)
             else:
                 too_far.append(False)
