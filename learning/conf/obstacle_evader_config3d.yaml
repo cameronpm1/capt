@@ -3,7 +3,7 @@
 #  - override hydra/hydra_logging: disabled  
 #  - override hydra/job_logging: disabled
 
-seed: 23 # set experiment seed
+seed: 53 # set experiment seed
 
 logging:
   job:
@@ -11,7 +11,7 @@ logging:
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
-notes: 2000kg mass, 7 obs
+notes: evade 5 3ds 2
 
 alg:
   lib: ray
@@ -61,7 +61,7 @@ path_planner:
   goal_state: [1,20,0,0,0,0,0,0,0,0,0,0] 
   path_planning_algorithm: VFH
   kwargs:
-    radius: 15
+    radius: 10
     iterations: 1
     distance_tolerance: 0.5
     min_distance: 6
@@ -91,7 +91,7 @@ obstacles:
 
 random:
   on: True
-  n: 7
+  n: 5
   vel: 0.0
   x_range: [-7,7] #[-7,7]
   y_range: [4,18] #[5,15]

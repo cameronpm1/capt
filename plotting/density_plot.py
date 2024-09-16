@@ -31,7 +31,7 @@ def collect_action_dist_data(
         filedir: str,
         master_dir: str,
 ):
-    iter = 15
+    iter = 4
 
     evader = None
     models = []
@@ -72,6 +72,8 @@ def collect_action_dist_data(
 
     end_timestep = cfg['env']['max_timestep']
 
+    kl_div = []
+
     for i in range(iter):
         print('running simulation',i)
         observations = []
@@ -94,7 +96,8 @@ def collect_action_dist_data(
                     action_dict = {}
                     action_dict['evader'],_,_ = evader.compute_single_action(observations[j][-1]['evader'])
                     action_dict['adversary0'],_,_ = policies[j].compute_single_action(observations[j][-1]['adversary0'])
-                    action_dict['adversary1'],_,_ = policies[i%cfg['env']['n_policies']].compute_single_action(observations[j][-1]['adversary1'])
+                    action_dict['adversary1'],_,_ = policies[j].compute_single_action(observations[j][-1]['adversary1'])
+                    #action_dict['adversary1'],_,_ = policies[i%cfg['env']['n_policies']].compute_single_action(observations[j][-1]['adversary1'])
                     obs,rewards,terminated,truncated,_ = env.step(action_dict)
                     observations[j].append(obs)
                     if terminated['__all__'] or truncated['__all__']:
@@ -106,15 +109,18 @@ def collect_action_dist_data(
         cc_observations = None
 
         obs_len = 0
-        for i,obs_set in enumerate(observations):
+        for k,obs_set in enumerate(observations):
              obs_len += len(obs_set)
 
-             if i == 0:
+             if k == 0:
                   cc_observations = np.array(obs_set)
              else:
                   cc_observations = np.concatenate((cc_observations,np.array(obs_set)))
 
         observations = cc_observations
+
+        dists = []
+        last_dist = None
 
         for j,env in enumerate(envs):
             #compute action dist outputs
@@ -124,6 +130,13 @@ def collect_action_dist_data(
             actions_input, _ = models[j].get_action_model_outputs(torch.from_numpy(model_out).cuda())
             action_dist_class = _get_dist_class(policies[j], policies[j].config, policies[j].action_space)
             action_dist = action_dist_class(actions_input, models[j])
+            if i == 0:
+                 dists.append(action_dist)
+            if j == 0:
+                 last_dist = action_dist
+            else:
+                 kl_div.append(torch.mean(last_dist.kl(action_dist)).item())
+                 kl_div.append(torch.mean(action_dist.kl(last_dist)).item())
             #divergent_action_input = [mean1,mean2,log_std1,log_std2]
             episode_dist_data = np.concatenate((action_dist.mean.cpu().detach().numpy(),action_dist.std.cpu().detach().numpy()),axis=1)
             #action_dist_data[j].append((action_dist.mean.cpu().detach().numpy(),action_dist.std.cpu().detach().numpy()))
@@ -131,6 +144,14 @@ def collect_action_dist_data(
                 action_dist_data[j] = np.concatenate((action_dist_data[j],episode_dist_data),axis=0)
             else:
                 action_dist_data[j] = episode_dist_data
+        '''
+        if i == 0:
+            for a in range(2):
+                for b in range(2):
+                    if a != b:
+                        print(torch.mean(dists[a].kl(dists[b])))
+        '''
+    print(np.average(kl_div))
 
     file_dirs = os.listdir(master_dir)
     for file in file_dirs:
@@ -167,7 +188,7 @@ def action_density_plot(
          grid = np.zeros((grid_size,grid_size))
          if data[i][:,].max() > 1 or data[i][:,].min() < -1:
               data1 = normalize(data[i][:,0],-1,1)
-              data2 = normalize(data[i][:,2],-1,1)
+              data2 = normalize(data[i][:,3],-1,1)
               normalize_on = True
          else:
               normalize_on = False
@@ -187,7 +208,7 @@ def action_density_plot(
          t = np.linspace(0, grid.max(), n)
          integral = ((grid >= t[:, None, None]) * grid).sum(axis=(1,2))
          f = interpolate.interp1d(integral, t)
-         t_contours = f(np.array([0.9,0.7,0.5,0.3,0.1]))
+         t_contours = f(np.array([0.9,0.7,0.5,0.3]))
          plt.subplot(1, len(data), i+1)
          plt.imshow(grid.T, origin='lower', extent=[-1,1,-1,1], cmap="gray")
          plt.contour(grid.T, t_contours, extent=[-1,1,-1,1])

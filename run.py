@@ -84,14 +84,13 @@ def run_rl_model(cfg: DictConfig):
     return modeldir
 
 def eval_training(cfg: DictConfig):
-    master_dir = '/home/cameron/capt/logs/marl3d/2024-09-03_19-40-09'
+    master_dir = '/home/cameron/capt/logs/marl3d/2024-09-13_00-19-03'
     eval_plot(cfg,DIRECTORY,master_dir=master_dir)
 
 #@hydra.main(config_path="learning/conf", config_name=CONFIG_FILE, version_base='1.1')
 def collect_data(cfg: DictConfig):
     os.chdir('../../../')
-    master_dir = '/home/cameron/magpie_rl/logs/div_policies3'
-    master_dir = '/home/cameron/capt/logs/div adv early'
+    master_dir = '/home/cameron/capt/logs/paper/baseline4/checkpoint20884800/policies'
     collect_action_dist_data(cfg,DIRECTORY,master_dir)
     return master_dir
 

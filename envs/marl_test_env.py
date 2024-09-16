@@ -76,9 +76,11 @@ class MARLTestEnv(satGymEnv):
 
         self.EVADE = False
         if evader_policy_dir is None:
+            print('running EVADE')
             self.EVADE = True
             self.sim.EVADE = True
         else:
+            print(evader_policy_dir)
             self.sim.EVADE = False
             self.evader_policy = Policy.from_checkpoint(evader_policy_dir)
             self.evader_model = lambda obs: self.evader_policy.compute_single_action(obs)

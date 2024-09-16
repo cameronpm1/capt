@@ -39,7 +39,7 @@ def runSpaceSimRay(
 
     first_goal_count = 0
     second_goal_count = 0
-    eps = 20
+    eps = 50
 
     for i in range(eps):
 
@@ -87,7 +87,7 @@ def runSpaceSimRay(
             if render:
                 renderer.plot(env.unwrapped.render())
 
-        print('Simulation ended at timestep',timestep)
+        #print('Simulation ended at timestep',timestep)
     
     print('total episodes:',eps)
     print('first goal reached:',first_goal_count)

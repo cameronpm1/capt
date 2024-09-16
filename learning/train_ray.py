@@ -108,8 +108,8 @@ def train_ray(cfg: DictConfig,filedir):
         if 'evader' in agent_id: 
             return 'evader'
         else:
-            #idx = (worker.worker_index-1) % cfg['env']['n_policies']
-            idx = random.choice(list(range(cfg['env']['n_policies'])))
+            idx = (worker.worker_index-1) % cfg['env']['n_policies']
+            #idx = random.choice(list(range(cfg['env']['n_policies'])))
             return 'adversary'+str(idx)
         
     class policyTrainingSchedule():
@@ -128,9 +128,9 @@ def train_ray(cfg: DictConfig,filedir):
             #receives none when checking for target network update
             if batch is not None:
                 self.max_samples = max(batch[pid]['unroll_id'])/len(batch.policy_batches)*self.workers
-            if ('adversary' in pid and self.max_samples < 12e6): # or (batch is not None and np.average(batch['evader']['rewards']) > 0.0):
+            if ('adversary' in pid and self.max_samples < 9e6): # or (batch is not None and np.average(batch['evader']['rewards']) > 0.0):
                 return True
-            elif 'evade' in pid and self.max_samples > 12e6:
+            elif 'evade' in pid and self.max_samples > 9e6:
                 return True
             else:
                 return False
@@ -176,10 +176,10 @@ def train_ray(cfg: DictConfig,filedir):
     batch = None
 
     if 'sac' in cfg['alg']['type']:
-        if 'marl' in cfg['env']['scenario']: # and 'base' not in cfg['env']['scenario']:
+        if 'marl' in cfg['env']['scenario'] and 'base' not in cfg['env']['scenario']:
             algo = custom_SACConfig()
             adv_policy_model_dict = {
-                'custom_model': 'sirenfcnet',
+                #'custom_model': 'sirenfcnet',
                 'fcnet_hiddens': cfg['alg']['pi_adv'],
             }
             adv_q_model_dict = {
@@ -240,6 +240,7 @@ def train_ray(cfg: DictConfig,filedir):
                     else:
                         agent_label = 'adversary0'
                         policy_model_dict = {
+                            #'custom_model': 'sirenfcnet',
                             'fcnet_hiddens': cfg['alg']['pi_adv'],
                         }
                         q_model_dict = {
@@ -265,7 +266,7 @@ def train_ray(cfg: DictConfig,filedir):
                         num_envs_per_worker=cfg['alg']['cpu_envs'], #60
                         num_cpus_per_env_runner=1
                         )
-            .resources(num_gpus=0)
+            .resources(num_gpus=1)
             .multi_agent(policy_mapping_fn=policy_mapping_fn,
                             policies_to_train=policy_training_fn,
                             policies=policy_info)
@@ -300,7 +301,7 @@ def train_ray(cfg: DictConfig,filedir):
         algo_build.set_weights(pre_trained_policy_weights)    
 
     #train 15,000 iterations
-    for i in range(50000): 
+    for i in range(60000): 
         result = algo_build.train()
         if i % 500 == 0:# and i != 0:
             save_dir = logdir+'/checkpoint'+str(result['timesteps_total'])

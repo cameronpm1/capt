@@ -3,7 +3,7 @@
 #  - override hydra/hydra_logging: disabled  
 #  - override hydra/job_logging: disabled
 
-seed: 98 # set experiment seed
+seed: 70 # set experiment seed
 
 logging:
   job:
@@ -40,7 +40,7 @@ env:
   action_scaling: clip
   random_initial_state: True
   dim: 3
-  evader_policy_dir:
+  evader_policy_dir: #'/home/cameron/capt/logs/paper/base_evader1/checkpoint40910400/policies/policy0'
   adversary_controller: 'models/3D control policy'
 
 satellite:
@@ -63,16 +63,16 @@ path_planner:
   goal_state: [1,20,0,0,0,0,0,0,0,0,0,0] 
   path_planning_algorithm: VFH
   kwargs:
-    radius: 15
+    radius: 10
     iterations: 1
     distance_tolerance: 0.5
     min_distance: 6
-    layers: 3
+    layers: 5
     angle_sections: 30
     data_format: histogram
   max_distance: 0.3
   interpolation_method: spline
-  n: 25
+  n: 10
 
 sim:
   control_method: PPOC #MPC, PPOC, none
@@ -96,6 +96,7 @@ adversary:
       mesh:
         points: [[0.0,0.0,0.0]]
         lines: []
+      rad: 1.0
       name: adversary1
       pos: [0, 0, 0]
       vel: [0, 0, 0] 
@@ -108,6 +109,7 @@ adversary:
       mesh:
         points: [[0.0,0.0,0.0]]
         lines: []
+      rad: 1.0
       name: adversary2
       pos: [0, 0, 0]
       vel: [0, 0, 0] 

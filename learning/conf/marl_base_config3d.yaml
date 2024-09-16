@@ -3,7 +3,7 @@
 #  - override hydra/hydra_logging: disabled  
 #  - override hydra/job_logging: disabled
 
-seed: 7 # set experiment seed
+seed: 40 # set experiment seed
 
 logging:
   job:
@@ -11,7 +11,7 @@ logging:
   run:
     dir: /logs/${logging.job.name}/${now:%Y-%m-%d_%H-%M-%S} # model and log will be saved here (for adding in hrs,min,sec: _%H-%M-%S}) 
 
-notes: new histogram method, and point cloud generation
+notes: 3ds, 2 big adv, siren
 
 alg:
   lib: ray
@@ -28,14 +28,14 @@ alg:
   #model dependant training variables:
   pi_adv: [512, 512]
   vf_adv: [512, 512]
-  pi_evader: [512, 512]
-  vf_evader: [512, 512]
+  pi: [512, 512]
+  vf: [512, 512]
   lr_adv: 0.0003
   lr_evader: 0.0003
 
 env:
   scenario: marlbase #control, controlImage, adversary, evade, multi, test
-  n_policies: 3 #number of adversary policies
+  n_policies: 2 #number of adversary policies
   max_timestep: 1024
   sat_max_control: [0.15,0.15,.15]
   adv_max_control: [0.15,0.15,.15]
@@ -43,7 +43,7 @@ env:
   action_scaling: clip
   random_initial_state: True
   dim: 3
-  evader_policy_dir: '/home/cameron/capt/models/evader 10 obs 3d'
+  evader_policy_dir: '/home/cameron/capt/models/evader 5 obs 3ds'
 
 satellite:
   name: satellite
@@ -65,7 +65,7 @@ path_planner:
   goal_state: [1,20,0,0,0,0,0,0,0,0,0,0] 
   path_planning_algorithm: VFH
   kwargs:
-    radius: 15
+    radius: 10
     iterations: 1
     distance_tolerance: 0.5
     min_distance: 6
@@ -78,7 +78,7 @@ path_planner:
 
 sim:
   control_method: none #MPC, PPOC, none
-  point_cloud_size: 50
+  point_cloud_size: 100
   path_point_tolerance: 0.1
   point_cloud_radius: 50
   goal_tolerance: 0.5
@@ -98,6 +98,7 @@ adversary:
       mesh:
         points: [[0.0,0.0,0.0]]
         lines: []
+      rad: 1.0
       name: adversary1
       pos: [0, 0, 0]
       vel: [0, 0, 0] 
@@ -110,6 +111,7 @@ adversary:
       mesh:
         points: [[0.0,0.0,0.0]]
         lines: []
+      rad: 1.0
       name: adversary2
       pos: [0, 0, 0]
       vel: [0, 0, 0] 
