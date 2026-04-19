@@ -19,6 +19,7 @@ from space_sim.sim import Sim
 from envs.marl_env import MARLEnv
 from envs.sat_gym_env import satGymEnv
 from envs.marl_test_env import MARLTestEnv
+from envs.heuristic_env import heuristicEnv
 from dynamics.twod_dynamics import twodDynamics
 from dynamics.static_object import staticObject
 from dynamics.dynamic_object import dynamicObject
@@ -326,6 +327,40 @@ def make_env(filedir: str, cfg: DictConfig):
             adv_max_ctrl=cfg['env']['adv_max_control'],
             action_scaling_type=cfg['env']['action_scaling'],
             evader_policy_dir=cfg['env']['evader_policy_dir'],
+            randomize_initial_state=cfg['env']['random_initial_state'],
+            control_model_path = cfg['env']['adversary_controller'],
+        )
+
+    elif 'heuristic' in cfg['env']['scenario']:
+        '''
+        set up env for training on heuristic adversaries
+        '''
+
+        sim = Sim(
+            main_object = satellite,
+            path_planner = path_planner,
+            point_cloud_size = cfg['sim']['point_cloud_size'],
+            path_point_tolerance = cfg['sim']['path_point_tolerance'],
+            point_cloud_radius = cfg['sim']['point_cloud_radius'],
+            control_method = cfg['sim']['control_method'],
+            goal_tolerance = cfg['sim']['goal_tolerance'],
+            collision_tolerance = cfg['sim']['collision_tolerance'],
+            track_point_cloud = cfg['sim']['track_point_cloud'],
+            control_model_path = cfg['env']['adversary_controller'],
+            kwargs = kwargs,
+        )
+
+        initialize_adversasries(sim)
+        initialize_obstacles(sim)
+
+        logger.info('Initializing heuristic environment')
+        env = heuristicEnv(
+            sim=sim,
+            step_duration=cfg['satellite']['dynamics']['timestep']*cfg['satellite']['dynamics']['horizon'],
+            max_episode_length=cfg['env']['max_timestep'],
+            sat_max_ctrl=cfg['env']['sat_max_control'],
+            adv_max_ctrl=cfg['env']['adv_max_control'],
+            action_scaling_type=cfg['env']['action_scaling'],
             randomize_initial_state=cfg['env']['random_initial_state'],
             control_model_path = cfg['env']['adversary_controller'],
         )

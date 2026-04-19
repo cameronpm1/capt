@@ -31,7 +31,7 @@ def collect_action_dist_data(
         filedir: str,
         master_dir: str,
 ):
-    iter = 4
+    iter = 8
 
     evader = None
     models = []
@@ -60,7 +60,7 @@ def collect_action_dist_data(
         elif 'evader' in model_dir:
             policy = Policy.from_checkpoint(master_dir+'/'+model_dir)
             evader = policy
-    print(policies)
+    #print(policies)
 
     #use same prompter for all envs
     if cfg['env']['dim'] == 2:
@@ -102,7 +102,7 @@ def collect_action_dist_data(
                     observations[j].append(obs)
                     if terminated['__all__'] or truncated['__all__']:
                         dones[j] = True
-                        print(t)
+                        #print(t)
                     else:
                         dones[j] = False
 
@@ -127,7 +127,7 @@ def collect_action_dist_data(
             obs = np.array([obs['adversary0'] for obs in observations])
             #obs = np.concatenate((obs,np.array([obs['adversary1'] for obs in observations])))
             model_out, _ = models[j]({'obs':obs.squeeze()})
-            actions_input, _ = models[j].get_action_model_outputs(torch.from_numpy(model_out).cuda())
+            actions_input, _ = models[j].get_action_model_outputs(torch.from_numpy(model_out).cpu())
             action_dist_class = _get_dist_class(policies[j], policies[j].config, policies[j].action_space)
             action_dist = action_dist_class(actions_input, models[j])
             if i == 0:
@@ -151,7 +151,7 @@ def collect_action_dist_data(
                     if a != b:
                         print(torch.mean(dists[a].kl(dists[b])))
         '''
-    print(np.average(kl_div))
+    #print(np.average(kl_div))
 
     file_dirs = os.listdir(master_dir)
     for file in file_dirs:
@@ -177,6 +177,8 @@ def action_density_plot(
     files = os.listdir(load_dir)
     data = []
 
+    fig = plt.figure(figsize=(10, 10))
+
     for file in files:
          if 'data' in file:
               data.append(np.load(load_dir+'/'+file))
@@ -184,19 +186,20 @@ def action_density_plot(
     for i in range(len(data)):
          print('plotting policy'+str(i)+' data')
          grid_size = 50
-         iter = 2/grid_size
+         iter1 = 2/grid_size
+         iter2 = 1/grid_size
          grid = np.zeros((grid_size,grid_size))
          if data[i][:,].max() > 1 or data[i][:,].min() < -1:
               data1 = normalize(data[i][:,0],-1,1)
-              data2 = normalize(data[i][:,3],-1,1)
+              data2 = normalize(data[i][:,3],0,1)
               normalize_on = True
          else:
               normalize_on = False
          for j,data_point in enumerate(data[i]):
             if normalize_on:
-                 idx1, idx2 = (data1[j] + 1)//iter , (data2[j] + 1)//iter
-            else:
-                idx1, idx2 = (data_point[0] + 1)//iter , (data_point[1] + 1)//iter
+                 idx1, idx2 = (data1[j] + 1)//iter1 , (data2[j])//iter2
+            #else:
+            #    idx1, idx2 = (data_point[0] + 1)//(iter) , (data_point[1] + 1)//(iter)
             if idx1 > grid_size - 1:
                  idx1 -= grid_size - 1
             if idx2 > grid_size - 1:
@@ -209,15 +212,32 @@ def action_density_plot(
          integral = ((grid >= t[:, None, None]) * grid).sum(axis=(1,2))
          f = interpolate.interp1d(integral, t)
          t_contours = f(np.array([0.9,0.7,0.5,0.3]))
-         plt.subplot(1, len(data), i+1)
-         plt.imshow(grid.T, origin='lower', extent=[-1,1,-1,1], cmap="gray")
-         plt.contour(grid.T, t_contours, extent=[-1,1,-1,1])
+         ax = fig.add_subplot(1, len(data), i+1)
+         #plt.subplot(1, len(data), i+1)
+         ax.imshow(grid.T, origin='lower', extent=[-1,1,0,1], cmap="gray")
+         #plt.imshow(grid.T, origin='lower', extent=[-1,1,-1,1], cmap="gray")
+         ax.contour(grid.T, t_contours, extent=[-1,1,0,1])
+         #plt.contour(grid.T, t_contours, extent=[-1,1,-1,1])
+         ax.set_aspect(1./ax.get_data_ratio())
+         ax.set_title('Adversary'+str(i))
 
         #mean1 = data[i][:,0]
         #mean2 = data[i][:,1]
         #
         #plt.scatter(mean1,mean2,s=1)
+    s1 = load_dir.find('checkpoint')
+    s2 = load_dir.find('/policies')
+    title = 'Timestep ' +  load_dir[s1+10:s2]
+    fig.suptitle(title,fontsize=16)
+
+    print('saving image to', load_dir+'/'+'density.png')
     plt.savefig(load_dir+'/'+'density.png')
+
+    image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
+    image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    plt.close(fig)
+    return image
+    #    imageio.mimsave('PPO_3_link3_ng.gif', self.frames, duration=0.05)
 
 
 if __name__ == "__main__":

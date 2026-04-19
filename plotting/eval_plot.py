@@ -20,19 +20,19 @@ def eval_plot(
     start=14000000
 
     #save directories with checkpoint
-    for dir in checkpoint_dirs:
-        if 'checkpoint' in dir:
-            if int(dir[10:]) > start:
-                checkpoint_map[dir] = int(dir[10:])
+    for cdir in checkpoint_dirs:
+        if 'checkpoint' in cdir:
+            if int(cdir[10:]) > start:
+                checkpoint_map[cdir] = int(cdir[10:])
     #sort checkpoint directories
     sorted_dirs = sorted(checkpoint_map.keys(), key=checkpoint_map.get)
 
     first = []
     second = []
 
-    for dir in sorted_dirs:
-        print(master_dir+'/'+dir)
-        cfg['env']['evader_policy_dir'] = master_dir+'/'+dir+'/policies/evader'
+    for sdir in sorted_dirs:
+        print(master_dir+'/'+sdir)
+        cfg['env']['evader_policy_dir'] = master_dir+'/'+sdir+'/policies/evader'
         res = runSpaceSimRay(cfg,directory,modeldir=None,render=False,verbose=False)
         first.append(res[0])
         second.append(res[1])

@@ -23,15 +23,12 @@ alg:
   device: cpu # cpu, cuda
   total_timesteps: 20e6 #20e6
   #model dependant training variables:
-  pi_adv: [512, 512]
-  vf_adv: [512, 512]
-  pi_evader: [512, 512]
-  vf_evader: [512, 512]
-  lr_adv: 0.0003
+  pi: [512, 512]
+  vf: [512, 512]
   lr_evader: 0.0003
 
 env:
-  scenario: test #control, controlImage, adversary, evade, multi, test
+  scenario: heuristic #control, controlImage, adversary, evade, multi, test, heuristic
   n_policies: 3 #number of adversary policies
   max_timestep: 1024
   sat_max_control: [0.15,0.15,.15]
@@ -41,7 +38,7 @@ env:
   random_initial_state: True
   dim: 3
   evader_policy_dir: #'/home/cameron/capt/logs/paper/base_evader1/checkpoint40910400/policies/policy0'
-  adversary_controller: 'models/3D control policy'
+  adversary_controller: '/home/cameron/capt/models/3D control policy'
 
 satellite:
   name: satellite

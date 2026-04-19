@@ -155,6 +155,14 @@ def train_ray(cfg: DictConfig,filedir):
         policy_list.append('evader')
         policy_mapping_fn = marl_policy_mapping_fn
         policy_training_fn = policy_tracker.policy_training_schedule
+    elif 'heuristic' in cfg['env']['scenario']:
+        env_name = cfg['env']['scenario']
+        register_env(env_name, multi_agent_env_maker) #register make env function
+        #test_env for getting obs/action space
+        test_env = multi_agent_env_maker({})
+        policy_list = ['evader']
+        policy_mapping_fn = lambda agent_id, episode, worker, **kwargs: 'evader'
+        policy_training_fn = policy_list
     else:
         '''
         TO DO:
@@ -227,8 +235,7 @@ def train_ray(cfg: DictConfig,filedir):
 
             policy_info = {}
             for label in policy_list:
-                agent_label = test_env.label
-                if 'base' in cfg['env']['scenario']:
+                if 'base' in cfg['env']['scenario'] or 'heuristic' in cfg['env']['scenario']:
                     if 'evade' in label:
                         agent_label = 'evader'
                         policy_model_dict = {
@@ -246,6 +253,8 @@ def train_ray(cfg: DictConfig,filedir):
                         q_model_dict = {
                             'fcnet_hiddens': cfg['alg']['vf_adv'],
                         }
+                else:
+                    agent_label = test_env.label
                 policy_info[label] = (
                                 None, #policy_class
                                 test_env.observation_space[agent_label], #observation_space
@@ -266,7 +275,7 @@ def train_ray(cfg: DictConfig,filedir):
                         num_envs_per_worker=cfg['alg']['cpu_envs'], #60
                         num_cpus_per_env_runner=1
                         )
-            .resources(num_gpus=1)
+            .resources(num_gpus=0)
             .multi_agent(policy_mapping_fn=policy_mapping_fn,
                             policies_to_train=policy_training_fn,
                             policies=policy_info)

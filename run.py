@@ -1,8 +1,11 @@
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
 import ray
 import time
 import hydra
 import torch
+import imageio
 import argparse
 from pathlib import Path
 from typing import Optional
@@ -90,9 +93,49 @@ def eval_training(cfg: DictConfig):
 #@hydra.main(config_path="learning/conf", config_name=CONFIG_FILE, version_base='1.1')
 def collect_data(cfg: DictConfig):
     os.chdir('../../../')
-    master_dir = '/home/cameron/capt/logs/paper/baseline4/checkpoint20884800/policies'
-    collect_action_dist_data(cfg,DIRECTORY,master_dir)
-    return master_dir
+    master_dir = '/home/cameron/capt/logs/paper/baseline1'
+    if 'policies' in master_dir:
+        collect_action_dist_data(cfg,DIRECTORY,master_dir)
+        return master_dir
+    else:
+        checkpoint_dirs = os.listdir(master_dir)
+        checkpoint_map = {}
+        stop=14000000
+        #save directories with checkpoint
+        for cdir in checkpoint_dirs:
+            if 'checkpoint' in cdir:
+                if int(cdir[10:]) < stop:
+                    checkpoint_map[cdir] = int(cdir[10:])
+        #sort checkpoint directories
+        sorted_dirs = sorted(checkpoint_map.keys(), key=checkpoint_map.get)
+        for pol_dir in sorted_dirs:
+            new_dir = master_dir+'/'+pol_dir+'/policies'
+            print(new_dir)
+            collect_action_dist_data(cfg,DIRECTORY,new_dir)
+        return None
+
+def generate_density_video(cfg: DictConfig):
+    os.chdir('../../../')
+    master_dir = '/home/cameron/capt/logs/paper/baseline1'
+    checkpoint_dirs = os.listdir(master_dir)
+    checkpoint_map = {}
+    stop=5000000
+    #save directories with checkpoint
+    for cdir in checkpoint_dirs:
+        if 'checkpoint' in cdir:
+            if int(cdir[10:]) < stop:
+                checkpoint_map[cdir] = int(cdir[10:])
+    #sort checkpoint directories
+    sorted_dirs = sorted(checkpoint_map.keys(), key=checkpoint_map.get)
+    plots = []
+    for pol_dir in sorted_dirs:
+        new_dir = master_dir+'/'+pol_dir+'/policies'
+        print(new_dir)
+        plot = action_density_plot(load_dir=new_dir)
+        plots.append(plot)
+    video_dir = master_dir+'/'+'density_vid.gif'
+    print('saving video to', video_dir)
+    imageio.mimsave(video_dir, plots, duration=1.5)
 
 if __name__ == "__main__":
     '''
@@ -102,7 +145,7 @@ if __name__ == "__main__":
     
     '''
 
-    #torch.set_num_threads(8)
+    torch.set_num_threads(8)
     DIRECTORY = os.getcwd()
     args = get_args()
     dim_end = str(args.dim) + 'd'
@@ -117,6 +160,8 @@ if __name__ == "__main__":
             CONFIG_FILE = 'marl_base_config' + dim_end
         else:
             CONFIG_FILE = 'marl_config' + dim_end
+    elif 'heuristic' in args.env:
+        CONFIG_FILE = 'heuristic_config' + dim_end
     elif 'test' in args.env:
         CONFIG_FILE = 'test_config' + dim_end
     else:
@@ -135,5 +180,8 @@ if __name__ == "__main__":
             eval_training(OmegaConf.to_container(cfg, resolve=True)) #,structured_config_mode=SCMode.DICT))
         else:
             data_dir = collect_data(OmegaConf.to_container(cfg, resolve=True))
-            action_density_plot(load_dir=data_dir)
+            if data_dir is not None:
+                plot = action_density_plot(load_dir=data_dir)
+    if 'film' in args.run:
+        generate_density_video(OmegaConf.to_container(cfg, resolve=True))
     
